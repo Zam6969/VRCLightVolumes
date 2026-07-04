@@ -40,9 +40,10 @@ If an Area Light has no Cookie assigned, it keeps the original fast parametric A
 3. Scale the transform to match the physical size of the emitting surface.
 4. Rotate the Area Light so the rectangle faces the area you want to illuminate.
 5. Assign a source to the `Cookie` field. It can be a Texture, RenderTexture or Material.
-6. Set `Color` and `Intensity`. These multiply the emitted texture color and can be changed at runtime without rebuilding the texture array.
-7. Set `Cookie Resolution` in **Light Volume Setup** as low as acceptable for the visible result.
-8. Enable `Debug Range` to check how much scene area the light affects.
+6. If only part of the source should emit, adjust `Area Cookie Crop`, or drag a rectangle on the crop preview below it. Assign `Area Cookie Crop Preview` when you want to use a separate alignment image instead of the runtime cookie image. X/Y are normalized lower-left offset, Z/W are normalized width and height.
+7. Set `Color` and `Intensity`. These multiply the emitted texture color and can be changed at runtime without rebuilding the texture array.
+8. Set `Cookie Resolution` in **Light Volume Setup** as low as acceptable for the visible result.
+9. Enable `Debug Range` to check how much scene area the light affects.
 
 For static pictures, regular Texture assets are the cheapest source. For video screens, assign the same RenderTexture used by the video player, or use a Material that renders the desired emissive image.
 
@@ -63,15 +64,17 @@ Texture compression artifacts are still visible after packing. For important coo
 
 The same Texture, RenderTexture or Material source can be reused by several Area Lights. The source is uploaded once, while each light still keeps its own `Color`, `Intensity`, transform and range data.
 
+`Area Cookie Crop` lets an Area Light use a normalized sub-rectangle from the source. The cropped region is packed into the runtime texture array before mipmaps are generated, so modern shaders and the old-shader average-color fallback both use the cropped result. Lights share a packed slice only when the source, auto-update mode and crop rectangle all match.
+
 ## Runtime Updates
 
 Changing `Color`, `Intensity`, enable state or transform data does not require rebuilding the texture array. The manager updates the light data separately.
 
-Changing the `Cookie` source, changing `Cookie Resolution`, or adding/removing a light that uses a new source requires the custom texture array to be rebuilt. The editor does this automatically from the authoring component. In runtime scripts, call `ReinitializeCustomTextures()` after changing projection sources manually.
+Changing the `Cookie` source, changing `Area Cookie Crop`, changing `Cookie Resolution`, or adding/removing a light that uses a new source requires the custom texture array to be rebuilt. The editor does this automatically from the authoring component. In runtime scripts, call `ReinitializeCustomTextures()` after changing projection sources or crop rectangles manually.
 
 RenderTexture and Material sources are treated as animated sources. To refresh them at runtime, enable `Auto Update Textures` in **Light Volume Setup**. Keep it disabled when all projection sources are static.
 
-When assigning Area Light cookies from Udon with `SetCustomMaterial()` or `SetCustomTexture()`, the manager shares one runtime texture-array slice only for matching source/update-mode pairs. Reusing the same Material with `autoUpdate = false` on one light and `autoUpdate = true` on another uses two separate slices, which prevents the auto-updated copy from leaking into the static light.
+When assigning Area Light cookies from Udon with `SetCustomMaterial()` or `SetCustomTexture()`, the manager shares one runtime texture-array slice only for matching source/update-mode/crop pairs. Reusing the same Material with `autoUpdate = false` on one light and `autoUpdate = true` on another uses two separate slices, which prevents the auto-updated copy from leaking into the static light.
 
 ## Old Shader Fallback
 

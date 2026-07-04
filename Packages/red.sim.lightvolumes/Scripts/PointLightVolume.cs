@@ -34,6 +34,12 @@ namespace VRCLightVolumes {
         public UnityEngine.Object FalloffLUT = null;
         [Tooltip("Projects a texture for Spot Light cookies, or a textured emitter surface for Area Lights. Modern compatible shaders sample Area Light cookies directly and use their source size for softer speculars.")]
         public UnityEngine.Object Cookie = null;
+        [Tooltip("Normalized Area Light cookie crop rectangle. X/Y are the lower-left offset, Z/W are width and height.")]
+        public Vector4 AreaCookieCrop = new Vector4(0f, 0f, 1f, 1f);
+#if UNITY_EDITOR
+        [Tooltip("Editor-only image shown behind the Area Cookie Crop picker. Use this as an alignment guide when the runtime cookie source is blank, generated, or hard to inspect.")]
+        public Texture AreaCookieCropPreview = null;
+#endif
         [Tooltip("Width / height aspect used by custom spotlight cookie projection. 1 keeps a square projector; values above 1 compress projected height.")]
         [Min(0.001f)] public float SpotCookieAspect = 1f;
         [Tooltip("Projects a cubemap for point lights.")]
@@ -96,6 +102,7 @@ namespace VRCLightVolumes {
         private float _shadingStrengthPrev = 1f;
         private float _anglePrev = 60f;
         private float _falloffPrev = 1f;
+        private Vector4 _areaCookieCropPrev = new Vector4(0f, 0f, 1f, 1f);
         private float _spotCookieAspectPrev = 1f;
         private bool _useWorldSpacePrev = false;
         private int _layerMaskPrev = 270849;
@@ -142,6 +149,20 @@ namespace VRCLightVolumes {
             if (Type == LightType.PointLight) return Cubemap;
             if (Type == LightType.SpotLight) return Cookie;
             return null;
+        }
+
+        // Returns a valid normalized crop rectangle for Area Light cookie packing.
+        public Vector4 GetAreaCookieCrop() {
+            return GetSafeAreaCookieCrop(AreaCookieCrop);
+        }
+
+        // Clamps a crop rectangle to a valid normalized subregion of the source cookie.
+        private static Vector4 GetSafeAreaCookieCrop(Vector4 crop) {
+            float width = Mathf.Clamp(Mathf.Abs(crop.z), 0.001f, 1f);
+            float height = Mathf.Clamp(Mathf.Abs(crop.w), 0.001f, 1f);
+            float offsetX = Mathf.Clamp(crop.x, 0f, 1f - width);
+            float offsetY = Mathf.Clamp(crop.y, 0f, 1f - height);
+            return new Vector4(offsetX, offsetY, width, height);
         }
 
         // Returns the projection texture source that should be copied into the shared runtime texture array
@@ -320,6 +341,8 @@ namespace VRCLightVolumes {
                 _pointLightVolumeBehaviour.SetProgramVariable("Intensity", Intensity);
                 _pointLightVolumeBehaviour.SetProgramVariable("ShadingStrength", Mathf.Clamp01(ShadingStrength));
                 _pointLightVolumeBehaviour.SetProgramVariable("SpotCookieAspect", Mathf.Max(Mathf.Abs(SpotCookieAspect), 0.001f));
+                Vector4 areaCookieCrop = GetAreaCookieCrop();
+                _pointLightVolumeBehaviour.SetProgramVariable("AreaCookieCrop", areaCookieCrop);
                 _pointLightVolumeBehaviour.SetProgramVariable("IsRangeDirty", true);
                 _pointLightVolumeBehaviour.SetProgramVariable("ShadowMapID", (float)GetShadowRuntimeID());
                 _pointLightVolumeBehaviour.SetProgramVariable("WorldSpaceShadows", UseWorldSpace);
@@ -336,6 +359,7 @@ namespace VRCLightVolumes {
                 // Set the parameters first, then execute a parameterless method
                 bool hasProjectionSource = HasProjectionSource();
                 if (Type == LightType.AreaLight) {
+                    _pointLightVolumeBehaviour.SendCustomEvent("SetAreaCookieCrop");
                     _pointLightVolumeBehaviour.SendCustomEvent("SetAreaLight");
                 } else {
                     bool usesLut = Projection == LightProjection.LUT && hasProjectionSource;
@@ -366,6 +390,10 @@ namespace VRCLightVolumes {
                 PointLightVolumeInstance.SetIntensity(Intensity);
                 PointLightVolumeInstance.SetShadingStrength(ShadingStrength);
                 PointLightVolumeInstance.SetSpotCookieAspect(SpotCookieAspect);
+                if (Type == LightType.AreaLight) {
+                    Vector4 areaCookieCrop = GetAreaCookieCrop();
+                    PointLightVolumeInstance.SetAreaCookieCrop(areaCookieCrop.x, areaCookieCrop.y, areaCookieCrop.z, areaCookieCrop.w);
+                }
                 PointLightVolumeInstance.SetShadowSettings(GetShadowRuntimeID(), UseWorldSpace, LayerMask.value, GetShadowNearClip(), GetShadowFarClip(), Bias, Blur, ContactHardening);
                 if (syncTextureSources) SyncTextureSourcesToInstance();
 
@@ -404,12 +432,14 @@ namespace VRCLightVolumes {
                 _projectionSourcePrev = GetProjectionSource();
                 _typePrev = Type;
                 _projectionPrev = Projection;
+                _areaCookieCropPrev = GetAreaCookieCrop();
             }
         }
 
         // Returns true when projection texture array metadata needs rebuilding.
         public bool HasEditorCustomTextureChanges() {
-            return _projectionSourcePrev != GetProjectionSource() || _typePrev != Type || _projectionPrev != Projection;
+            bool areaCookieCropChanged = (Type == LightType.AreaLight || _typePrev == LightType.AreaLight) && _areaCookieCropPrev != GetAreaCookieCrop();
+            return _projectionSourcePrev != GetProjectionSource() || _typePrev != Type || _projectionPrev != Projection || areaCookieCropChanged;
         }
 
         // Returns true when shadow texture array metadata needs rebuilding.
@@ -427,6 +457,7 @@ namespace VRCLightVolumes {
             _shadingStrengthPrev = ShadingStrength;
             _anglePrev = Angle;
             _falloffPrev = Falloff;
+            _areaCookieCropPrev = GetAreaCookieCrop();
             _spotCookieAspectPrev = SpotCookieAspect;
             _useWorldSpacePrev = UseWorldSpace;
             _layerMaskPrev = LayerMask.value;
@@ -464,17 +495,19 @@ namespace VRCLightVolumes {
             bool intensityChanged = _intensityPrev != Intensity;
             bool shadingStrengthChanged = _shadingStrengthPrev != ShadingStrength;
             bool spotCookieAspectChanged = _spotCookieAspectPrev != SpotCookieAspect;
+            Vector4 areaCookieCrop = GetAreaCookieCrop();
+            bool areaCookieCropChanged = (Type == LightType.AreaLight || _typePrev == LightType.AreaLight) && _areaCookieCropPrev != areaCookieCrop;
             UnityEngine.Object projectionSource = GetProjectionSource();
             bool typeChanged = _typePrev != Type;
             bool projectionChanged = _projectionPrev != Projection;
             bool sourceChanged = _projectionSourcePrev != projectionSource;
-            customTexturesChanged = customTexturesChanged || typeChanged || projectionChanged || sourceChanged;
+            customTexturesChanged = customTexturesChanged || typeChanged || projectionChanged || sourceChanged || areaCookieCropChanged;
             shadowTexturesChanged = shadowTexturesChanged || HasEditorShadowTextureChanges();
             bool sizeChanged = _lightSourceSizePrev != LightSourceSize || _rangePrev != Range;
             bool spotShapeChanged = _anglePrev != Angle || _falloffPrev != Falloff;
             bool shadowSettingsChanged = shadowTexturesChanged || _useWorldSpacePrev != UseWorldSpace || _layerMaskPrev != LayerMask.value || _nearPlanePrev != NearPlane || _farPlanePrev != FarPlane || _biasPrev != Bias || _blurPrev != Blur || _contactHardeningPrev != ContactHardening;
 
-            if (recordUndo && (dynamicChanged || colorChanged || intensityChanged || shadingStrengthChanged || spotCookieAspectChanged || customTexturesChanged || sizeChanged || spotShapeChanged || shadowSettingsChanged)) UnityEditor.Undo.RecordObject(PointLightVolumeInstance, "Sync Point Light Volume Instance");
+            if (recordUndo && (dynamicChanged || colorChanged || intensityChanged || shadingStrengthChanged || spotCookieAspectChanged || areaCookieCropChanged || customTexturesChanged || sizeChanged || spotShapeChanged || shadowSettingsChanged)) UnityEditor.Undo.RecordObject(PointLightVolumeInstance, "Sync Point Light Volume Instance");
 
             if (dynamicChanged) {
                 PointLightVolumeInstance.SetDynamic(Dynamic);
@@ -495,6 +528,10 @@ namespace VRCLightVolumes {
             if (spotCookieAspectChanged) {
                 PointLightVolumeInstance.SetSpotCookieAspect(SpotCookieAspect);
                 _spotCookieAspectPrev = SpotCookieAspect;
+            }
+            if (areaCookieCropChanged) {
+                if (Type == LightType.AreaLight) PointLightVolumeInstance.SetAreaCookieCrop(areaCookieCrop.x, areaCookieCrop.y, areaCookieCrop.z, areaCookieCrop.w);
+                _areaCookieCropPrev = areaCookieCrop;
             }
 
             if (customTexturesChanged) SyncTextureSourcesToInstance();
@@ -556,6 +593,7 @@ namespace VRCLightVolumes {
             _pointLightVolumeBehaviour.SetProgramVariable("CustomTextureMaterial", customTextureMaterial);
             _pointLightVolumeBehaviour.SetProgramVariable("ProjectionType", projectionType);
             _pointLightVolumeBehaviour.SetProgramVariable("ProjectionMode", projectionMode);
+            _pointLightVolumeBehaviour.SetProgramVariable("AreaCookieCrop", GetAreaCookieCrop());
             if (customSourceChanged) _pointLightVolumeBehaviour.SetProgramVariable("AutoUpdateCustomTexture", ShouldAutoUpdateCustomTexture());
             _pointLightVolumeBehaviour.SetProgramVariable("CustomTextureIsCubemap", IsProjectionTextureCubemap());
             _pointLightVolumeBehaviour.SetProgramVariable("CustomTextureHasDepthSlices", ProjectionTextureHasDepthSlices());
@@ -579,6 +617,7 @@ namespace VRCLightVolumes {
             PointLightVolumeInstance.CustomTextureMaterial = customTextureMaterial;
             PointLightVolumeInstance.ProjectionType = projectionType;
             PointLightVolumeInstance.ProjectionMode = projectionMode;
+            PointLightVolumeInstance.AreaCookieCrop = GetAreaCookieCrop();
             if (customSourceChanged) PointLightVolumeInstance.AutoUpdateCustomTexture = ShouldAutoUpdateCustomTexture();
             PointLightVolumeInstance.CustomTextureIsCubemap = IsProjectionTextureCubemap();
             PointLightVolumeInstance.CustomTextureHasDepthSlices = ProjectionTextureHasDepthSlices();
@@ -660,6 +699,7 @@ namespace VRCLightVolumes {
 
 #if UNITY_EDITOR
         private void OnValidate() {
+            AreaCookieCrop = GetSafeAreaCookieCrop(AreaCookieCrop);
             if (FarPlane < 0f) FarPlane = 0f;
             if (FarPlane > 0f && FarPlane <= NearPlane) FarPlane = NearPlane + 0.0001f;
             _isValidated = true;

@@ -38,6 +38,7 @@ Stores the Light Volume atlas, Point Light Volume texture arrays and references 
 |`int ShadowMapsCount` | Total shadow map count stored in `ShadowTextures`. Cubemap shadows use 6 array slices, single projected shadows use 1 slice. |
 |`bool HasAutoShadowTextureUpdates` | Internal state. True when at least one shadow source needs per-frame texture updates. |
 |`Material CubemapFaceMaterial` | Internal material used to copy cubemap faces into runtime texture arrays. You usually don't need to touch this field manually. |
+|`Material CookieCropMaterial` | Internal material used to crop Area Light cookies while copying them into runtime texture arrays. You usually don't need to touch this field manually. |
 
 ### Public Properties
 | Public Property | Description |
@@ -54,7 +55,7 @@ Stores the Light Volume atlas, Point Light Volume texture arrays and references 
 |`void DeinitializeLightVolume(LightVolumeInstance lightVolume)` | Removes a Light Volume instance from the runtime registry without resizing the array. Called automatically on disable. |
 |`void InitializePointLightVolume(PointLightVolumeInstance pointLightVolume)` | Registers a Point Light Volume instance at runtime. Called automatically by `PointLightVolumeInstance.Start()` / `OnEnable()` when `LightVolumeManager` is assigned, and when the manager reference is assigned later. |
 |`void DeinitializePointLightVolume(PointLightVolumeInstance pointLightVolume, bool customTexturesChanged, bool shadowTexturesChanged)` | Removes a Point Light Volume instance from the runtime registry and optionally invalidates projection or shadow texture caches. Called automatically on disable. |
-|`void ReinitializeCustomTextures()` | Rebuilds the shared runtime texture array for Point Light Volume LUTs, cookies and cubemaps. Call this after changing projection sources manually. Sources are deduplicated by source object and auto-update mode, so the same source can have one static slice and one auto-updated slice if both modes are used. |
+|`void ReinitializeCustomTextures()` | Rebuilds the shared runtime texture array for Point Light Volume LUTs, cookies and cubemaps. Call this after changing projection sources or Area Light cookie crop rectangles manually. Sources are deduplicated by source object, auto-update mode and Area Light crop rectangle, so the same source can have separate static, auto-updated or cropped slices when needed. |
 |`void UpdateAutoCustomTextures()` | Updates only projection sources marked for per-frame refresh. Usually called automatically when `AutoUpdateTextures` is enabled. |
 |`void ReinitializeShadowTextures()` | Rebuilds the shared runtime texture array for Point Light Volume shadow maps. Call this after changing shadow sources manually. |
 |`void UpdateAutoShadowTextures()` | Updates only shadow sources marked for per-frame refresh. Usually called automatically when `AutoUpdateTextures` is enabled. |
@@ -124,6 +125,7 @@ When changing a Point Light Volume from another Udon script, prefer the setter m
 |`float OuterAngleCos` | Cosine of the spotlight outer angle used by parametric and LUT spot lights. |
 |`float OuterAngleTan` | Tangent of the spotlight outer angle used by cookie projection and single-slice spot shadows. |
 |`float SpotCookieAspect` | Width / height aspect used by custom Spot Light cookie projection. |
+|`Vector4 AreaCookieCrop` | Normalized Area Light cookie crop rectangle. X/Y are the lower-left offset, Z/W are width and height. Use `SetAreaCookieCrop(...)` when changing it at runtime so the manager rebuilds affected texture slices. |
 |`float Height` | Area light height in meters. Affects textured Area Light emission and size-aware Area Light speculars in modern compatible shaders. |
 |`float SquaredRange` | Squared range after which the light is culled. Recalculated by the manager when `IsRangeDirty` is true. |
 |`float SquaredScale` | Average squared lossy scale of the light. `LightSourceSize` gets multiplied by it at the end. |
@@ -172,6 +174,7 @@ When changing a Point Light Volume from another Udon script, prefer the setter m
 |`void SetSpotLight(float angleDeg)` | Sets this light into Spot Light type with angle only, updating only changed shader data. |
 |`void SetAreaLight()` | Sets this light into Area Light type and updates width, height and rotation data from the transform. |
 |`void SetSpotCookieAspect(float aspect)` | Sets custom Spot Light cookie projection aspect and updates shader data. |
+|`void SetAreaCookieCrop(float offsetX, float offsetY, float width, float height)` | Sets normalized Area Light cookie crop rectangle, clamps it inside `0..1`, and rebuilds affected custom texture slices when a cookie source is assigned. |
 |`void SetColor(Color color)` | Sets light source color, updates the internal change cache and marks range dirty only when the value changes. |
 |`void SetIntensity(float intensity)` | Sets light source intensity, updates the internal change cache and marks range dirty only when the value changes. |
 |`void SetShadingStrength(float shadingStrength)` | Sets per-surface Point Light Volume shading and shadow strength in the `0..1` range, updating the internal change cache only when the value changes. |

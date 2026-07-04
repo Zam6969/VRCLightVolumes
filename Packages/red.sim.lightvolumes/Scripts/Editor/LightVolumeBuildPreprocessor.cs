@@ -12,6 +12,7 @@ namespace VRCLightVolumes {
     [InitializeOnLoad]
     internal static class LightVolumePreprocessor {
         private const string CubemapFaceShaderName = "Hidden/CubeFace";
+        private const string CookieCropShaderName = "Hidden/VRCLV/CookieCrop";
         private const string ShadowDepthEncodeShaderName = "Hidden/VRCLV/PointLightShadowDepthEncode";
         private const string ShadowBlurShaderName = "Hidden/VRCLV/PointLightShadowRuntimeBlur";
         private const string BackingUdonBehaviourFieldName = "_udonSharpBackingUdonBehaviour";
@@ -92,6 +93,7 @@ namespace VRCLightVolumes {
             if (editorTemporary) PrepareProjectionTextureImports(roots);
 
             Shader cubemapFaceShader = Shader.Find(CubemapFaceShaderName);
+            Shader cookieCropShader = Shader.Find(CookieCropShaderName);
             Shader shadowDepthEncodeShader = Shader.Find(ShadowDepthEncodeShaderName);
             Shader shadowBlurShader = Shader.Find(ShadowBlurShaderName);
 
@@ -101,7 +103,7 @@ namespace VRCLightVolumes {
 
                 _managerBuffer.Clear();
                 root.GetComponentsInChildren(true, _managerBuffer);
-                for (int j = 0; j < _managerBuffer.Count; j++) PrepareManagerMaterial(_managerBuffer[j], cubemapFaceShader, editorTemporary);
+                for (int j = 0; j < _managerBuffer.Count; j++) PrepareManagerMaterial(_managerBuffer[j], cubemapFaceShader, cookieCropShader, editorTemporary);
 
                 _shadowBakerBuffer.Clear();
                 root.GetComponentsInChildren(true, _shadowBakerBuffer);
@@ -169,9 +171,10 @@ namespace VRCLightVolumes {
         }
 
         // Prepares the cubemap face unwrap material for one runtime manager
-        static void PrepareManagerMaterial(LightVolumeManager manager, Shader cubemapFaceShader, bool editorTemporary) {
+        static void PrepareManagerMaterial(LightVolumeManager manager, Shader cubemapFaceShader, Shader cookieCropShader, bool editorTemporary) {
             if (manager == null) return;
             manager.CubemapFaceMaterial = CreateRuntimeMaterialInstance(cubemapFaceShader, manager.CubemapFaceMaterial, manager.name + "_CubemapFaceRuntime", editorTemporary);
+            manager.CookieCropMaterial = CreateRuntimeMaterialInstance(cookieCropShader, manager.CookieCropMaterial, manager.name + "_CookieCropRuntime", editorTemporary);
             ApplyManagerMaterial(manager);
         }
 
@@ -190,6 +193,7 @@ namespace VRCLightVolumes {
             Component udonBehaviour = GetBackingUdonBehaviour(manager);
             if (udonBehaviour == null) return;
             SetUdonProgramVariable(udonBehaviour, "CubemapFaceMaterial", manager.CubemapFaceMaterial);
+            SetUdonProgramVariable(udonBehaviour, "CookieCropMaterial", manager.CookieCropMaterial);
         }
 
         // Pushes the prepared runtime shadow dependencies into one backing UdonBehaviour
@@ -206,7 +210,9 @@ namespace VRCLightVolumes {
         static void ClearManagerMaterial(LightVolumeManager manager) {
             if (manager == null) return;
             DestroyRuntimeMaterialInstance(manager.CubemapFaceMaterial);
+            DestroyRuntimeMaterialInstance(manager.CookieCropMaterial);
             manager.CubemapFaceMaterial = null;
+            manager.CookieCropMaterial = null;
         }
 
         // Clears one shadow baker's temporary runtime shadow dependencies

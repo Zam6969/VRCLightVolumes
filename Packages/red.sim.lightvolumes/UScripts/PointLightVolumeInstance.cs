@@ -56,6 +56,8 @@ namespace VRCLightVolumes {
         public float OuterAngleTan = 0f;
         [Tooltip("Width / height aspect used by custom spotlight cookie projection. 1 keeps a square projector; values above 1 compress projected height.")]
         [Min(0.001f)] public float SpotCookieAspect = 1f;
+        [Tooltip("Normalized Area Light cookie crop rectangle. X/Y are the lower-left offset, Z/W are width and height.")]
+        public Vector4 AreaCookieCrop = new Vector4(0f, 0f, 1f, 1f);
         [Tooltip("Area Light height in meters. Affects textured Area Light emission and size-aware Area Light speculars in modern compatible shaders.")]
         [Min(0.001f)] public float Height = 1f;
 
@@ -441,6 +443,33 @@ namespace VRCLightVolumes {
             if (SpotCookieAspect == safeAspect) return;
             SpotCookieAspect = safeAspect;
             NotifyManager(false, false, false);
+        }
+
+        // Applies the currently assigned Area Light cookie crop rectangle.
+        public void SetAreaCookieCrop() {
+            SetAreaCookieCrop(AreaCookieCrop.x, AreaCookieCrop.y, AreaCookieCrop.z, AreaCookieCrop.w);
+        }
+
+        // Sets normalized Area Light cookie crop rectangle and rebuilds affected custom texture slices.
+        public void SetAreaCookieCrop(float offsetX, float offsetY, float width, float height) {
+            Vector4 crop = GetSafeAreaCookieCrop(new Vector4(offsetX, offsetY, width, height));
+            if (CookieCropsMatch(AreaCookieCrop, crop)) return;
+            AreaCookieCrop = crop;
+            NotifyManager(false, CustomTexture != null || CustomTextureMaterial != null, false);
+        }
+
+        // Clamps a crop rectangle to a valid normalized subregion of the source cookie.
+        private Vector4 GetSafeAreaCookieCrop(Vector4 crop) {
+            float width = Mathf.Clamp(Mathf.Abs(crop.z), 0.001f, 1f);
+            float height = Mathf.Clamp(Mathf.Abs(crop.w), 0.001f, 1f);
+            float offsetX = Mathf.Clamp(crop.x, 0f, 1f - width);
+            float offsetY = Mathf.Clamp(crop.y, 0f, 1f - height);
+            return new Vector4(offsetX, offsetY, width, height);
+        }
+
+        // Exact comparison is enough here because the crop is sanitized before it is stored.
+        private bool CookieCropsMatch(Vector4 a, Vector4 b) {
+            return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
         }
 
         // Sets shadow bake and projection parameters without rebuilding unrelated light data

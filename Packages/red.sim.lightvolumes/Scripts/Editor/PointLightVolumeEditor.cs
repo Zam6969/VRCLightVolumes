@@ -15,9 +15,21 @@ namespace VRCLightVolumes {
         private static readonly string _cubemapMaterialHint = "None (Texture/Material)";
         private static readonly string _projectionSourceObjectPickerFilter = "t:Texture t:Material";
         private const float ObjectSelectorButtonWidth = 19f;
+        private const float AreaCookiePreviewAspect = 1920f / 1080f;
+        private const float AreaCookiePreviewMinHeight = 96f;
+        private const float AreaCookiePreviewMaxHeight = 280f;
+        private const float AreaCookieCropMinSize = 0.001f;
+        private const float AreaCookieCropMinPreviewPixels = 1f;
         private static readonly Color _shadowClipVisibleColor = new Color(0.2f, 0.65f, 1f, 0.75f);
         private static readonly Color _shadowClipHiddenColor = new Color(0.2f, 0.65f, 1f, 0.18f);
+        private static readonly Color _areaCookiePreviewBackgroundColor = new Color(0.04f, 0.04f, 0.04f, 1f);
+        private static readonly Color _areaCookiePreviewBorderColor = new Color(0f, 0f, 0f, 0.65f);
+        private static readonly Color _areaCookieCropFillColor = new Color(1f, 0.84f, 0.12f, 0.16f);
+        private static readonly Color _areaCookieCropBorderColor = new Color(1f, 0.84f, 0.12f, 0.95f);
         private static GUIStyle _projectionSourceHintStyle = null;
+        private Vector2 _areaCookieCropDragStart;
+        private bool _isDraggingAreaCookieCrop;
+        private bool _areaCookieCropHasDragged;
 
         private void OnEnable() {
             PointLightVolume = (PointLightVolume)target;
@@ -49,6 +61,8 @@ namespace VRCLightVolumes {
             hiddenFields.Add("FalloffLUT");
             hiddenFields.Add("Cubemap");
             hiddenFields.Add("Cookie");
+            hiddenFields.Add("AreaCookieCrop");
+            hiddenFields.Add("AreaCookieCropPreview");
             hiddenFields.Add("Shadows");
             hiddenFields.Add("ShadingStrength");
             hiddenFields.Add("BakeIntoProbes");
@@ -183,6 +197,7 @@ namespace VRCLightVolumes {
         private void DrawActiveProjectionSourceField() {
             if (PointLightVolume.Type == PointLightVolume.LightType.AreaLight) {
                 DrawTextureMaterialField("Cookie", _textureMaterialHint, false);
+                DrawAreaCookieCropControls();
                 return;
             }
             if (PointLightVolume.Projection == PointLightVolume.LightProjection.Parametric) return;
@@ -193,6 +208,171 @@ namespace VRCLightVolumes {
             } else if (PointLightVolume.Type == PointLightVolume.LightType.SpotLight) {
                 DrawTextureMaterialField("Cookie", _textureMaterialHint, false);
             }
+        }
+
+        // Draws the normalized Area Light crop field plus a draggable 16:9 visual picker.
+        private void DrawAreaCookieCropControls() {
+            SerializedProperty cropProperty = serializedObject.FindProperty("AreaCookieCrop");
+            SerializedProperty previewProperty = serializedObject.FindProperty("AreaCookieCropPreview");
+            if (previewProperty != null) EditorGUILayout.PropertyField(previewProperty);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PropertyField(cropProperty);
+            if (GUILayout.Button("Full", GUILayout.Width(44f))) {
+                cropProperty.vector4Value = new Vector4(0f, 0f, 1f, 1f);
+            }
+            EditorGUILayout.EndHorizontal();
+            UnityEngine.Object previewSource = previewProperty != null ? previewProperty.objectReferenceValue : null;
+            DrawAreaCookieCropPreview(cropProperty, previewSource, serializedObject.FindProperty("Cookie").objectReferenceValue);
+        }
+
+        // Draws the assigned guide image, cookie image, or a blank 1920x1080 canvas, then applies drag selections to AreaCookieCrop.
+        private void DrawAreaCookieCropPreview(SerializedProperty cropProperty, UnityEngine.Object previewSource, UnityEngine.Object cookieSource) {
+            float previewAspect = GetAreaCookiePreviewAspect(previewSource, cookieSource);
+            float previewHeight = Mathf.Clamp((EditorGUIUtility.currentViewWidth - 40f) / previewAspect, AreaCookiePreviewMinHeight, AreaCookiePreviewMaxHeight);
+            Rect previewRect = EditorGUI.IndentedRect(EditorGUILayout.GetControlRect(false, previewHeight));
+            Rect canvasRect = FitRectToAspect(previewRect, previewAspect);
+            HandleAreaCookieCropPreviewInput(canvasRect, cropProperty);
+
+            if (Event.current.type != EventType.Repaint) return;
+            EditorGUI.DrawRect(previewRect, _areaCookiePreviewBackgroundColor);
+            Texture previewTexture = GetAreaCookiePreviewTexture(previewSource, cookieSource);
+            if (previewTexture != null) {
+                EditorGUI.DrawPreviewTexture(canvasRect, previewTexture, null, ScaleMode.StretchToFill);
+            } else {
+                EditorGUI.DrawRect(canvasRect, Color.black);
+            }
+
+            DrawRectOutline(canvasRect, _areaCookiePreviewBorderColor, 1f);
+            Rect cropRect = CropToPreviewRect(canvasRect, GetSafeAreaCookieCrop(cropProperty.vector4Value));
+            EditorGUI.DrawRect(cropRect, _areaCookieCropFillColor);
+            DrawRectOutline(cropRect, _areaCookieCropBorderColor, 2f);
+        }
+
+        // Handles click-drag crop selection. Hold Shift to force a square selection in image pixels.
+        private void HandleAreaCookieCropPreviewInput(Rect canvasRect, SerializedProperty cropProperty) {
+            int controlID = GUIUtility.GetControlID(FocusType.Passive, canvasRect);
+            Event currentEvent = Event.current;
+            switch (currentEvent.GetTypeForControl(controlID)) {
+                case EventType.MouseDown:
+                    if (currentEvent.button != 0 || !canvasRect.Contains(currentEvent.mousePosition)) return;
+                    GUIUtility.hotControl = controlID;
+                    _isDraggingAreaCookieCrop = true;
+                    _areaCookieCropHasDragged = false;
+                    _areaCookieCropDragStart = ClampPointToRect(currentEvent.mousePosition, canvasRect);
+                    currentEvent.Use();
+                    break;
+                case EventType.MouseDrag:
+                    if (GUIUtility.hotControl != controlID || !_isDraggingAreaCookieCrop) return;
+                    _areaCookieCropHasDragged = true;
+                    SetAreaCookieCropFromPreviewDrag(canvasRect, cropProperty, currentEvent);
+                    currentEvent.Use();
+                    break;
+                case EventType.MouseUp:
+                    if (GUIUtility.hotControl != controlID || !_isDraggingAreaCookieCrop) return;
+                    if (_areaCookieCropHasDragged) SetAreaCookieCropFromPreviewDrag(canvasRect, cropProperty, currentEvent);
+                    _isDraggingAreaCookieCrop = false;
+                    _areaCookieCropHasDragged = false;
+                    GUIUtility.hotControl = 0;
+                    currentEvent.Use();
+                    break;
+            }
+        }
+
+        // Converts a preview drag rectangle into normalized lower-left crop coordinates.
+        private void SetAreaCookieCropFromPreviewDrag(Rect canvasRect, SerializedProperty cropProperty, Event currentEvent) {
+            Vector2 end = ClampPointToRect(currentEvent.mousePosition, canvasRect);
+            if (currentEvent.shift) end = ClampPointToRect(GetSquareDragEnd(_areaCookieCropDragStart, end), canvasRect);
+
+            float left = Mathf.Min(_areaCookieCropDragStart.x, end.x);
+            float right = Mathf.Max(_areaCookieCropDragStart.x, end.x);
+            float top = Mathf.Min(_areaCookieCropDragStart.y, end.y);
+            float bottom = Mathf.Max(_areaCookieCropDragStart.y, end.y);
+
+            if (right - left < AreaCookieCropMinPreviewPixels) {
+                if (end.x >= _areaCookieCropDragStart.x) right = Mathf.Min(canvasRect.xMax, left + AreaCookieCropMinPreviewPixels);
+                else left = Mathf.Max(canvasRect.xMin, right - AreaCookieCropMinPreviewPixels);
+            }
+            if (bottom - top < AreaCookieCropMinPreviewPixels) {
+                if (end.y >= _areaCookieCropDragStart.y) bottom = Mathf.Min(canvasRect.yMax, top + AreaCookieCropMinPreviewPixels);
+                else top = Mathf.Max(canvasRect.yMin, bottom - AreaCookieCropMinPreviewPixels);
+            }
+
+            Vector4 crop = new Vector4(
+                (left - canvasRect.x) / canvasRect.width,
+                (canvasRect.yMax - bottom) / canvasRect.height,
+                (right - left) / canvasRect.width,
+                (bottom - top) / canvasRect.height
+            );
+            cropProperty.vector4Value = GetSafeAreaCookieCrop(crop);
+            GUI.changed = true;
+        }
+
+        // Returns the drag end point adjusted to a screen-square box around the drag start.
+        private Vector2 GetSquareDragEnd(Vector2 start, Vector2 end) {
+            Vector2 delta = end - start;
+            float side = Mathf.Min(Mathf.Abs(delta.x), Mathf.Abs(delta.y));
+            if (side <= 0f) side = Mathf.Max(Mathf.Abs(delta.x), Mathf.Abs(delta.y));
+            float xSign = delta.x < 0f ? -1f : 1f;
+            float ySign = delta.y < 0f ? -1f : 1f;
+            return new Vector2(start.x + xSign * side, start.y + ySign * side);
+        }
+
+        // Fits a source aspect inside an available preview rectangle.
+        private Rect FitRectToAspect(Rect rect, float aspect) {
+            float width = rect.width;
+            float height = width / aspect;
+            if (height > rect.height) {
+                height = rect.height;
+                width = height * aspect;
+            }
+            return new Rect(rect.x + (rect.width - width) * 0.5f, rect.y + (rect.height - height) * 0.5f, width, height);
+        }
+
+        // Converts a normalized lower-left crop rectangle to preview-space coordinates.
+        private Rect CropToPreviewRect(Rect canvasRect, Vector4 crop) {
+            return new Rect(
+                canvasRect.x + crop.x * canvasRect.width,
+                canvasRect.y + (1f - crop.y - crop.w) * canvasRect.height,
+                crop.z * canvasRect.width,
+                crop.w * canvasRect.height
+            );
+        }
+
+        // Uses the assigned guide/cookie texture aspect when possible, otherwise falls back to a blank 1920x1080 canvas.
+        private float GetAreaCookiePreviewAspect(UnityEngine.Object previewSource, UnityEngine.Object cookieSource) {
+            Texture previewTexture = GetAreaCookiePreviewTexture(previewSource, cookieSource);
+            if (previewTexture == null || previewTexture.width <= 0 || previewTexture.height <= 0) return AreaCookiePreviewAspect;
+            return (float)previewTexture.width / previewTexture.height;
+        }
+
+        // Returns the texture to display for visual crop picking.
+        private Texture GetAreaCookiePreviewTexture(UnityEngine.Object previewSource, UnityEngine.Object cookieSource) {
+            if (previewSource is Texture previewTexture) return previewTexture;
+            if (cookieSource is Texture texture) return texture;
+            if (cookieSource is Material material) return material.mainTexture;
+            return null;
+        }
+
+        // Clamps a crop rectangle to a valid normalized subregion.
+        private Vector4 GetSafeAreaCookieCrop(Vector4 crop) {
+            float width = Mathf.Clamp(Mathf.Abs(crop.z), AreaCookieCropMinSize, 1f);
+            float height = Mathf.Clamp(Mathf.Abs(crop.w), AreaCookieCropMinSize, 1f);
+            float offsetX = Mathf.Clamp(crop.x, 0f, 1f - width);
+            float offsetY = Mathf.Clamp(crop.y, 0f, 1f - height);
+            return new Vector4(offsetX, offsetY, width, height);
+        }
+
+        // Clamps a point to a preview rectangle.
+        private Vector2 ClampPointToRect(Vector2 point, Rect rect) {
+            return new Vector2(Mathf.Clamp(point.x, rect.xMin, rect.xMax), Mathf.Clamp(point.y, rect.yMin, rect.yMax));
+        }
+
+        // Draws a crisp IMGUI rectangle outline.
+        private void DrawRectOutline(Rect rect, Color color, float thickness) {
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, thickness), color);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - thickness, rect.width, thickness), color);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, thickness, rect.height), color);
+            EditorGUI.DrawRect(new Rect(rect.xMax - thickness, rect.y, thickness, rect.height), color);
         }
 
         // Draws a named texture/material source field using the original serialized label and tooltip.

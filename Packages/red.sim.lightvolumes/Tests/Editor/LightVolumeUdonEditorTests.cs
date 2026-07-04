@@ -1046,6 +1046,81 @@ namespace VRCLightVolumes.Tests {
             AssertPointCustomData(point, -1, 0);
         }
 
+        // Verifies matching Area Light cookie sources split when their crop rectangles differ.
+        [Test]
+        public void AreaCookieCropMismatchUsesSeparateRuntimeSlices() {
+            LightVolumeManager manager = CreateManager("Area Cookie Crop Split Manager", false);
+            Texture2D source = CreateTexture2D("Area Cookie Crop Shared Source");
+            manager.CustomTexturesWidth = 4;
+            manager.CustomTexturesHeight = 4;
+
+            PointLightVolumeInstance firstPoint = CreatePointLight(manager, "Area Cookie Crop A", true);
+            firstPoint.transform.localScale = new Vector3(2, 3, 1);
+            firstPoint.SetCustomTexture();
+            firstPoint.SetAreaLight();
+            firstPoint.CustomTexture = source;
+            firstPoint.ProjectionType = 1; // 1: texture
+            firstPoint.AreaCookieCrop = new Vector4(0f, 0f, 0.5f, 1f);
+
+            PointLightVolumeInstance secondPoint = CreatePointLight(manager, "Area Cookie Crop B", true);
+            secondPoint.transform.localScale = new Vector3(2, 3, 1);
+            secondPoint.SetCustomTexture();
+            secondPoint.SetAreaLight();
+            secondPoint.CustomTexture = source;
+            secondPoint.ProjectionType = 1; // 1: texture
+            secondPoint.AreaCookieCrop = new Vector4(0.5f, 0f, 0.5f, 1f);
+
+            manager.PointLightVolumeInstances = new[] { firstPoint, secondPoint };
+
+            manager.ReinitializeCustomTextures();
+            manager.UpdateVolumes();
+
+            Assert.That(GetManagerField<int>(manager, _customSingleTextureCountField), Is.EqualTo(2));
+            Assert.That(manager.CustomTextures, Is.Not.Null);
+            Assert.That(manager.CustomTextures.volumeDepth, Is.EqualTo(2));
+            Assert.That(GetManagerField<int[]>(manager, _pointLightCustomIDsField), Is.EqualTo(new[] { 0, 1 }));
+            AssertPointCustomData(0, firstPoint, -1, 0);
+            AssertPointCustomData(1, secondPoint, -2, 0);
+        }
+
+        // Verifies runtime crop changes invalidate the custom texture cache and re-split shared sources.
+        [Test]
+        public void AreaCookieCropSetterRefreshesRuntimeSlices() {
+            LightVolumeManager manager = CreateManager("Area Cookie Crop Setter Manager", false);
+            Texture2D source = CreateTexture2D("Area Cookie Crop Setter Source");
+            manager.CustomTexturesWidth = 4;
+            manager.CustomTexturesHeight = 4;
+
+            PointLightVolumeInstance firstPoint = CreatePointLight(manager, "Area Cookie Crop Setter A", true);
+            firstPoint.transform.localScale = new Vector3(2, 3, 1);
+            firstPoint.SetCustomTexture();
+            firstPoint.SetAreaLight();
+            firstPoint.CustomTexture = source;
+            firstPoint.ProjectionType = 1; // 1: texture
+
+            PointLightVolumeInstance secondPoint = CreatePointLight(manager, "Area Cookie Crop Setter B", true);
+            secondPoint.transform.localScale = new Vector3(2, 3, 1);
+            secondPoint.SetCustomTexture();
+            secondPoint.SetAreaLight();
+            secondPoint.CustomTexture = source;
+            secondPoint.ProjectionType = 1; // 1: texture
+
+            manager.PointLightVolumeInstances = new[] { firstPoint, secondPoint };
+            manager.ReinitializeCustomTextures();
+
+            Assert.That(GetManagerField<int>(manager, _customSingleTextureCountField), Is.EqualTo(1));
+            Assert.That(GetManagerField<int[]>(manager, _pointLightCustomIDsField), Is.EqualTo(new[] { 0, 0 }));
+
+            secondPoint.SetAreaCookieCrop(0.25f, 0.25f, 0.5f, 0.5f);
+            manager.UpdateVolumes();
+
+            AssertVectorClose(new Vector4(0.25f, 0.25f, 0.5f, 0.5f), secondPoint.AreaCookieCrop);
+            Assert.That(GetManagerField<int>(manager, _customSingleTextureCountField), Is.EqualTo(2));
+            Assert.That(manager.CustomTextures, Is.Not.Null);
+            Assert.That(manager.CustomTextures.volumeDepth, Is.EqualTo(2));
+            Assert.That(GetManagerField<int[]>(manager, _pointLightCustomIDsField), Is.EqualTo(new[] { 0, 1 }));
+        }
+
         // Verifies the runtime manager respects a manual auto-update override on an area RenderTexture cookie.
         [Test]
         public void AreaRenderTextureCookieRespectsManualAutoUpdateOverride() {

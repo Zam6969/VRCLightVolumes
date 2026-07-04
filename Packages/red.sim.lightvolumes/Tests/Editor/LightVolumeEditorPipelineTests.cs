@@ -124,6 +124,7 @@ namespace VRCLightVolumes.Tests {
             pointLight.PointLightVolumeInstance = instance;
             pointLight.Type = PointLightVolume.LightType.AreaLight;
             pointLight.Cookie = CreateTexture2D("Editor Area Cookie Source");
+            pointLight.AreaCookieCrop = new Vector4(0.25f, 0.1f, 0.5f, 0.75f);
 
             Editor editor = Editor.CreateEditor(pointLight);
             _createdObjects.Add(editor);
@@ -137,6 +138,7 @@ namespace VRCLightVolumes.Tests {
             Assert.That(instance.ProjectionType, Is.EqualTo(1)); // 1: texture
             Assert.That(instance.ProjectionMode, Is.EqualTo(2)); // 2: cookie/cubemap
             Assert.That(instance.LightType, Is.EqualTo(2)); // 2: area
+            Assert.That(instance.AreaCookieCrop, Is.EqualTo(pointLight.AreaCookieCrop));
         }
 
         // Verifies no-op LightVolume sync does not dirty the runtime Udon instance after scene load.
