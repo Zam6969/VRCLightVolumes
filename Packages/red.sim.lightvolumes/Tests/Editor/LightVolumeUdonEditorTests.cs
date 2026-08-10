@@ -45,6 +45,7 @@ namespace VRCLightVolumes.Tests {
         private static readonly int _pointLightDirectionID = Shader.PropertyToID("_UdonPointLightVolumeDirection");
         private static readonly int _pointLightExtraDataID = Shader.PropertyToID("_UdonPointLightVolumeExtraData");
         private static readonly int _pointLightCustomIdID = Shader.PropertyToID("_UdonPointLightVolumeCustomID");
+        private static readonly int _pointLightAreaTriangleDataID = Shader.PropertyToID("_UdonPointLightVolumeAreaTriangleData");
         private static readonly int _pointLightCountID = Shader.PropertyToID("_UdonPointLightVolumeCount");
         private static readonly int _pointLightCubeCountID = Shader.PropertyToID("_UdonPointLightVolumeCubeCount");
         private static readonly int _pointLightTextureID = Shader.PropertyToID("_UdonPointLightVolumeTexture");
@@ -3036,6 +3037,27 @@ namespace VRCLightVolumes.Tests {
 
             Assert.That(point.AreaLightShape, Is.EqualTo(5));
             AssertPointCustomData(point, -1, 0);
+
+        }
+
+        [Test]
+        public void AreaLightCustomTrianglePacksCornerBufferWithoutCookie() {
+            LightVolumeManager manager = CreateManager("Area Light Custom Triangle Manager", false);
+            PointLightVolumeInstance point = CreatePointLight(manager, "Area Light Custom Triangle", true);
+            point.transform.localScale = new Vector3(2, 3, 1);
+            point.SetAreaLight();
+            point.SetAreaLightShape(3);
+            point.SetAreaLightShapeTriangle(-0.4f, -0.3f, 0.45f, -0.25f, 0.1f, 0.4f);
+            manager.PointLightVolumeInstances = new[] { point };
+            manager.UpdateVolumes();
+
+            Assert.That(point.AreaLightUseCustomShape, Is.True);
+            AssertPointCustomData(point, 0, 0);
+            Vector4[] customTriangleData = Shader.GetGlobalVectorArray(_pointLightAreaTriangleDataID);
+            AssertVectorClose(new Vector4(-0.4f, -0.3f, 0.45f, -0.25f), customTriangleData[0]);
+            Assert.That(customTriangleData[1].x, Is.EqualTo(0.1f).Within(Epsilon));
+            Assert.That(customTriangleData[1].y, Is.EqualTo(0.4f).Within(Epsilon));
+            Assert.That(customTriangleData[1].z, Is.GreaterThan(0f));
         }
 
         // Verifies the runtime manager respects a manual auto-update override on an area RenderTexture cookie.
@@ -4338,11 +4360,12 @@ namespace VRCLightVolumes.Tests {
             Assert.That(footprintSource, Does.Not.Contain("outsideDelta"));
             Assert.That(footprintSource, Does.Not.Contain("edgeSoftness"));
             Assert.That(footprintSource, Does.Not.Contain("abs(localZ) * 0.02"));
-            Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeAreaScale(size, shape)"));
+            Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeAreaScale(size, shape, customTriangle1)"));
             Assert.That(shaderSource, Does.Contain("packedAreaData = customID_data.w"));
-            Assert.That(shaderSource, Does.Contain("min(LV_AreaLightPackedShape(packedAreaData), 5.0)"));
+            Assert.That(shaderSource, Does.Contain("min(LV_AreaLightPackedShape(packedAreaData), 6.0)"));
+            Assert.That(shaderSource, Does.Contain("_UdonPointLightVolumeAreaTriangleData[id * 2]"));
             Assert.That(shaderSource, Does.Not.Contain("_UdonLightVolumeVersion >= 3 ? customID_data.w : 0.0"));
-            Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeFootprint(localPos.xy, halfSize, shape)"));
+            Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeFootprint(localPos.xy, halfSize, shape, customTriangle0, customTriangle1)"));
             Assert.That(projectionSource, Does.Contain("* footprint"));
         }
 
@@ -6144,7 +6167,7 @@ namespace VRCLightVolumes.Tests {
             Assert.That(data.z, Is.EqualTo(point.SquaredRange).Within(Epsilon));
             float expectedCustomDataW = 0f;
             if (point.LightType == 2) { // Area packs emitter shape here and, when textured, preserves the Cookie mirror tag.
-                int areaLightShape = Mathf.Clamp(point.AreaLightShape, 0, 5);
+                int areaLightShape = point.AreaLightUseCustomShape ? 6 : Mathf.Clamp(point.AreaLightShape, 0, 5);
                 float shapeData = areaLightShape * 0.01f;
                 if (customId < 0) {
                     float areaCookieMirror = Mathf.Abs(point.AreaCookieMirror) >= 0.5f ? point.AreaCookieMirror : 1f;

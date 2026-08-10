@@ -93,7 +93,11 @@ namespace VRCLightVolumes {
         }
 
         // Returns emitter area relative to the bounding rectangle.
-        private float GetAreaLightShapeAreaScale(float width, float height, int shape) {
+        private float GetAreaLightShapeAreaScale(float width, float height, int shape, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC) {
+            if (shape == 6) {
+                float twiceArea = Mathf.Abs((triangleB.x - triangleA.x) * (triangleC.y - triangleA.y) - (triangleB.y - triangleA.y) * (triangleC.x - triangleA.x));
+                return Mathf.Clamp01(twiceArea * 0.5f);
+            }
             int safeShape = GetSafeAreaLightShape(shape);
             if (safeShape == 0) return 1f;
             if (safeShape < 5) return 0.5f;
@@ -104,17 +108,17 @@ namespace VRCLightVolumes {
         }
 
         // Packs Area Light shape into CustomID.W without losing the legacy cookie mirror tag.
-        private float PackAreaLightCustomDataW(float areaCookieMirror, int areaLightShape, bool hasAreaCookie) {
-            float shapeData = GetSafeAreaLightShape(areaLightShape) * AreaLightShapePackScale;
+        private float PackAreaLightCustomDataW(float areaCookieMirror, int areaLightShape, bool useCustomShape, bool hasAreaCookie) {
+            float shapeData = (useCustomShape ? 6 : GetSafeAreaLightShape(areaLightShape)) * AreaLightShapePackScale;
             if (!hasAreaCookie) return shapeData;
             float safeMirror = Mathf.Abs(areaCookieMirror) >= 0.5f ? areaCookieMirror : 1f;
             return safeMirror + (safeMirror < 0f ? -shapeData : shapeData);
         }
 
         // Computes a bounding sphere radius squared for area lights
-        private float ComputeAreaLightSquaredBoundingSphere(float width, float height, int areaLightShape, Color color, float intensity, float cutoff) {
+        private float ComputeAreaLightSquaredBoundingSphere(float width, float height, int areaLightShape, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC, Color color, float intensity, float cutoff) {
             float minSolidAngle = Mathf.Clamp(cutoff / (Mathf.Max(color.r, Mathf.Max(color.g, color.b)) * intensity), -Mathf.PI * 2f, Mathf.PI * 2);
-            float A = width * height * GetAreaLightShapeAreaScale(width, height, areaLightShape);
+            float A = width * height * GetAreaLightShapeAreaScale(width, height, areaLightShape, triangleA, triangleB, triangleC);
             float w2 = width * width;
             float h2 = height * height;
             float B = 0.25f * (w2 + h2);
@@ -136,7 +140,8 @@ namespace VRCLightVolumes {
             if (instance == null) return;
             float cutoff = LightsBrightnessCutoff;
             if (instance.LightType == 2) { // 2: area
-                instance.SquaredRange = ComputeAreaLightSquaredBoundingSphere(Mathf.Abs(instance.SquaredScale / instance.Width), instance.Height, instance.AreaLightShape, instance.Color, instance.Intensity * Mathf.PI, cutoff);
+                int areaShape = instance.AreaLightUseCustomShape ? 6 : instance.AreaLightShape;
+                instance.SquaredRange = ComputeAreaLightSquaredBoundingSphere(Mathf.Abs(instance.SquaredScale / instance.Width), instance.Height, areaShape, instance.AreaLightShapeTriangleA, instance.AreaLightShapeTriangleB, instance.AreaLightShapeTriangleC, instance.Color, instance.Intensity * Mathf.PI, cutoff);
             } else if (instance.ProjectionMode == 1) { // 1: LUT
                 instance.SquaredRange = Mathf.Abs(instance.SquaredScale / instance.InverseSquaredRange);
             } else {
@@ -556,6 +561,7 @@ namespace VRCLightVolumes {
             _pointLightDirectionID = VRCShader.PropertyToID("_UdonPointLightVolumeDirection");
             _pointLightCountID = VRCShader.PropertyToID("_UdonPointLightVolumeCount");
             _pointLightCustomIdID = VRCShader.PropertyToID("_UdonPointLightVolumeCustomID");
+            _pointLightAreaTriangleDataID = VRCShader.PropertyToID("_UdonPointLightVolumeAreaTriangleData");
             _pointLightCubeCountID = VRCShader.PropertyToID("_UdonPointLightVolumeCubeCount");
             _pointLightTextureID = VRCShader.PropertyToID("_UdonPointLightVolumeTexture");
             _pointLightTextureTexelCountID = VRCShader.PropertyToID("_UdonPointLightVolumeTextureTexelCount");
@@ -609,6 +615,7 @@ namespace VRCLightVolumes {
             VRCShader.SetGlobalVectorArray(_pointLightExtraDataID, _pointLightExtraData);
             VRCShader.SetGlobalVectorArray(_pointLightDirectionID, _pointLightDirection);
             VRCShader.SetGlobalVectorArray(_pointLightCustomIdID, _pointLightCustomId);
+            VRCShader.SetGlobalVectorArray(_pointLightAreaTriangleDataID, _pointLightAreaTriangleData);
             VRCShader.SetGlobalVectorArray(_pointLightShadowReprojectionDataID, _pointLightShadowReprojectionData);
             VRCShader.SetGlobalVectorArray(_pointLightShadowRotationDataID, _pointLightShadowRotationData);
             VRCShader.SetGlobalVector(_pointLightShadowReceiverParamsID, GetPointLightShadowReceiverParams());

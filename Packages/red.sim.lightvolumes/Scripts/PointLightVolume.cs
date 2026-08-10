@@ -28,6 +28,10 @@ namespace VRCLightVolumes {
         public Vector4 AreaCookieCropTriangleB = new Vector4(1f, 0f, 0f, 0f);
         public Vector4 AreaCookieCropTriangleC = new Vector4(0f, 1f, 0f, 0f);
         [Range(0, 5)] public int AreaLightShape = 0;
+        [HideInInspector] public bool AreaLightUseCustomShape = false;
+        [HideInInspector] public Vector4 AreaLightShapeTriangleA = new Vector4(0f, 0.5f, 0f, 0f);
+        [HideInInspector] public Vector4 AreaLightShapeTriangleB = new Vector4(0.5f, -0.5f, 0f, 0f);
+        [HideInInspector] public Vector4 AreaLightShapeTriangleC = new Vector4(-0.5f, -0.5f, 0f, 0f);
         public Texture AreaCookieCropPreview;
         public UnityEngine.Object Cubemap;
         public bool BakeIntoProbes = false;

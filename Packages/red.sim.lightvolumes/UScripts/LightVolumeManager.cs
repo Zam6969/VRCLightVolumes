@@ -35,6 +35,7 @@ namespace VRCLightVolumes {
         private const float Version = 3; // Current VRC Light Volumes shader feature version
         private const int MaxLightVolumeCount = 32;
         private const int MaxPointLightCount = 128;
+        private const int MaxAreaTriangleDataCount = MaxPointLightCount * 2;
         private const int DefaultRegistryOrder = 2147483647;
         private const int MaxLightVolumeRotationVectors = MaxLightVolumeCount * 2;
         private const int MaxLightVolumeUvwScaleVectors = MaxLightVolumeCount * 3;
@@ -52,6 +53,7 @@ namespace VRCLightVolumes {
         private const int PointLightUploadCustomId = 16;
         private const int PointLightUploadShadowReprojection = 32;
         private const int PointLightUploadShadowRotation = 64;
+        private const int PointLightUploadAreaTriangle = 128;
         private const int ShadowTextureFormatHalf = 0;
         private const string RuntimeShadowCameraName = "Runtime Shadow Camera";
         private const string ClusteringShaderName = "Hidden/VRCLV/FroxelClusteringBuild";
@@ -307,6 +309,7 @@ namespace VRCLightVolumes {
         private Vector4[] _pointLightExtraData = new Vector4[MaxPointLightCount];
         private Vector4[] _pointLightDirection = new Vector4[MaxPointLightCount];
         private Vector4[] _pointLightCustomId = new Vector4[MaxPointLightCount];
+        private Vector4[] _pointLightAreaTriangleData = new Vector4[MaxAreaTriangleDataCount];
         private Vector4[] _clusteringLights = new Vector4[MaxPointLightCount / 2];
         private Vector4[] _pointLightShadowReprojectionData = new Vector4[MaxPointLightCount];
         private Vector4[] _pointLightShadowRotationData = new Vector4[MaxPointLightCount];
@@ -415,6 +418,7 @@ namespace VRCLightVolumes {
         private int _pointLightExtraDataID;
         private int _pointLightDirectionID;
         private int _pointLightCustomIdID;
+        private int _pointLightAreaTriangleDataID;
         private int _pointLightCountID;
         private int _pointLightCubeCountID;
         private int _pointLightTextureID;

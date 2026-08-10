@@ -49,6 +49,7 @@ namespace VRCLightVolumes {
         private int _areaCookieTrianglePickCount;
         private bool _isDraggingAreaCookieCrop;
         private bool _isPickingAreaCookieTriangle;
+        private bool _isEditingAreaLightCorners;
         private bool _areaCookieCropHasDragged;
         private bool _debugExpanded;
 
@@ -464,7 +465,15 @@ namespace VRCLightVolumes {
         // Draws the Area Light cookie source, shape selector, normalized crop field and 16:9 visual picker.
         private void DrawAreaCookieCropControls() {
             SerializedProperty areaShapeProperty = serializedObject.FindProperty("AreaLightShape");
-            if (areaShapeProperty != null) DrawShapePicker(areaShapeProperty, new GUIContent("Area Shape", areaShapeProperty.tooltip), true);
+            if (areaShapeProperty != null) {
+                int previousAreaShape = areaShapeProperty.intValue;
+                DrawShapePicker(areaShapeProperty, new GUIContent("Area Shape", areaShapeProperty.tooltip), true);
+                if (areaShapeProperty.intValue != previousAreaShape) {
+                    serializedObject.FindProperty("AreaLightUseCustomShape").boolValue = false;
+                    _isEditingAreaLightCorners = false;
+                }
+            }
+            DrawAreaLightCornerEditControls(areaShapeProperty);
 
             DrawTextureMaterialField("Cookie", _textureMaterialHint, false);
 
@@ -497,6 +506,67 @@ namespace VRCLightVolumes {
             UnityEngine.Object previewSource = previewProperty != null ? previewProperty.objectReferenceValue : null;
             UnityEngine.Object cookieSource = serializedObject.FindProperty("Cookie").objectReferenceValue;
             DrawAreaCookieCropPreview(cropProperty, shapeProperty, rotationProperty, triangleAProperty, triangleBProperty, triangleCProperty, previewSource, cookieSource);
+        }
+
+        private void DrawAreaLightCornerEditControls(SerializedProperty areaShapeProperty) {
+            SerializedProperty customProperty = serializedObject.FindProperty("AreaLightUseCustomShape");
+            bool isTriangle = areaShapeProperty != null && !areaShapeProperty.hasMultipleDifferentValues && areaShapeProperty.intValue > 0;
+            bool isCustom = customProperty != null && !customProperty.hasMultipleDifferentValues && customProperty.boolValue;
+            using (new EditorGUI.DisabledScope(targets.Length != 1 || (!isTriangle && !isCustom))) {
+                using (new EditorGUILayout.HorizontalScope()) {
+                    GUILayout.Space(EditorGUIUtility.labelWidth);
+                    bool nextEditing = GUILayout.Toggle(_isEditingAreaLightCorners, "Edit Corners", EditorStyles.miniButton, GUILayout.Width(110f));
+                    if (nextEditing != _isEditingAreaLightCorners) {
+                        _isEditingAreaLightCorners = nextEditing;
+                        if (nextEditing && !isCustom) InitializeCustomAreaLightTriangle(areaShapeProperty, customProperty);
+                        SceneView.RepaintAll();
+                    }
+                    using (new EditorGUI.DisabledScope(!isCustom)) {
+                        if (GUILayout.Button("Reset", EditorStyles.miniButton, GUILayout.Width(48f))) {
+                            customProperty.boolValue = false;
+                            _isEditingAreaLightCorners = false;
+                            SceneView.RepaintAll();
+                        }
+                    }
+                    if (isCustom) GUILayout.Label("Custom", GUILayout.Width(54f));
+                }
+            }
+        }
+
+        private void InitializeCustomAreaLightTriangle(SerializedProperty areaShapeProperty, SerializedProperty customProperty) {
+            if (PointLightVolume == null || areaShapeProperty == null || customProperty == null) return;
+            Vector4 a;
+            Vector4 b;
+            Vector4 c;
+            GetAreaLightPresetTriangle(areaShapeProperty.intValue, PointLightVolume.transform.lossyScale, out a, out b, out c);
+            serializedObject.FindProperty("AreaLightShapeTriangleA").vector4Value = a;
+            serializedObject.FindProperty("AreaLightShapeTriangleB").vector4Value = b;
+            serializedObject.FindProperty("AreaLightShapeTriangleC").vector4Value = c;
+            customProperty.boolValue = true;
+        }
+
+        private static void GetAreaLightPresetTriangle(int shape, Vector3 lossyScale, out Vector4 a, out Vector4 b, out Vector4 c) {
+            a = new Vector4(-0.5f, -0.5f, 0f, 0f);
+            b = new Vector4(0.5f, -0.5f, 0f, 0f);
+            c = new Vector4(-0.5f, 0.5f, 0f, 0f);
+            if (shape == 2) c = new Vector4(0.5f, 0.5f, 0f, 0f);
+            else if (shape == 3) {
+                b = new Vector4(-0.5f, 0.5f, 0f, 0f);
+                c = new Vector4(0.5f, 0.5f, 0f, 0f);
+            } else if (shape == 4) {
+                a = new Vector4(0.5f, -0.5f, 0f, 0f);
+                b = new Vector4(-0.5f, 0.5f, 0f, 0f);
+                c = new Vector4(0.5f, 0.5f, 0f, 0f);
+            } else if (shape == AreaLightEquilateralShape) {
+                float width = Mathf.Max(Mathf.Abs(lossyScale.x), 0.001f);
+                float height = Mathf.Max(Mathf.Abs(lossyScale.y), 0.001f);
+                float side = Mathf.Min(width, height * 1.1547005f);
+                float halfX = side * 0.5f / width;
+                float halfY = side * 0.4330127f / height;
+                a = new Vector4(0f, halfY, 0f, 0f);
+                b = new Vector4(halfX, -halfY, 0f, 0f);
+                c = new Vector4(-halfX, -halfY, 0f, 0f);
+            }
         }
 
         // Draws the triangle-picking command row.
@@ -1043,7 +1113,7 @@ namespace VRCLightVolumes {
         }
 
         // Draws the Scene View shape, range and optional debug bounds for one light.
-        private void DrawVolumeGUI(PointLightVolumeInstance pointLightVolume) {
+        private void DrawVolumeGUI(PointLightVolumeInstance pointLightVolume, bool editAreaCorners) {
 
             Transform t = pointLightVolume.transform;
             Vector3 origin = t.position;
@@ -1104,20 +1174,23 @@ namespace VRCLightVolumes {
                 float x = Mathf.Max(Mathf.Abs(pointLightVolume.transform.lossyScale.x), 0.001f);
                 float y = Mathf.Max(Mathf.Abs(pointLightVolume.transform.lossyScale.y), 0.001f);
                 int shape = Mathf.Clamp(pointLightVolume.AreaLightShape, 0, AreaLightEquilateralShape);
+                bool useCustomShape = pointLightVolume.AreaLightUseCustomShape;
 
                 Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual;
                 Handles.color = new Color(1f, 1f, 0f, 0.6f);
-                DrawAreaLight(origin, t.rotation, x, y, shape);
+                DrawAreaLight(origin, t.rotation, x, y, shape, useCustomShape, pointLightVolume.AreaLightShapeTriangleA, pointLightVolume.AreaLightShapeTriangleB, pointLightVolume.AreaLightShapeTriangleC);
 
-                if (pointLightVolume.DebugRange) DrawAreaLightDebug(origin, t.rotation, x, y, shape, pointLightVolume.Color, pointLightVolume.Intensity, GetBrightnessCutoff(pointLightVolume));
+                if (pointLightVolume.DebugRange) DrawAreaLightDebug(origin, t.rotation, x, y, shape, useCustomShape, pointLightVolume.AreaLightShapeTriangleA, pointLightVolume.AreaLightShapeTriangleB, pointLightVolume.AreaLightShapeTriangleC, pointLightVolume.Color, pointLightVolume.Intensity, GetBrightnessCutoff(pointLightVolume));
                 DrawShadowClipGUI(pointLightVolume, origin, t);
 
                 Handles.zTest = UnityEngine.Rendering.CompareFunction.Greater;
                 Handles.color = new Color(1f, 1f, 0f, 0.15f);
-                DrawAreaLight(origin, t.rotation, x, y, shape);
+                DrawAreaLight(origin, t.rotation, x, y, shape, useCustomShape, pointLightVolume.AreaLightShapeTriangleA, pointLightVolume.AreaLightShapeTriangleB, pointLightVolume.AreaLightShapeTriangleC);
 
-                if (pointLightVolume.DebugRange) DrawAreaLightDebug(origin, t.rotation, x, y, shape, pointLightVolume.Color, pointLightVolume.Intensity, GetBrightnessCutoff(pointLightVolume));
+                if (pointLightVolume.DebugRange) DrawAreaLightDebug(origin, t.rotation, x, y, shape, useCustomShape, pointLightVolume.AreaLightShapeTriangleA, pointLightVolume.AreaLightShapeTriangleB, pointLightVolume.AreaLightShapeTriangleC, pointLightVolume.Color, pointLightVolume.Intensity, GetBrightnessCutoff(pointLightVolume));
                 DrawShadowClipGUI(pointLightVolume, origin, t);
+
+                if (editAreaCorners && useCustomShape) DrawAreaLightCornerHandles(pointLightVolume);
 
             }
 
@@ -1127,7 +1200,7 @@ namespace VRCLightVolumes {
         void OnSceneGUI() {
             foreach (var obj in Selection.gameObjects) {
                 var volume = obj.GetComponent<PointLightVolumeInstance>();
-                if (volume != null) DrawVolumeGUI(volume);
+                if (volume != null) DrawVolumeGUI(volume, _isEditingAreaLightCorners && volume == PointLightVolume);
             }
         }
 
@@ -1190,8 +1263,8 @@ namespace VRCLightVolumes {
         }
 
         // Draws an Area Light emitter shape and its forward direction.
-        private void DrawAreaLight(Vector3 center, Quaternion rotation, float width, float height, int shape) {
-            Vector3[] corners = GetAreaLightShapeCorners(center, rotation, width, height, shape);
+        private void DrawAreaLight(Vector3 center, Quaternion rotation, float width, float height, int shape, bool useCustomShape, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC) {
+            Vector3[] corners = GetAreaLightShapeCorners(center, rotation, width, height, shape, useCustomShape, triangleA, triangleB, triangleC);
             for (int i = 0; i < corners.Length; i++) Handles.DrawLine(corners[i], corners[(i + 1) % corners.Length]);
 
             // Draw forward vector
@@ -1199,9 +1272,17 @@ namespace VRCLightVolumes {
         }
 
         // Returns Scene View vertices matching the Area Light emitter shape.
-        private Vector3[] GetAreaLightShapeCorners(Vector3 center, Quaternion rotation, float width, float height, int shape) {
+        private Vector3[] GetAreaLightShapeCorners(Vector3 center, Quaternion rotation, float width, float height, int shape, bool useCustomShape, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC) {
             Vector3 right = rotation * Vector3.right * (width * 0.5f);
             Vector3 up = rotation * Vector3.up * (height * 0.5f);
+
+            if (useCustomShape) {
+                return new[] {
+                    center + rotation * new Vector3(triangleA.x * width, triangleA.y * height, 0f),
+                    center + rotation * new Vector3(triangleB.x * width, triangleB.y * height, 0f),
+                    center + rotation * new Vector3(triangleC.x * width, triangleC.y * height, 0f)
+                };
+            }
 
             Vector3 lowerLeft = center - right - up;
             Vector3 lowerRight = center + right - up;
@@ -1222,8 +1303,47 @@ namespace VRCLightVolumes {
             return new[] { upperRight, upperLeft, lowerLeft, lowerRight };
         }
 
+        private void DrawAreaLightCornerHandles(PointLightVolumeInstance pointLightVolume) {
+            Transform transform = pointLightVolume.transform;
+            float width = Mathf.Max(Mathf.Abs(transform.lossyScale.x), 0.001f);
+            float height = Mathf.Max(Mathf.Abs(transform.lossyScale.y), 0.001f);
+            Vector4[] points = { pointLightVolume.AreaLightShapeTriangleA, pointLightVolume.AreaLightShapeTriangleB, pointLightVolume.AreaLightShapeTriangleC };
+            string[] labels = { "A", "B", "C" };
+            Quaternion rotation = transform.rotation;
+            Vector3 center = transform.position;
+            Vector3 right = rotation * Vector3.right;
+            Vector3 up = rotation * Vector3.up;
+            Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
+
+            for (int i = 0; i < points.Length; i++) {
+                Vector3 worldPoint = center + right * (points[i].x * width) + up * (points[i].y * height);
+                float handleSize = HandleUtility.GetHandleSize(worldPoint) * 0.075f;
+                Handles.color = i == 0 ? new Color(1f, 0.25f, 0.2f, 1f) : i == 1 ? new Color(0.25f, 1f, 0.35f, 1f) : new Color(0.25f, 0.55f, 1f, 1f);
+                EditorGUI.BeginChangeCheck();
+                Vector3 movedPoint = Handles.FreeMoveHandle(worldPoint, handleSize, Vector3.zero, Handles.DotHandleCap);
+                Handles.Label(worldPoint + up * handleSize * 1.4f, labels[i]);
+                if (!EditorGUI.EndChangeCheck()) continue;
+
+                Vector3 delta = movedPoint - center;
+                Vector4 normalizedPoint = new Vector4(
+                    Mathf.Clamp(Vector3.Dot(delta, right) / width, -0.5f, 0.5f),
+                    Mathf.Clamp(Vector3.Dot(delta, up) / height, -0.5f, 0.5f),
+                    0f,
+                    0f
+                );
+                Undo.RecordObject(pointLightVolume, "Edit Area Light Triangle Corner");
+                if (i == 0) pointLightVolume.AreaLightShapeTriangleA = normalizedPoint;
+                else if (i == 1) pointLightVolume.AreaLightShapeTriangleB = normalizedPoint;
+                else pointLightVolume.AreaLightShapeTriangleC = normalizedPoint;
+                pointLightVolume.AreaLightUseCustomShape = true;
+                pointLightVolume.EditorApplyAuthoringData(false, false);
+                EditorUtility.SetDirty(pointLightVolume);
+                serializedObject.Update();
+            }
+        }
+
         // Draws the estimated culling sphere of an Area Light.
-        private void DrawAreaLightDebug(Vector3 center, Quaternion rotation, float width, float height, int shape, Color color, float intensity, float cutoff) {
+        private void DrawAreaLightDebug(Vector3 center, Quaternion rotation, float width, float height, int shape, bool useCustomShape, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC, Color color, float intensity, float cutoff) {
 
             // Light normal
             Vector3 up = rotation * Vector3.up;
@@ -1232,7 +1352,7 @@ namespace VRCLightVolumes {
 
             // Calculate the bounding sphere of the area light given the cutoff irradiance
             float minSolidAngle = Mathf.Clamp(cutoff / (Mathf.Max(color.r, Mathf.Max(color.g, color.b)) * intensity * Mathf.PI), -Mathf.PI * 2f, Mathf.PI * 2);
-            float sqMaxDist = ComputeAreaLightSquaredBoundingSphere(width, height, shape, minSolidAngle);
+            float sqMaxDist = ComputeAreaLightSquaredBoundingSphere(width, height, shape, useCustomShape, triangleA, triangleB, triangleC, minSolidAngle);
             float radius = Mathf.Sqrt(sqMaxDist);
 
             Handles.DrawWireDisc(center, forward, radius);
@@ -1242,8 +1362,8 @@ namespace VRCLightVolumes {
         }
 
         // Calculates squared Area Light range from emitter dimensions and minimum solid angle.
-        float ComputeAreaLightSquaredBoundingSphere(float width, float height, int shape, float minSolidAngle) {
-            float A = width * height * GetAreaLightShapeAreaScale(width, height, shape);
+        float ComputeAreaLightSquaredBoundingSphere(float width, float height, int shape, bool useCustomShape, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC, float minSolidAngle) {
+            float A = width * height * GetAreaLightShapeAreaScale(width, height, shape, useCustomShape, triangleA, triangleB, triangleC);
             float w2 = width * width;
             float h2 = height * height;
             float B = 0.25f * (w2 + h2);
@@ -1256,7 +1376,11 @@ namespace VRCLightVolumes {
         }
 
         // Returns emitter area relative to the bounding rectangle.
-        float GetAreaLightShapeAreaScale(float width, float height, int shape) {
+        float GetAreaLightShapeAreaScale(float width, float height, int shape, bool useCustomShape, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC) {
+            if (useCustomShape) {
+                float twiceArea = Mathf.Abs((triangleB.x - triangleA.x) * (triangleC.y - triangleA.y) - (triangleB.y - triangleA.y) * (triangleC.x - triangleA.x));
+                return Mathf.Clamp01(twiceArea * 0.5f);
+            }
             if (shape == 0) return 1f;
             if (shape < AreaLightEquilateralShape) return 0.5f;
             float safeWidth = Mathf.Max(Mathf.Abs(width), 0.0001f);

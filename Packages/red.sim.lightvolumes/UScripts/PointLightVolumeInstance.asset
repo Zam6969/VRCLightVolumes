@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: PointLightVolumeInstance
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 9c0db5c1a4bd59640a77cb882d209215, type: 2}
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 8ececf0e931a0cd42904c80ae1906bdd, type: 2}
   udonAssembly: 
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: 064ede0cbb894e94abe683cb8db91f6f, type: 3}
@@ -43,7 +43,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 12
-      Data: 117
+      Data: 129
     - Name: 
       Entry: 7
       Data: 
@@ -1105,10 +1105,676 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: Height
+      Data: AreaCookieCrop
     - Name: $v
       Entry: 7
       Data: 65|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: AreaCookieCrop
+    - Name: <UserType>k__BackingField
+      Entry: 7
+      Data: 66|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: UnityEngine.Vector4, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 66
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: true
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 67|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 68|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: Normalized Area Light cookie crop rectangle. X/Y are the lower-left offset,
+        Z/W are width and height.
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: AreaCookieCropShape
+    - Name: $v
+      Entry: 7
+      Data: 69|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: AreaCookieCropShape
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: true
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 70|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 2
+    - Name: 
+      Entry: 7
+      Data: 71|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: Area Light cookie crop shape. 0 = rectangle, 1 = lower-left triangle,
+        2 = lower-right triangle, 3 = upper-left triangle, 4 = upper-right triangle,
+        5 = custom clicked triangle.
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 72|UnityEngine.RangeAttribute, UnityEngine.CoreModule
+    - Name: min
+      Entry: 4
+      Data: 0
+    - Name: max
+      Entry: 4
+      Data: 5
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: AreaCookieCropRotation
+    - Name: $v
+      Entry: 7
+      Data: 73|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: AreaCookieCropRotation
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 16
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 16
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: true
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 74|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 2
+    - Name: 
+      Entry: 7
+      Data: 75|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: Area Light cookie crop rotation in degrees. Rotates the cropped rectangle
+        or triangle around its center while fitting inside the selected crop.
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 76|UnityEngine.RangeAttribute, UnityEngine.CoreModule
+    - Name: min
+      Entry: 4
+      Data: -180
+    - Name: max
+      Entry: 4
+      Data: 180
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: AreaCookieCropTriangleA
+    - Name: $v
+      Entry: 7
+      Data: 77|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: AreaCookieCropTriangleA
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 66
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 66
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: true
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 78|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 79|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: First custom Area Light cookie crop triangle point in normalized crop-local
+        coordinates.
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: AreaCookieCropTriangleB
+    - Name: $v
+      Entry: 7
+      Data: 80|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: AreaCookieCropTriangleB
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 66
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 66
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: true
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 81|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 82|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: Second custom Area Light cookie crop triangle point in normalized crop-local
+        coordinates.
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: AreaCookieCropTriangleC
+    - Name: $v
+      Entry: 7
+      Data: 83|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: AreaCookieCropTriangleC
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 66
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 66
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: true
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 84|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 85|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: Third custom Area Light cookie crop triangle point in normalized crop-local
+        coordinates.
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: AreaLightShape
+    - Name: $v
+      Entry: 7
+      Data: 86|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: AreaLightShape
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: true
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 87|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 2
+    - Name: 
+      Entry: 7
+      Data: 88|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: Area Light emitter shape. 0 = rectangle, 1 = lower-left triangle, 2 =
+        lower-right triangle, 3 = upper-left triangle, 4 = upper-right triangle.
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 89|UnityEngine.RangeAttribute, UnityEngine.CoreModule
+    - Name: min
+      Entry: 4
+      Data: 0
+    - Name: max
+      Entry: 4
+      Data: 5
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: AreaLightUseCustomShape
+    - Name: $v
+      Entry: 7
+      Data: 90|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: AreaLightUseCustomShape
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 3
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 3
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: true
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 91|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 92|UnityEngine.HideInInspector, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: AreaLightShapeTriangleA
+    - Name: $v
+      Entry: 7
+      Data: 93|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: AreaLightShapeTriangleA
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 66
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 66
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: true
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 94|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 95|UnityEngine.HideInInspector, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: AreaLightShapeTriangleB
+    - Name: $v
+      Entry: 7
+      Data: 96|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: AreaLightShapeTriangleB
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 66
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 66
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: true
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 97|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 98|UnityEngine.HideInInspector, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: AreaLightShapeTriangleC
+    - Name: $v
+      Entry: 7
+      Data: 99|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: AreaLightShapeTriangleC
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 66
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 66
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: true
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 100|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 101|UnityEngine.HideInInspector, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: Height
+    - Name: $v
+      Entry: 7
+      Data: 102|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: Height
@@ -1132,13 +1798,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 66|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+      Data: 103|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 67|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 104|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Area Light height in meters. Affects textured Area Light emission and
@@ -1148,7 +1815,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 68|UnityEngine.MinAttribute, UnityEngine.CoreModule
+      Data: 105|UnityEngine.MinAttribute, UnityEngine.CoreModule
     - Name: min
       Entry: 4
       Data: 0.001
@@ -1175,7 +1842,7 @@ MonoBehaviour:
       Data: SquaredRange
     - Name: $v
       Entry: 7
-      Data: 69|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 106|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: SquaredRange
@@ -1199,13 +1866,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 70|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+      Data: 107|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 71|UnityEngine.HeaderAttribute, UnityEngine.CoreModule
+      Data: 108|UnityEngine.HeaderAttribute, UnityEngine.CoreModule
     - Name: header
       Entry: 1
       Data: Runtime State
@@ -1214,7 +1882,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 72|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 109|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Squared range after which light will be culled. Recalculated by the Light
@@ -1242,7 +1910,7 @@ MonoBehaviour:
       Data: SquaredScale
     - Name: $v
       Entry: 7
-      Data: 73|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 110|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: SquaredScale
@@ -1266,13 +1934,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 74|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+      Data: 111|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 75|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 112|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Average squared lossy scale of the light. Light Source Size uses this
@@ -1301,13 +1970,13 @@ MonoBehaviour:
       Data: LightVolumeManager
     - Name: $v
       Entry: 7
-      Data: 76|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 113|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: LightVolumeManager
     - Name: <UserType>k__BackingField
       Entry: 7
-      Data: 77|System.RuntimeType, mscorlib
+      Data: 114|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
       Data: VRCLightVolumes.LightVolumeManager, red.sim.LightVolumesUdon
@@ -1316,7 +1985,7 @@ MonoBehaviour:
       Data: 
     - Name: <SystemType>k__BackingField
       Entry: 7
-      Data: 78|System.RuntimeType, mscorlib
+      Data: 115|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
       Data: VRC.Udon.UdonBehaviour, VRC.Udon
@@ -1337,13 +2006,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 79|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+      Data: 116|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 80|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 117|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Reference to the world's single Light Volume Manager. Assign it before
@@ -1371,7 +2041,7 @@ MonoBehaviour:
       Data: RegistryOrder
     - Name: $v
       Entry: 7
-      Data: 81|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 118|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: RegistryOrder
@@ -1395,13 +2065,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 82|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+      Data: 119|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 83|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 120|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Internal stable manager registry tie-breaker used when this point light
@@ -1411,7 +2082,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 84|UnityEngine.HideInInspector, UnityEngine.CoreModule
+      Data: 121|UnityEngine.HideInInspector, UnityEngine.CoreModule
     - Name: 
       Entry: 8
       Data: 
@@ -1435,7 +2106,7 @@ MonoBehaviour:
       Data: RegistryWeight
     - Name: $v
       Entry: 7
-      Data: 85|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 122|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: RegistryWeight
@@ -1459,13 +2130,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 86|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+      Data: 123|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 87|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 124|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Manager registry sort weight. Higher weights are uploaded to shaders
@@ -1475,7 +2147,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 88|UnityEngine.HideInInspector, UnityEngine.CoreModule
+      Data: 125|UnityEngine.HideInInspector, UnityEngine.CoreModule
     - Name: 
       Entry: 8
       Data: 
@@ -1499,7 +2171,7 @@ MonoBehaviour:
       Data: IsActive
     - Name: $v
       Entry: 7
-      Data: 89|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 126|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: IsActive
@@ -1523,13 +2195,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 90|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+      Data: 127|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 91|UnityEngine.HideInInspector, UnityEngine.CoreModule
+      Data: 128|UnityEngine.HideInInspector, UnityEngine.CoreModule
     - Name: 
       Entry: 8
       Data: 
@@ -1553,13 +2226,13 @@ MonoBehaviour:
       Data: CustomTexture
     - Name: $v
       Entry: 7
-      Data: 92|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 129|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: CustomTexture
     - Name: <UserType>k__BackingField
       Entry: 7
-      Data: 93|System.RuntimeType, mscorlib
+      Data: 130|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
       Data: UnityEngine.Texture, UnityEngine.CoreModule
@@ -1568,7 +2241,7 @@ MonoBehaviour:
       Data: 
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 93
+      Data: 130
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -1583,13 +2256,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 94|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+      Data: 131|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 95|UnityEngine.HeaderAttribute, UnityEngine.CoreModule
+      Data: 132|UnityEngine.HeaderAttribute, UnityEngine.CoreModule
     - Name: header
       Entry: 1
       Data: Projection Source
@@ -1598,7 +2272,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 96|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 133|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Texture source used by this light's active LUT, cookie or cubemap projection.
@@ -1625,13 +2299,13 @@ MonoBehaviour:
       Data: CustomTextureMaterial
     - Name: $v
       Entry: 7
-      Data: 97|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 134|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: CustomTextureMaterial
     - Name: <UserType>k__BackingField
       Entry: 7
-      Data: 98|System.RuntimeType, mscorlib
+      Data: 135|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
       Data: UnityEngine.Material, UnityEngine.CoreModule
@@ -1640,7 +2314,7 @@ MonoBehaviour:
       Data: 
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 98
+      Data: 135
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -1655,13 +2329,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 99|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+      Data: 136|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 100|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 137|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Material source used by this light's active LUT, cookie or cubemap projection.
@@ -1688,7 +2363,7 @@ MonoBehaviour:
       Data: ProjectionType
     - Name: $v
       Entry: 7
-      Data: 101|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 138|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: ProjectionType
@@ -1712,14 +2387,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 102|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 139|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 103|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 140|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Projection source type used by this light. 0 = none, 1 = texture, 2 =
@@ -1747,7 +2422,7 @@ MonoBehaviour:
       Data: ProjectionMode
     - Name: $v
       Entry: 7
-      Data: 104|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 141|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: ProjectionMode
@@ -1771,14 +2446,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 105|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 142|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 106|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 143|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Projection mode used by this light. 0 = parametric, 1 = LUT, 2 = custom
@@ -1806,7 +2481,7 @@ MonoBehaviour:
       Data: AutoUpdateCustomTexture
     - Name: $v
       Entry: 7
-      Data: 107|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 144|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: AutoUpdateCustomTexture
@@ -1830,14 +2505,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 108|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 145|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 109|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 146|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Updates this light's custom texture slice every frame.
@@ -1864,16 +2539,16 @@ MonoBehaviour:
       Data: ShadowMapTexture
     - Name: $v
       Entry: 7
-      Data: 110|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 147|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: ShadowMapTexture
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 93
+      Data: 130
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 93
+      Data: 130
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -1888,14 +2563,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 111|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 148|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 112|UnityEngine.HeaderAttribute, UnityEngine.CoreModule
+      Data: 149|UnityEngine.HeaderAttribute, UnityEngine.CoreModule
     - Name: header
       Entry: 1
       Data: Shadow Source
@@ -1904,7 +2579,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 113|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 150|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Texture source used by this light's shadow map.
@@ -1931,16 +2606,16 @@ MonoBehaviour:
       Data: ShadowMapMaterial
     - Name: $v
       Entry: 7
-      Data: 114|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 151|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: ShadowMapMaterial
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 98
+      Data: 135
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 98
+      Data: 135
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -1955,14 +2630,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 115|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 152|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 116|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 153|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Material source used by this light's shadow map.
@@ -1989,7 +2664,7 @@ MonoBehaviour:
       Data: AutoUpdateShadowMap
     - Name: $v
       Entry: 7
-      Data: 117|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 154|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: AutoUpdateShadowMap
@@ -2013,14 +2688,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 118|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 155|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 119|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 156|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Updates this light's shadow map texture every frame.
@@ -2047,7 +2722,7 @@ MonoBehaviour:
       Data: ShadowMapID
     - Name: $v
       Entry: 7
-      Data: 120|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 157|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: ShadowMapID
@@ -2071,14 +2746,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 121|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 158|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 122|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 159|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Index of the shadow map used by this light. -1 means no shadow.
@@ -2105,7 +2780,7 @@ MonoBehaviour:
       Data: WorldSpaceShadows
     - Name: $v
       Entry: 7
-      Data: 123|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 160|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: WorldSpaceShadows
@@ -2129,14 +2804,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 124|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 161|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 125|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 162|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Keeps baked shadows fixed in world space instead of moving with the light.
@@ -2164,7 +2839,7 @@ MonoBehaviour:
       Data: ShadowBakePosition
     - Name: $v
       Entry: 7
-      Data: 126|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 163|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: ShadowBakePosition
@@ -2188,14 +2863,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 127|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 164|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 128|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 165|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: World-space position where the shadow map was baked.
@@ -2222,7 +2897,7 @@ MonoBehaviour:
       Data: ShadowBakeRotation
     - Name: $v
       Entry: 7
-      Data: 129|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 166|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: ShadowBakeRotation
@@ -2246,14 +2921,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 130|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 167|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 131|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 168|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: World-space rotation where the shadow map was baked.
@@ -2280,7 +2955,7 @@ MonoBehaviour:
       Data: LayerMask
     - Name: $v
       Entry: 7
-      Data: 132|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 169|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: LayerMask
@@ -2304,14 +2979,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 133|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 170|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 134|UnityEngine.HeaderAttribute, UnityEngine.CoreModule
+      Data: 171|UnityEngine.HeaderAttribute, UnityEngine.CoreModule
     - Name: header
       Entry: 1
       Data: Shadow Bake Settings
@@ -2320,7 +2995,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 135|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 172|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Layers that can cast shadows.
@@ -2347,7 +3022,7 @@ MonoBehaviour:
       Data: NearClip
     - Name: $v
       Entry: 7
-      Data: 136|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 173|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: NearClip
@@ -2371,14 +3046,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 137|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 174|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 138|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 175|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Near clip plane used by the shadow bake camera. Higher values can clip
@@ -2388,7 +3063,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 139|UnityEngine.MinAttribute, UnityEngine.CoreModule
+      Data: 176|UnityEngine.MinAttribute, UnityEngine.CoreModule
     - Name: min
       Entry: 4
       Data: 0.0001
@@ -2415,7 +3090,7 @@ MonoBehaviour:
       Data: FarClip
     - Name: $v
       Entry: 7
-      Data: 140|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 177|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: FarClip
@@ -2439,14 +3114,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 141|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 178|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 142|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 179|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Far clip plane used by the shadow bake camera. Shadow casters outside
@@ -2456,7 +3131,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 143|UnityEngine.MinAttribute, UnityEngine.CoreModule
+      Data: 180|UnityEngine.MinAttribute, UnityEngine.CoreModule
     - Name: min
       Entry: 4
       Data: 0
@@ -2483,7 +3158,7 @@ MonoBehaviour:
       Data: BakedFarClip
     - Name: $v
       Entry: 7
-      Data: 144|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 181|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: BakedFarClip
@@ -2507,14 +3182,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 145|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 182|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 146|UnityEngine.HideInInspector, UnityEngine.CoreModule
+      Data: 183|UnityEngine.HideInInspector, UnityEngine.CoreModule
     - Name: 
       Entry: 8
       Data: 
@@ -2538,7 +3213,7 @@ MonoBehaviour:
       Data: Bias
     - Name: $v
       Entry: 7
-      Data: 147|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 184|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: Bias
@@ -2562,14 +3237,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 148|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 185|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 149|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 186|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: World-space bias in meters applied while baking this light's shadow map.
@@ -2580,7 +3255,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 150|UnityEngine.MinAttribute, UnityEngine.CoreModule
+      Data: 187|UnityEngine.MinAttribute, UnityEngine.CoreModule
     - Name: min
       Entry: 4
       Data: 0
@@ -2607,7 +3282,7 @@ MonoBehaviour:
       Data: Blur
     - Name: $v
       Entry: 7
-      Data: 151|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 188|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: Blur
@@ -2631,14 +3306,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 152|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 189|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 153|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 190|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Shadow blur radius applied after baking, normalized to 128x128 shadow
@@ -2651,7 +3326,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 154|UnityEngine.MinAttribute, UnityEngine.CoreModule
+      Data: 191|UnityEngine.MinAttribute, UnityEngine.CoreModule
     - Name: min
       Entry: 4
       Data: 0
@@ -2678,7 +3353,7 @@ MonoBehaviour:
       Data: ContactHardening
     - Name: $v
       Entry: 7
-      Data: 155|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 192|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: ContactHardening
@@ -2702,14 +3377,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 156|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 193|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 157|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 194|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Hardens shadows near the contact areas. Can produce artefacts, so use
@@ -2720,7 +3395,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 158|UnityEngine.RangeAttribute, UnityEngine.CoreModule
+      Data: 195|UnityEngine.RangeAttribute, UnityEngine.CoreModule
     - Name: min
       Entry: 4
       Data: 0
@@ -2750,7 +3425,7 @@ MonoBehaviour:
       Data: BakeInGame
     - Name: $v
       Entry: 7
-      Data: 159|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 196|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: BakeInGame
@@ -2774,14 +3449,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 160|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 197|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 161|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 198|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Bakes this light's shadow map once when the runtime instance starts.
@@ -2810,7 +3485,7 @@ MonoBehaviour:
       Data: RuntimeShadowResolution
     - Name: $v
       Entry: 7
-      Data: 162|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 199|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: RuntimeShadowResolution
@@ -2834,14 +3509,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 163|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 200|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 164|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 201|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Resolution used by runtime shadow baking.
@@ -2850,7 +3525,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 165|UnityEngine.MinAttribute, UnityEngine.CoreModule
+      Data: 202|UnityEngine.MinAttribute, UnityEngine.CoreModule
     - Name: min
       Entry: 4
       Data: 16
@@ -2877,7 +3552,7 @@ MonoBehaviour:
       Data: RuntimeShadowBlurSamplePreset
     - Name: $v
       Entry: 7
-      Data: 166|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 203|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: RuntimeShadowBlurSamplePreset
@@ -2901,14 +3576,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 167|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 204|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 168|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 205|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Runtime blur and contact hardening sample preset. 0 = low, 1 = medium,
@@ -2918,7 +3593,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 169|UnityEngine.RangeAttribute, UnityEngine.CoreModule
+      Data: 206|UnityEngine.RangeAttribute, UnityEngine.CoreModule
     - Name: min
       Entry: 4
       Data: 0
@@ -2948,7 +3623,7 @@ MonoBehaviour:
       Data: RuntimeShadowSphericalBlur
     - Name: $v
       Entry: 7
-      Data: 170|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 207|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: RuntimeShadowSphericalBlur
@@ -2972,14 +3647,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 171|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 208|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 1
     - Name: 
       Entry: 7
-      Data: 172|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 209|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: Samples runtime blur in spherical shadow space. This is slower but reduces
@@ -3007,7 +3682,7 @@ MonoBehaviour:
       Data: RuntimeShadowFacesPerFrame
     - Name: $v
       Entry: 7
-      Data: 173|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 210|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: RuntimeShadowFacesPerFrame
@@ -3031,14 +3706,14 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 174|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 211|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 175|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 212|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
       Data: How many shadow faces or slices are rendered each time runtime shadow
@@ -3049,7 +3724,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 7
-      Data: 176|UnityEngine.RangeAttribute, UnityEngine.CoreModule
+      Data: 213|UnityEngine.RangeAttribute, UnityEngine.CoreModule
     - Name: min
       Entry: 4
       Data: 1
@@ -3079,600 +3754,10 @@ MonoBehaviour:
       Data: RuntimeShadowDirectOutput
     - Name: $v
       Entry: 7
-      Data: 177|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: RuntimeShadowDirectOutput
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 3
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 3
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: true
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 178|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 2
-    - Name: 
-      Entry: 7
-      Data: 179|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
-    - Name: tooltip
-      Entry: 1
-      Data: Writes runtime shadow output directly into the manager shadow atlas when
-        the bake resolution matches it. Intended for external realtime baking; Bake
-        In Game keeps a full-size source texture.
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 180|UnityEngine.HideInInspector, UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: Projection
-    - Name: $v
-      Entry: 7
-      Data: 181|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: Projection
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 7
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 7
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: true
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 182|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 2
-    - Name: 
-      Entry: 7
-      Data: 183|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
-    - Name: tooltip
-      Entry: 1
-      Data: Parametric computes light falloff from settings. LUT uses X for cone
-        falloff and Y for attenuation. Custom projects a cookie or cubemap.
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 184|UnityEngine.HideInInspector, UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: Range
-    - Name: $v
-      Entry: 7
-      Data: 185|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: Range
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 16
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 16
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: true
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 186|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 2
-    - Name: 
-      Entry: 7
-      Data: 187|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
-    - Name: tooltip
-      Entry: 1
-      Data: Radius in meters beyond which the light is culled. Fewer overlapping
-        lights improve performance.
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 188|UnityEngine.HideInInspector, UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: Falloff
-    - Name: $v
-      Entry: 7
-      Data: 189|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: Falloff
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 16
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 16
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: true
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 190|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 2
-    - Name: 
-      Entry: 7
-      Data: 191|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
-    - Name: tooltip
-      Entry: 1
-      Data: Controls the Spot Light cone falloff.
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 192|UnityEngine.HideInInspector, UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: FalloffLUT
-    - Name: $v
-      Entry: 7
-      Data: 193|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: FalloffLUT
-    - Name: <UserType>k__BackingField
-      Entry: 7
-      Data: 194|System.RuntimeType, mscorlib
-    - Name: 
-      Entry: 1
-      Data: UnityEngine.Object, UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 194
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: true
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 195|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 2
-    - Name: 
-      Entry: 7
-      Data: 196|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
-    - Name: tooltip
-      Entry: 1
-      Data: LUT texture or material. X controls cone falloff and Y controls attenuation.
-        Uncompressed RGBA Half or RGBA Float is recommended for textures.
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 197|UnityEngine.HideInInspector, UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: Cookie
-    - Name: $v
-      Entry: 7
-      Data: 198|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: Cookie
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 194
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 194
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: true
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 199|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 2
-    - Name: 
-      Entry: 7
-      Data: 200|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
-    - Name: tooltip
-      Entry: 1
-      Data: Texture or material projected by a Spot Light, or used as the textured
-        emitter surface of an Area Light.
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 201|UnityEngine.HideInInspector, UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: Cubemap
-    - Name: $v
-      Entry: 7
-      Data: 202|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: Cubemap
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 194
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 194
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: true
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 203|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 2
-    - Name: 
-      Entry: 7
-      Data: 204|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
-    - Name: tooltip
-      Entry: 1
-      Data: Cubemap texture or material projected by a Point Light.
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 205|UnityEngine.HideInInspector, UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: BakeIntoProbes
-    - Name: $v
-      Entry: 7
-      Data: 206|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: BakeIntoProbes
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 3
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 3
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: true
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 207|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 2
-    - Name: 
-      Entry: 7
-      Data: 208|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
-    - Name: tooltip
-      Entry: 1
-      Data: Bakes this light into light probes so it can affect objects without Light
-        Volumes support. Intended for static lights.
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 209|UnityEngine.HideInInspector, UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: DebugRange
-    - Name: $v
-      Entry: 7
-      Data: 210|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: DebugRange
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 3
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 3
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: true
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 211|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 2
-    - Name: 
-      Entry: 7
-      Data: 212|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
-    - Name: tooltip
-      Entry: 1
-      Data: Shows the light's culling range gizmo. Use it to reduce unnecessary overlap
-        between Point Light Volumes.
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 213|UnityEngine.HideInInspector, UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: Shadows
-    - Name: $v
-      Entry: 7
       Data: 214|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: Shadows
+      Data: RuntimeShadowDirectOutput
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 3
@@ -3703,8 +3788,9 @@ MonoBehaviour:
       Data: 216|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
-      Data: Enables baked shadows for this light. Baked shadows can still affect
-        dynamic objects such as avatars.
+      Data: Writes runtime shadow output directly into the manager shadow atlas when
+        the bake resolution matches it. Intended for external realtime baking; Bake
+        In Game keeps a full-size source texture.
     - Name: 
       Entry: 8
       Data: 
@@ -3731,19 +3817,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: RebakeShadows
+      Data: Projection
     - Name: $v
       Entry: 7
       Data: 218|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: RebakeShadows
+      Data: Projection
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 3
+      Data: 7
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 3
+      Data: 7
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -3768,8 +3854,8 @@ MonoBehaviour:
       Data: 220|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
-      Data: Includes this light when Bake Shadows is clicked in the Light Volume
-        Manager. Disable it to keep the current shadow map during batch bakes.
+      Data: Parametric computes light falloff from settings. LUT uses X for cone
+        falloff and Y for attenuation. Custom projects a cookie or cubemap.
     - Name: 
       Entry: 8
       Data: 
@@ -3796,25 +3882,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: ExclusionMask
+      Data: Range
     - Name: $v
       Entry: 7
       Data: 222|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: ExclusionMask
+      Data: Range
     - Name: <UserType>k__BackingField
-      Entry: 7
-      Data: 223|System.RuntimeType, mscorlib
-    - Name: 
-      Entry: 1
-      Data: UnityEngine.GameObject[], UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
+      Entry: 9
+      Data: 16
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 223
+      Data: 16
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -3829,25 +3909,24 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 224|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 223|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 225|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 224|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
-      Data: Objects that must not cast shadows for this light. Every Renderer under
-        a listed root is temporarily excluded from both editor and runtime shadow
-        baking.
+      Data: Radius in meters beyond which the light is culled. Fewer overlapping
+        lights improve performance.
     - Name: 
       Entry: 8
       Data: 
     - Name: 
       Entry: 7
-      Data: 226|UnityEngine.HideInInspector, UnityEngine.CoreModule
+      Data: 225|UnityEngine.HideInInspector, UnityEngine.CoreModule
     - Name: 
       Entry: 8
       Data: 
@@ -3868,19 +3947,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: DebugClipPlanes
+      Data: Falloff
     - Name: $v
       Entry: 7
-      Data: 227|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 226|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: DebugClipPlanes
+      Data: Falloff
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 3
+      Data: 16
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 3
+      Data: 16
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -3895,23 +3974,23 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 228|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 227|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
       Data: 2
     - Name: 
       Entry: 7
-      Data: 229|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+      Data: 228|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
-      Data: Shows the shadow near and far clip plane gizmo.
+      Data: Controls the Spot Light cone falloff.
     - Name: 
       Entry: 8
       Data: 
     - Name: 
       Entry: 7
-      Data: 230|UnityEngine.HideInInspector, UnityEngine.CoreModule
+      Data: 229|UnityEngine.HideInInspector, UnityEngine.CoreModule
     - Name: 
       Entry: 8
       Data: 
@@ -3932,19 +4011,25 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: ForceCubemapShadows
+      Data: FalloffLUT
     - Name: $v
       Entry: 7
-      Data: 231|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 230|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: ForceCubemapShadows
+      Data: FalloffLUT
     - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 3
+      Entry: 7
+      Data: 231|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: UnityEngine.Object, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 3
+      Data: 231
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -3969,8 +4054,8 @@ MonoBehaviour:
       Data: 233|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
-      Data: Forces Spot Light shadows to bake and store as a cubemap even when the
-        spot angle is below 180 degrees.
+      Data: LUT texture or material. X controls cone falloff and Y controls attenuation.
+        Uncompressed RGBA Half or RGBA Float is recommended for textures.
     - Name: 
       Entry: 8
       Data: 
@@ -3997,19 +4082,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: ShadowMap
+      Data: Cookie
     - Name: $v
       Entry: 7
       Data: 235|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: ShadowMap
+      Data: Cookie
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 194
+      Data: 231
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 194
+      Data: 231
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -4034,8 +4119,8 @@ MonoBehaviour:
       Data: 237|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
-      Data: Baked shadow map source for this light. Bake Shadows generates it automatically;
-        compatible textures and materials can also be assigned manually.
+      Data: Texture or material projected by a Spot Light, or used as the textured
+        emitter surface of an Area Light.
     - Name: 
       Entry: 8
       Data: 
@@ -4062,25 +4147,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: RuntimeShadowCamera
+      Data: AreaCookieCropPreview
     - Name: $v
       Entry: 7
       Data: 239|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: RuntimeShadowCamera
+      Data: AreaCookieCropPreview
     - Name: <UserType>k__BackingField
-      Entry: 7
-      Data: 240|System.RuntimeType, mscorlib
-    - Name: 
-      Entry: 1
-      Data: UnityEngine.Camera, UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
+      Entry: 9
+      Data: 130
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 240
+      Data: 130
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -4092,17 +4171,28 @@ MonoBehaviour:
       Data: 
     - Name: <IsSerialized>k__BackingField
       Entry: 5
-      Data: false
+      Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 241|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 240|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 1
+      Data: 2
     - Name: 
       Entry: 7
-      Data: 242|System.NonSerializedAttribute, mscorlib
+      Data: 241|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: Editor-only image shown behind the Area Cookie Crop picker. Use this
+        as an alignment guide when the runtime cookie source is blank, generated,
+        or hard to inspect.
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 242|UnityEngine.HideInInspector, UnityEngine.CoreModule
     - Name: 
       Entry: 8
       Data: 
@@ -4123,19 +4213,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: RuntimeShadowDepthEncodeMaterial
+      Data: Cubemap
     - Name: $v
       Entry: 7
       Data: 243|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: RuntimeShadowDepthEncodeMaterial
+      Data: Cubemap
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 98
+      Data: 231
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 98
+      Data: 231
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -4147,17 +4237,26 @@ MonoBehaviour:
       Data: 
     - Name: <IsSerialized>k__BackingField
       Entry: 5
-      Data: false
+      Data: true
     - Name: _fieldAttributes
       Entry: 7
       Data: 244|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 1
+      Data: 2
     - Name: 
       Entry: 7
-      Data: 245|System.NonSerializedAttribute, mscorlib
+      Data: 245|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: Cubemap texture or material projected by a Point Light.
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 246|UnityEngine.HideInInspector, UnityEngine.CoreModule
     - Name: 
       Entry: 8
       Data: 
@@ -4178,19 +4277,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: RuntimeShadowBlurMaterial
+      Data: BakeIntoProbes
     - Name: $v
       Entry: 7
-      Data: 246|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 247|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: RuntimeShadowBlurMaterial
+      Data: BakeIntoProbes
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 98
+      Data: 3
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 98
+      Data: 3
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -4202,17 +4301,27 @@ MonoBehaviour:
       Data: 
     - Name: <IsSerialized>k__BackingField
       Entry: 5
-      Data: false
+      Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 247|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 248|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 1
+      Data: 2
     - Name: 
       Entry: 7
-      Data: 248|System.NonSerializedAttribute, mscorlib
+      Data: 249|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: Bakes this light into light probes so it can affect objects without Light
+        Volumes support. Intended for static lights.
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 250|UnityEngine.HideInInspector, UnityEngine.CoreModule
     - Name: 
       Entry: 8
       Data: 
@@ -4233,25 +4342,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _shadowExclusionRenderers
+      Data: DebugRange
     - Name: $v
       Entry: 7
-      Data: 249|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 251|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _shadowExclusionRenderers
+      Data: DebugRange
     - Name: <UserType>k__BackingField
-      Entry: 7
-      Data: 250|System.RuntimeType, mscorlib
-    - Name: 
-      Entry: 1
-      Data: UnityEngine.Renderer[], UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
+      Entry: 9
+      Data: 3
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 250
+      Data: 3
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -4263,14 +4366,30 @@ MonoBehaviour:
       Data: 
     - Name: <IsSerialized>k__BackingField
       Entry: 5
-      Data: false
+      Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 251|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 252|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 0
+      Data: 2
+    - Name: 
+      Entry: 7
+      Data: 253|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: Shows the light's culling range gizmo. Use it to reduce unnecessary overlap
+        between Point Light Volumes.
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 254|UnityEngine.HideInInspector, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: 
       Entry: 13
       Data: 
@@ -4288,74 +4407,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _shadowExclusionRendererStates
-    - Name: $v
-      Entry: 7
-      Data: 252|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: _shadowExclusionRendererStates
-    - Name: <UserType>k__BackingField
-      Entry: 7
-      Data: 253|System.RuntimeType, mscorlib
-    - Name: 
-      Entry: 1
-      Data: System.Boolean[], mscorlib
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 253
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: false
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 254|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 0
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: _shadowExclusionRendererCount
+      Data: Shadows
     - Name: $v
       Entry: 7
       Data: 255|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _shadowExclusionRendererCount
+      Data: Shadows
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 3
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 3
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -4367,66 +4431,27 @@ MonoBehaviour:
       Data: 
     - Name: <IsSerialized>k__BackingField
       Entry: 5
-      Data: false
+      Data: true
     - Name: _fieldAttributes
       Entry: 7
       Data: 256|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 0
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
+      Data: 2
     - Name: 
       Entry: 7
-      Data: 
-    - Name: $k
+      Data: 257|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
       Entry: 1
-      Data: CustomTextureIsCubemap
-    - Name: $v
-      Entry: 7
-      Data: 257|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: CustomTextureIsCubemap
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 3
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 3
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
+      Data: Enables baked shadows for this light. Baked shadows can still affect
+        dynamic objects such as avatars.
     - Name: 
       Entry: 8
       Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: true
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 258|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 1
     - Name: 
       Entry: 7
-      Data: 259|UnityEngine.HideInInspector, UnityEngine.CoreModule
+      Data: 258|UnityEngine.HideInInspector, UnityEngine.CoreModule
     - Name: 
       Entry: 8
       Data: 
@@ -4447,13 +4472,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: CustomTextureHasDepthSlices
+      Data: RebakeShadows
     - Name: $v
       Entry: 7
-      Data: 260|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 259|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: CustomTextureHasDepthSlices
+      Data: RebakeShadows
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 3
@@ -4474,11 +4499,21 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 261|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 260|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 1
+      Data: 2
+    - Name: 
+      Entry: 7
+      Data: 261|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: Includes this light when Bake Shadows is clicked in the Light Volume
+        Manager. Disable it to keep the current shadow map during batch bakes.
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: 
       Entry: 7
       Data: 262|UnityEngine.HideInInspector, UnityEngine.CoreModule
@@ -4502,19 +4537,25 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: ShadowMapTextureIsCubemap
+      Data: ExclusionMask
     - Name: $v
       Entry: 7
       Data: 263|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: ShadowMapTextureIsCubemap
+      Data: ExclusionMask
     - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 3
+      Entry: 7
+      Data: 264|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: UnityEngine.GameObject[], UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 3
+      Data: 264
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -4529,14 +4570,25 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 264|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 265|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 1
+      Data: 2
     - Name: 
       Entry: 7
-      Data: 265|UnityEngine.HideInInspector, UnityEngine.CoreModule
+      Data: 266|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: Objects that must not cast shadows for this light. Every Renderer under
+        a listed root is temporarily excluded from both editor and runtime shadow
+        baking.
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 267|UnityEngine.HideInInspector, UnityEngine.CoreModule
     - Name: 
       Entry: 8
       Data: 
@@ -4557,13 +4609,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: ShadowMapTextureHasDepthSlices
+      Data: DebugClipPlanes
     - Name: $v
       Entry: 7
-      Data: 266|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 268|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: ShadowMapTextureHasDepthSlices
+      Data: DebugClipPlanes
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 3
@@ -4584,66 +4636,20 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 267|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 269|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 1
+      Data: 2
     - Name: 
       Entry: 7
-      Data: 268|UnityEngine.HideInInspector, UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
+      Data: 270|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
       Entry: 1
-      Data: ShadowMapUsesCubemap
-    - Name: $v
-      Entry: 7
-      Data: 269|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: ShadowMapUsesCubemap
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 3
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 3
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
+      Data: Shows the shadow near and far clip plane gizmo.
     - Name: 
       Entry: 8
       Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: true
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 270|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 1
     - Name: 
       Entry: 7
       Data: 271|UnityEngine.HideInInspector, UnityEngine.CoreModule
@@ -4667,13 +4673,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: IsRangeDirty
+      Data: ForceCubemapShadows
     - Name: $v
       Entry: 7
       Data: 272|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: IsRangeDirty
+      Data: ForceCubemapShadows
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 3
@@ -4698,10 +4704,20 @@ MonoBehaviour:
         mscorlib
     - Name: 
       Entry: 12
-      Data: 1
+      Data: 2
     - Name: 
       Entry: 7
-      Data: 274|UnityEngine.HideInInspector, UnityEngine.CoreModule
+      Data: 274|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: Forces Spot Light shadows to bake and store as a cubemap even when the
+        spot angle is below 180 degrees.
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 275|UnityEngine.HideInInspector, UnityEngine.CoreModule
     - Name: 
       Entry: 8
       Data: 
@@ -4722,19 +4738,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _prevPosition
+      Data: ShadowMap
     - Name: $v
       Entry: 7
-      Data: 275|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 276|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _prevPosition
+      Data: ShadowMap
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 24
+      Data: 231
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 24
+      Data: 231
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -4746,14 +4762,30 @@ MonoBehaviour:
       Data: 
     - Name: <IsSerialized>k__BackingField
       Entry: 5
-      Data: false
+      Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 276|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 277|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 0
+      Data: 2
+    - Name: 
+      Entry: 7
+      Data: 278|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
+    - Name: tooltip
+      Entry: 1
+      Data: Baked shadow map source for this light. Bake Shadows generates it automatically;
+        compatible textures and materials can also be assigned manually.
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 279|UnityEngine.HideInInspector, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: 
       Entry: 13
       Data: 
@@ -4771,117 +4803,25 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _prevRotation
+      Data: RuntimeShadowCamera
     - Name: $v
       Entry: 7
-      Data: 277|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 280|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _prevRotation
+      Data: RuntimeShadowCamera
     - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 45
+      Entry: 7
+      Data: 281|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: UnityEngine.Camera, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 45
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: false
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 278|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 0
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: _prevScale
-    - Name: $v
-      Entry: 7
-      Data: 279|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: _prevScale
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 24
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 24
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: false
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 280|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 0
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: _old_Color
-    - Name: $v
-      Entry: 7
-      Data: 281|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: _old_Color
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 11
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 11
+      Data: 281
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -4900,7 +4840,13 @@ MonoBehaviour:
         mscorlib
     - Name: 
       Entry: 12
-      Data: 0
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 283|System.NonSerializedAttribute, mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: 
       Entry: 13
       Data: 
@@ -4918,19 +4864,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _old_Intensity
+      Data: RuntimeShadowDepthEncodeMaterial
     - Name: $v
       Entry: 7
-      Data: 283|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 284|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _old_Intensity
+      Data: RuntimeShadowDepthEncodeMaterial
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 16
+      Data: 135
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 16
+      Data: 135
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -4945,11 +4891,17 @@ MonoBehaviour:
       Data: false
     - Name: _fieldAttributes
       Entry: 7
-      Data: 284|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 285|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 0
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 286|System.NonSerializedAttribute, mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: 
       Entry: 13
       Data: 
@@ -4967,68 +4919,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _old_ShadingStrength
-    - Name: $v
-      Entry: 7
-      Data: 285|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: _old_ShadingStrength
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 16
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 16
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: false
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 286|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 0
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: _isRegisteredWithManager
+      Data: RuntimeShadowBlurMaterial
     - Name: $v
       Entry: 7
       Data: 287|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _isRegisteredWithManager
+      Data: RuntimeShadowBlurMaterial
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 3
+      Data: 135
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 3
+      Data: 135
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -5047,6 +4950,67 @@ MonoBehaviour:
         mscorlib
     - Name: 
       Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 289|System.NonSerializedAttribute, mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _shadowExclusionRenderers
+    - Name: $v
+      Entry: 7
+      Data: 290|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _shadowExclusionRenderers
+    - Name: <UserType>k__BackingField
+      Entry: 7
+      Data: 291|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: UnityEngine.Renderer[], UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 291
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 292|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
       Data: 0
     - Name: 
       Entry: 13
@@ -5065,19 +5029,25 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: AreaLightFallbackColor
+      Data: _shadowExclusionRendererStates
     - Name: $v
       Entry: 7
-      Data: 289|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 293|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: AreaLightFallbackColor
+      Data: _shadowExclusionRendererStates
     - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 11
+      Entry: 7
+      Data: 294|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: System.Boolean[], mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 11
+      Data: 294
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -5092,17 +5062,11 @@ MonoBehaviour:
       Data: false
     - Name: _fieldAttributes
       Entry: 7
-      Data: 290|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 295|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 1
-    - Name: 
-      Entry: 7
-      Data: 291|System.NonSerializedAttribute, mscorlib
-    - Name: 
-      Entry: 8
-      Data: 
+      Data: 0
     - Name: 
       Entry: 13
       Data: 
@@ -5120,19 +5084,68 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: AreaCookieMirror
+      Data: _shadowExclusionRendererCount
     - Name: $v
       Entry: 7
-      Data: 292|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 296|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: AreaCookieMirror
+      Data: _shadowExclusionRendererCount
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 16
+      Data: 7
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 16
+      Data: 7
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 297|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: CustomTextureIsCubemap
+    - Name: $v
+      Entry: 7
+      Data: 298|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: CustomTextureIsCubemap
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 3
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 3
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -5147,116 +5160,6 @@ MonoBehaviour:
       Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 293|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 1
-    - Name: 
-      Entry: 7
-      Data: 294|UnityEngine.HideInInspector, UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: AreaCookieAverageCustomId
-    - Name: $v
-      Entry: 7
-      Data: 295|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: AreaCookieAverageCustomId
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 7
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 7
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: false
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 296|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 1
-    - Name: 
-      Entry: 7
-      Data: 297|System.NonSerializedAttribute, mscorlib
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: AreaCookieAverageReadbackPending
-    - Name: $v
-      Entry: 7
-      Data: 298|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: AreaCookieAverageReadbackPending
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 3
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 3
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: false
-    - Name: _fieldAttributes
-      Entry: 7
       Data: 299|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
@@ -5264,7 +5167,7 @@ MonoBehaviour:
       Data: 1
     - Name: 
       Entry: 7
-      Data: 300|System.NonSerializedAttribute, mscorlib
+      Data: 300|UnityEngine.HideInInspector, UnityEngine.CoreModule
     - Name: 
       Entry: 8
       Data: 
@@ -5285,13 +5188,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: AreaCookieAverageReadbackDirty
+      Data: CustomTextureHasDepthSlices
     - Name: $v
       Entry: 7
       Data: 301|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: AreaCookieAverageReadbackDirty
+      Data: CustomTextureHasDepthSlices
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 3
@@ -5309,7 +5212,7 @@ MonoBehaviour:
       Data: 
     - Name: <IsSerialized>k__BackingField
       Entry: 5
-      Data: false
+      Data: true
     - Name: _fieldAttributes
       Entry: 7
       Data: 302|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
@@ -5319,7 +5222,7 @@ MonoBehaviour:
       Data: 1
     - Name: 
       Entry: 7
-      Data: 303|System.NonSerializedAttribute, mscorlib
+      Data: 303|UnityEngine.HideInInspector, UnityEngine.CoreModule
     - Name: 
       Entry: 8
       Data: 
@@ -5340,25 +5243,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _areaCookieAveragePixels
+      Data: ShadowMapTextureIsCubemap
     - Name: $v
       Entry: 7
       Data: 304|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _areaCookieAveragePixels
+      Data: ShadowMapTextureIsCubemap
     - Name: <UserType>k__BackingField
-      Entry: 7
-      Data: 305|System.RuntimeType, mscorlib
-    - Name: 
-      Entry: 1
-      Data: UnityEngine.Color32[], UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
+      Entry: 9
+      Data: 3
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 305
+      Data: 3
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -5370,14 +5267,20 @@ MonoBehaviour:
       Data: 
     - Name: <IsSerialized>k__BackingField
       Entry: 5
-      Data: false
+      Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 306|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 305|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 0
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 306|UnityEngine.HideInInspector, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: 
       Entry: 13
       Data: 
@@ -5395,13 +5298,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _inGameBakeStarted
+      Data: ShadowMapTextureHasDepthSlices
     - Name: $v
       Entry: 7
       Data: 307|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _inGameBakeStarted
+      Data: ShadowMapTextureHasDepthSlices
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 3
@@ -5419,14 +5322,20 @@ MonoBehaviour:
       Data: 
     - Name: <IsSerialized>k__BackingField
       Entry: 5
-      Data: false
+      Data: true
     - Name: _fieldAttributes
       Entry: 7
       Data: 308|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 0
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 309|UnityEngine.HideInInspector, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: 
       Entry: 13
       Data: 
@@ -5444,13 +5353,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowSourceInitialized
+      Data: ShadowMapUsesCubemap
     - Name: $v
       Entry: 7
-      Data: 309|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 310|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowSourceInitialized
+      Data: ShadowMapUsesCubemap
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 3
@@ -5468,14 +5377,20 @@ MonoBehaviour:
       Data: 
     - Name: <IsSerialized>k__BackingField
       Entry: 5
-      Data: false
+      Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 310|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 311|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 0
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 312|UnityEngine.HideInInspector, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: 
       Entry: 13
       Data: 
@@ -5493,68 +5408,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowShaderPropertiesInitialized
-    - Name: $v
-      Entry: 7
-      Data: 311|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: _runtimeShadowShaderPropertiesInitialized
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 3
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 3
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: false
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 312|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 0
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: _runtimeShadowReceiverNearClip
+      Data: IsRangeDirty
     - Name: $v
       Entry: 7
       Data: 313|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowReceiverNearClip
+      Data: IsRangeDirty
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 16
+      Data: 3
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 16
+      Data: 3
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -5566,14 +5432,20 @@ MonoBehaviour:
       Data: 
     - Name: <IsSerialized>k__BackingField
       Entry: 5
-      Data: false
+      Data: true
     - Name: _fieldAttributes
       Entry: 7
       Data: 314|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 0
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 315|UnityEngine.HideInInspector, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: 
       Entry: 13
       Data: 
@@ -5591,19 +5463,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowReceiverFarClip
+      Data: _prevPosition
     - Name: $v
       Entry: 7
-      Data: 315|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 316|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowReceiverFarClip
+      Data: _prevPosition
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 16
+      Data: 24
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 16
+      Data: 24
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -5618,7 +5490,7 @@ MonoBehaviour:
       Data: false
     - Name: _fieldAttributes
       Entry: 7
-      Data: 316|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 317|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
@@ -5640,19 +5512,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowFaceIndex
+      Data: _prevRotation
     - Name: $v
       Entry: 7
-      Data: 317|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 318|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowFaceIndex
+      Data: _prevRotation
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 45
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 45
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -5667,7 +5539,7 @@ MonoBehaviour:
       Data: false
     - Name: _fieldAttributes
       Entry: 7
-      Data: 318|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 319|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
@@ -5689,25 +5561,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowDepthTexture
+      Data: _prevScale
     - Name: $v
       Entry: 7
-      Data: 319|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 320|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowDepthTexture
+      Data: _prevScale
     - Name: <UserType>k__BackingField
-      Entry: 7
-      Data: 320|System.RuntimeType, mscorlib
-    - Name: 
-      Entry: 1
-      Data: UnityEngine.RenderTexture, UnityEngine.CoreModule
-    - Name: 
-      Entry: 8
-      Data: 
+      Entry: 9
+      Data: 24
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 320
+      Data: 24
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -5744,19 +5610,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowTexture
+      Data: _old_Color
     - Name: $v
       Entry: 7
       Data: 322|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowTexture
+      Data: _old_Color
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 320
+      Data: 11
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 320
+      Data: 11
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -5793,19 +5659,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowRegistrationTexture
+      Data: _old_Intensity
     - Name: $v
       Entry: 7
       Data: 324|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowRegistrationTexture
+      Data: _old_Intensity
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 320
+      Data: 16
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 320
+      Data: 16
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -5842,19 +5708,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowBlurTempTexture
+      Data: _old_ShadingStrength
     - Name: $v
       Entry: 7
       Data: 326|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowBlurTempTexture
+      Data: _old_ShadingStrength
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 320
+      Data: 16
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 320
+      Data: 16
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -5891,19 +5757,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowMaterialBlitInputTexture
+      Data: _isRegisteredWithManager
     - Name: $v
       Entry: 7
       Data: 328|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowMaterialBlitInputTexture
+      Data: _isRegisteredWithManager
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 320
+      Data: 3
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 320
+      Data: 3
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -5940,19 +5806,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowFaceRotation0
+      Data: AreaLightFallbackColor
     - Name: $v
       Entry: 7
       Data: 330|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowFaceRotation0
+      Data: AreaLightFallbackColor
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 45
+      Data: 11
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 45
+      Data: 11
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -5971,7 +5837,13 @@ MonoBehaviour:
         mscorlib
     - Name: 
       Entry: 12
-      Data: 0
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 332|System.NonSerializedAttribute, mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: 
       Entry: 13
       Data: 
@@ -5989,19 +5861,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowFaceRotation1
+      Data: AreaCookieMirror
     - Name: $v
       Entry: 7
-      Data: 332|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 333|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowFaceRotation1
+      Data: AreaCookieMirror
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 45
+      Data: 16
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 45
+      Data: 16
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -6013,14 +5885,20 @@ MonoBehaviour:
       Data: 
     - Name: <IsSerialized>k__BackingField
       Entry: 5
-      Data: false
+      Data: true
     - Name: _fieldAttributes
       Entry: 7
-      Data: 333|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 334|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 0
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 335|UnityEngine.HideInInspector, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: 
       Entry: 13
       Data: 
@@ -6038,68 +5916,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowFaceRotation2
-    - Name: $v
-      Entry: 7
-      Data: 334|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: _runtimeShadowFaceRotation2
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 45
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 45
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: false
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 335|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 0
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: _runtimeShadowFaceRotation3
+      Data: AreaCookieAverageCustomId
     - Name: $v
       Entry: 7
       Data: 336|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowFaceRotation3
+      Data: AreaCookieAverageCustomId
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 45
+      Data: 7
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 45
+      Data: 7
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -6118,7 +5947,13 @@ MonoBehaviour:
         mscorlib
     - Name: 
       Entry: 12
-      Data: 0
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 338|System.NonSerializedAttribute, mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: 
       Entry: 13
       Data: 
@@ -6136,19 +5971,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowFaceRotation4
+      Data: AreaCookieAverageReadbackPending
     - Name: $v
       Entry: 7
-      Data: 338|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 339|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowFaceRotation4
+      Data: AreaCookieAverageReadbackPending
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 45
+      Data: 3
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 45
+      Data: 3
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -6163,11 +5998,17 @@ MonoBehaviour:
       Data: false
     - Name: _fieldAttributes
       Entry: 7
-      Data: 339|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 340|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
-      Data: 0
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 341|System.NonSerializedAttribute, mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: 
       Entry: 13
       Data: 
@@ -6185,68 +6026,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowDepthTextureID
-    - Name: $v
-      Entry: 7
-      Data: 340|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: _runtimeShadowDepthTextureID
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 7
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 7
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: false
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 341|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 0
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: _runtimeShadowFarClipID
+      Data: AreaCookieAverageReadbackDirty
     - Name: $v
       Entry: 7
       Data: 342|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowFarClipID
+      Data: AreaCookieAverageReadbackDirty
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 3
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 3
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -6265,7 +6057,13 @@ MonoBehaviour:
         mscorlib
     - Name: 
       Entry: 12
-      Data: 0
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 344|System.NonSerializedAttribute, mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: 
       Entry: 13
       Data: 
@@ -6283,68 +6081,25 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowNearClipID
+      Data: _areaCookieAveragePixels
     - Name: $v
       Entry: 7
-      Data: 344|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 345|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowNearClipID
+      Data: _areaCookieAveragePixels
     - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 7
+      Entry: 7
+      Data: 346|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: UnityEngine.Color32[], UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 7
-    - Name: <SyncMode>k__BackingField
-      Entry: 7
-      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
-    - Name: 
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: <IsSerialized>k__BackingField
-      Entry: 5
-      Data: false
-    - Name: _fieldAttributes
-      Entry: 7
-      Data: 345|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
-        mscorlib
-    - Name: 
-      Entry: 12
-      Data: 0
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: _runtimeShadowBiasID
-    - Name: $v
-      Entry: 7
-      Data: 346|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
-    - Name: <Name>k__BackingField
-      Entry: 1
-      Data: _runtimeShadowBiasID
-    - Name: <UserType>k__BackingField
-      Entry: 9
-      Data: 7
-    - Name: <SystemType>k__BackingField
-      Entry: 9
-      Data: 7
+      Data: 346
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -6381,19 +6136,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowTanHalfFovID
+      Data: _inGameBakeStarted
     - Name: $v
       Entry: 7
       Data: 348|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowTanHalfFovID
+      Data: _inGameBakeStarted
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 3
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 3
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -6430,19 +6185,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowSourceArrayID
+      Data: _runtimeShadowSourceInitialized
     - Name: $v
       Entry: 7
       Data: 350|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowSourceArrayID
+      Data: _runtimeShadowSourceInitialized
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 3
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 3
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -6479,19 +6234,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowDepthArrayID
+      Data: _runtimeShadowShaderPropertiesInitialized
     - Name: $v
       Entry: 7
       Data: 352|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowDepthArrayID
+      Data: _runtimeShadowShaderPropertiesInitialized
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 3
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 3
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -6528,19 +6283,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowFaceIndexID
+      Data: _runtimeShadowReceiverNearClip
     - Name: $v
       Entry: 7
       Data: 354|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowFaceIndexID
+      Data: _runtimeShadowReceiverNearClip
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 16
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 16
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -6577,19 +6332,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowSourceBaseSliceID
+      Data: _runtimeShadowReceiverFarClip
     - Name: $v
       Entry: 7
       Data: 356|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowSourceBaseSliceID
+      Data: _runtimeShadowReceiverFarClip
     - Name: <UserType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 16
     - Name: <SystemType>k__BackingField
       Entry: 9
-      Data: 7
+      Data: 16
     - Name: <SyncMode>k__BackingField
       Entry: 7
       Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
@@ -6626,13 +6381,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowDepthBaseSliceID
+      Data: _runtimeShadowFaceIndex
     - Name: $v
       Entry: 7
       Data: 358|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: _runtimeShadowDepthBaseSliceID
+      Data: _runtimeShadowFaceIndex
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 7
@@ -6675,12 +6430,998 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: _runtimeShadowBlurDirectionID
+      Data: _runtimeShadowDepthTexture
     - Name: $v
       Entry: 7
       Data: 360|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
+      Data: _runtimeShadowDepthTexture
+    - Name: <UserType>k__BackingField
+      Entry: 7
+      Data: 361|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: UnityEngine.RenderTexture, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 361
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 362|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowTexture
+    - Name: $v
+      Entry: 7
+      Data: 363|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowTexture
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 361
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 361
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 364|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowRegistrationTexture
+    - Name: $v
+      Entry: 7
+      Data: 365|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowRegistrationTexture
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 361
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 361
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 366|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowBlurTempTexture
+    - Name: $v
+      Entry: 7
+      Data: 367|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowBlurTempTexture
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 361
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 361
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 368|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowMaterialBlitInputTexture
+    - Name: $v
+      Entry: 7
+      Data: 369|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowMaterialBlitInputTexture
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 361
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 361
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 370|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowFaceRotation0
+    - Name: $v
+      Entry: 7
+      Data: 371|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowFaceRotation0
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 45
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 45
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 372|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowFaceRotation1
+    - Name: $v
+      Entry: 7
+      Data: 373|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowFaceRotation1
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 45
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 45
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 374|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowFaceRotation2
+    - Name: $v
+      Entry: 7
+      Data: 375|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowFaceRotation2
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 45
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 45
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 376|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowFaceRotation3
+    - Name: $v
+      Entry: 7
+      Data: 377|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowFaceRotation3
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 45
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 45
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 378|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowFaceRotation4
+    - Name: $v
+      Entry: 7
+      Data: 379|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowFaceRotation4
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 45
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 45
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 380|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowDepthTextureID
+    - Name: $v
+      Entry: 7
+      Data: 381|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowDepthTextureID
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 382|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowFarClipID
+    - Name: $v
+      Entry: 7
+      Data: 383|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowFarClipID
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 384|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowNearClipID
+    - Name: $v
+      Entry: 7
+      Data: 385|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowNearClipID
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 386|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowBiasID
+    - Name: $v
+      Entry: 7
+      Data: 387|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowBiasID
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 388|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowTanHalfFovID
+    - Name: $v
+      Entry: 7
+      Data: 389|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowTanHalfFovID
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 390|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowSourceArrayID
+    - Name: $v
+      Entry: 7
+      Data: 391|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowSourceArrayID
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 392|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowDepthArrayID
+    - Name: $v
+      Entry: 7
+      Data: 393|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowDepthArrayID
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 394|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowFaceIndexID
+    - Name: $v
+      Entry: 7
+      Data: 395|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowFaceIndexID
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 396|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowSourceBaseSliceID
+    - Name: $v
+      Entry: 7
+      Data: 397|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowSourceBaseSliceID
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 398|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowDepthBaseSliceID
+    - Name: $v
+      Entry: 7
+      Data: 399|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
+      Data: _runtimeShadowDepthBaseSliceID
+    - Name: <UserType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SystemType>k__BackingField
+      Entry: 9
+      Data: 7
+    - Name: <SyncMode>k__BackingField
+      Entry: 7
+      Data: System.Nullable`1[[UdonSharp.UdonSyncMode, UdonSharp.Runtime]], mscorlib
+    - Name: 
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: <IsSerialized>k__BackingField
+      Entry: 5
+      Data: false
+    - Name: _fieldAttributes
+      Entry: 7
+      Data: 400|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+        mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: _runtimeShadowBlurDirectionID
+    - Name: $v
+      Entry: 7
+      Data: 401|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: <Name>k__BackingField
+      Entry: 1
       Data: _runtimeShadowBlurDirectionID
     - Name: <UserType>k__BackingField
       Entry: 9
@@ -6702,7 +7443,7 @@ MonoBehaviour:
       Data: false
     - Name: _fieldAttributes
       Entry: 7
-      Data: 361|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 402|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
@@ -6727,7 +7468,7 @@ MonoBehaviour:
       Data: _runtimeShadowBlurRadiusID
     - Name: $v
       Entry: 7
-      Data: 362|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 403|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: _runtimeShadowBlurRadiusID
@@ -6751,7 +7492,7 @@ MonoBehaviour:
       Data: false
     - Name: _fieldAttributes
       Entry: 7
-      Data: 363|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 404|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
@@ -6776,7 +7517,7 @@ MonoBehaviour:
       Data: _runtimeShadowBlurDepthID
     - Name: $v
       Entry: 7
-      Data: 364|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 405|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: _runtimeShadowBlurDepthID
@@ -6800,7 +7541,7 @@ MonoBehaviour:
       Data: false
     - Name: _fieldAttributes
       Entry: 7
-      Data: 365|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 406|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12
@@ -6825,7 +7566,7 @@ MonoBehaviour:
       Data: _runtimeShadowInvResolutionID
     - Name: $v
       Entry: 7
-      Data: 366|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+      Data: 407|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
       Data: _runtimeShadowInvResolutionID
@@ -6849,7 +7590,7 @@ MonoBehaviour:
       Data: false
     - Name: _fieldAttributes
       Entry: 7
-      Data: 367|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
+      Data: 408|System.Collections.Generic.List`1[[System.Attribute, mscorlib]],
         mscorlib
     - Name: 
       Entry: 12

@@ -292,6 +292,8 @@ namespace VRCLightVolumes {
                     VRCShader.SetGlobalVectorArray(_pointLightDirectionID, _pointLightDirection);
                 if ((pointLightUploadMask & PointLightUploadCustomId) != 0)
                     VRCShader.SetGlobalVectorArray(_pointLightCustomIdID, _pointLightCustomId);
+                if ((pointLightUploadMask & PointLightUploadAreaTriangle) != 0)
+                    VRCShader.SetGlobalVectorArray(_pointLightAreaTriangleDataID, _pointLightAreaTriangleData);
                 if ((pointLightUploadMask & PointLightUploadShadowReprojection) != 0)
                     VRCShader.SetGlobalVectorArray(_pointLightShadowReprojectionDataID, _pointLightShadowReprojectionData);
                 if ((pointLightUploadMask & PointLightUploadShadowRotation) != 0)
@@ -414,6 +416,8 @@ namespace VRCLightVolumes {
             Vector4 previousExtraData = _pointLightExtraData[shaderIndex];
             Vector4 previousDirection = _pointLightDirection[shaderIndex];
             Vector4 previousCustomId = _pointLightCustomId[shaderIndex];
+            Vector4 previousAreaTriangle0 = _pointLightAreaTriangleData[shaderIndex * 2];
+            Vector4 previousAreaTriangle1 = _pointLightAreaTriangleData[shaderIndex * 2 + 1];
             Vector4 previousShadowReprojection = _pointLightShadowReprojectionData[shaderIndex];
             Vector4 previousShadowRotation = _pointLightShadowRotationData[shaderIndex];
 
@@ -425,6 +429,7 @@ namespace VRCLightVolumes {
             if (PackedVectorChanged(previousExtraData, _pointLightExtraData[shaderIndex])) uploadMask |= PointLightUploadExtraData;
             if (PackedVectorChanged(previousDirection, _pointLightDirection[shaderIndex])) uploadMask |= PointLightUploadDirection;
             if (PackedVectorChanged(previousCustomId, _pointLightCustomId[shaderIndex])) uploadMask |= PointLightUploadCustomId;
+            if (PackedVectorChanged(previousAreaTriangle0, _pointLightAreaTriangleData[shaderIndex * 2]) || PackedVectorChanged(previousAreaTriangle1, _pointLightAreaTriangleData[shaderIndex * 2 + 1])) uploadMask |= PointLightUploadAreaTriangle;
             if (PackedVectorChanged(previousShadowReprojection, _pointLightShadowReprojectionData[shaderIndex])) uploadMask |= PointLightUploadShadowReprojection;
             if (PackedVectorChanged(previousShadowRotation, _pointLightShadowRotationData[shaderIndex])) uploadMask |= PointLightUploadShadowRotation;
             MarkPointLightArrayUploads(uploadMask);
@@ -547,7 +552,14 @@ namespace VRCLightVolumes {
                 if (shadingFade > 0f) shadowMapID += shadowMapID < 0f ? -shadingFade : shadingFade;
             }
 
-            float customDataW = isArea ? PackAreaLightCustomDataW(instance.AreaCookieMirror, instance.AreaLightShape, hasAreaCookie) : 0f;
+            float customDataW = isArea ? PackAreaLightCustomDataW(instance.AreaCookieMirror, instance.AreaLightShape, instance.AreaLightUseCustomShape, hasAreaCookie) : 0f;
+            int areaTriangleIndex = shaderIndex * 2;
+            Vector4 triangleA = instance.AreaLightShapeTriangleA;
+            Vector4 triangleB = instance.AreaLightShapeTriangleB;
+            Vector4 triangleC = instance.AreaLightShapeTriangleC;
+            float triangleAreaScale = GetAreaLightShapeAreaScale(instance.Width, instance.Height, 6, triangleA, triangleB, triangleC);
+            _pointLightAreaTriangleData[areaTriangleIndex] = new Vector4(triangleA.x, triangleA.y, triangleB.x, triangleB.y);
+            _pointLightAreaTriangleData[areaTriangleIndex + 1] = new Vector4(triangleC.x, triangleC.y, triangleAreaScale, 0f);
             if (hasShadow) {
                 bool usesCubemapShadow = resolvedShadowId < ShadowCubemapsCount;
                 Vector3 shadowBakePosition = instance.ShadowBakePosition;
@@ -756,6 +768,7 @@ namespace VRCLightVolumes {
                     VRCShader.SetGlobalVectorArray(_pointLightPositionID, _pointLightPosition);
                     VRCShader.SetGlobalVectorArray(_pointLightDirectionID, _pointLightDirection);
                     VRCShader.SetGlobalVectorArray(_pointLightCustomIdID, _pointLightCustomId);
+                    VRCShader.SetGlobalVectorArray(_pointLightAreaTriangleDataID, _pointLightAreaTriangleData);
                     if (_activeShadowCount > 0) {
                         VRCShader.SetGlobalVectorArray(_pointLightShadowReprojectionDataID, _pointLightShadowReprojectionData);
                         VRCShader.SetGlobalVectorArray(_pointLightShadowRotationDataID, _pointLightShadowRotationData);

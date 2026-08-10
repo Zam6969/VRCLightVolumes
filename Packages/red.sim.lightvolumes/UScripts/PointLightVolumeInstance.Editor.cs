@@ -172,7 +172,7 @@ namespace VRCLightVolumes {
             if (LightType == 2) {
                 float width = Mathf.Max(Mathf.Abs(lossyScale.x), 0.001f);
                 float height = Mathf.Max(Mathf.Abs(lossyScale.y), 0.001f);
-                return Mathf.Max(Mathf.Sqrt(ComputeEditorAreaLightSquaredRange(width, height, GetAreaLightShape(), Color, Intensity * Mathf.PI, cutoff)), 0.0001f);
+                return Mathf.Max(Mathf.Sqrt(ComputeEditorAreaLightSquaredRange(width, height, GetAreaLightShape(), AreaLightUseCustomShape, AreaLightShapeTriangleA, AreaLightShapeTriangleB, AreaLightShapeTriangleC, Color, Intensity * Mathf.PI, cutoff)), 0.0001f);
             }
             if (Projection == 1 && HasProjectionSource()) return Mathf.Max(Range * averageScale, 0.0001f);
 
@@ -183,7 +183,7 @@ namespace VRCLightVolumes {
         }
 
         // Estimates the squared culling range of an Area Light for editor shadow baking.
-        private static float ComputeEditorAreaLightSquaredRange(float width, float height, int areaLightShape, Color color, float intensity, float cutoff) {
+        private static float ComputeEditorAreaLightSquaredRange(float width, float height, int areaLightShape, bool useCustomShape, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC, Color color, float intensity, float cutoff) {
             float luminance = Mathf.Max(color.r, Mathf.Max(color.g, color.b)) * Mathf.Abs(intensity);
             if (luminance <= 0.000001f) return 0f;
 
@@ -191,7 +191,7 @@ namespace VRCLightVolumes {
             if (minSolidAngle >= Mathf.PI * 2f - 0.0001f) return 0f;
             minSolidAngle = Mathf.Max(minSolidAngle, 0.000001f);
 
-            float area = width * height * GetEditorAreaLightShapeAreaScale(width, height, areaLightShape);
+            float area = width * height * GetEditorAreaLightShapeAreaScale(width, height, areaLightShape, useCustomShape, triangleA, triangleB, triangleC);
             float shape = 0.25f * (width * width + height * height);
             float tangent = Mathf.Tan(0.25f * minSolidAngle);
             float tangentSquared = Mathf.Max(tangent * tangent, 0.000001f);
@@ -201,7 +201,11 @@ namespace VRCLightVolumes {
         }
 
         // Returns emitter area relative to the bounding rectangle for editor-only range estimates.
-        private static float GetEditorAreaLightShapeAreaScale(float width, float height, int areaLightShape) {
+        private static float GetEditorAreaLightShapeAreaScale(float width, float height, int areaLightShape, bool useCustomShape, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC) {
+            if (useCustomShape) {
+                float twiceArea = Mathf.Abs((triangleB.x - triangleA.x) * (triangleC.y - triangleA.y) - (triangleB.y - triangleA.y) * (triangleC.x - triangleA.x));
+                return Mathf.Clamp01(twiceArea * 0.5f);
+            }
             if (areaLightShape <= 0) return 1f;
             if (areaLightShape < 5) return 0.5f;
             float safeWidth = Mathf.Max(Mathf.Abs(width), 0.0001f);
@@ -263,6 +267,9 @@ namespace VRCLightVolumes {
             Vector4 safeAreaCookieCropTriangleB = GetSafeAreaCookieCropTrianglePoint(AreaCookieCropTriangleB);
             Vector4 safeAreaCookieCropTriangleC = GetSafeAreaCookieCropTrianglePoint(AreaCookieCropTriangleC);
             int safeAreaLightShape = GetAreaLightShape();
+            Vector4 safeAreaLightShapeTriangleA = GetSafeAreaLightShapeTrianglePoint(AreaLightShapeTriangleA);
+            Vector4 safeAreaLightShapeTriangleB = GetSafeAreaLightShapeTrianglePoint(AreaLightShapeTriangleB);
+            Vector4 safeAreaLightShapeTriangleC = GetSafeAreaLightShapeTrianglePoint(AreaLightShapeTriangleC);
             Transform instanceTransform = transform;
             Vector3 transformPosition = instanceTransform.position;
             Quaternion transformRotation = instanceTransform.rotation;
@@ -282,6 +289,9 @@ namespace VRCLightVolumes {
             AreaCookieCropTriangleB = safeAreaCookieCropTriangleB;
             AreaCookieCropTriangleC = safeAreaCookieCropTriangleC;
             AreaLightShape = safeAreaLightShape;
+            AreaLightShapeTriangleA = safeAreaLightShapeTriangleA;
+            AreaLightShapeTriangleB = safeAreaLightShapeTriangleB;
+            AreaLightShapeTriangleC = safeAreaLightShapeTriangleC;
             ShadingStrength = Mathf.Clamp01(ShadingStrength);
 
             Texture customTexture = GetCustomTexture();

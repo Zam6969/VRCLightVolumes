@@ -79,6 +79,10 @@ namespace VRCLightVolumes {
         public Vector4 AreaCookieCropTriangleC = new Vector4(0f, 1f, 0f, 0f);
         [Tooltip("Area Light emitter shape. 0 = rectangle, 1 = lower-left triangle, 2 = lower-right triangle, 3 = upper-left triangle, 4 = upper-right triangle.")]
         [Range(0, 5)] public int AreaLightShape = 0;
+        [HideInInspector] public bool AreaLightUseCustomShape = false;
+        [HideInInspector] public Vector4 AreaLightShapeTriangleA = new Vector4(0f, 0.5f, 0f, 0f);
+        [HideInInspector] public Vector4 AreaLightShapeTriangleB = new Vector4(0.5f, -0.5f, 0f, 0f);
+        [HideInInspector] public Vector4 AreaLightShapeTriangleC = new Vector4(-0.5f, -0.5f, 0f, 0f);
         [Tooltip("Area Light height in meters. Affects textured Area Light emission and size-aware Area Light speculars in modern compatible shaders.")]
         [Min(0.001f)] public float Height = 1f;
 
@@ -611,6 +615,9 @@ namespace VRCLightVolumes {
             Width = Mathf.Max(Mathf.Abs(lossyScale.x), 0.001f);
             Height = Mathf.Max(Mathf.Abs(lossyScale.y), 0.001f);
             AreaLightShape = GetSafeAreaLightShape(AreaLightShape);
+            AreaLightShapeTriangleA = GetSafeAreaLightShapeTrianglePoint(AreaLightShapeTriangleA);
+            AreaLightShapeTriangleB = GetSafeAreaLightShapeTrianglePoint(AreaLightShapeTriangleB);
+            AreaLightShapeTriangleC = GetSafeAreaLightShapeTrianglePoint(AreaLightShapeTriangleC);
             UpdateRotationCore(transformRotation, instanceTransform.localToWorldMatrix);
             MarkRangeDirtyAndNotify(true, CustomTexture != null || CustomTextureMaterial != null, shadowTexturesChanged);
         }
@@ -662,8 +669,22 @@ namespace VRCLightVolumes {
         // Sets the Area Light emitter shape used by lighting, textured cookies and range estimation.
         public void SetAreaLightShape(int shape) {
             int safeShape = GetSafeAreaLightShape(shape);
-            if (AreaLightShape == safeShape) return;
+            if (AreaLightShape == safeShape && !AreaLightUseCustomShape) return;
             AreaLightShape = safeShape;
+            AreaLightUseCustomShape = false;
+            MarkRangeDirtyAndNotify(false, false, false);
+        }
+
+        // Sets a custom Area Light triangle in normalized emitter-local coordinates (-0.5 to 0.5).
+        public void SetAreaLightShapeTriangle(float ax, float ay, float bx, float by, float cx, float cy) {
+            Vector4 a = GetSafeAreaLightShapeTrianglePoint(new Vector4(ax, ay, 0f, 0f));
+            Vector4 b = GetSafeAreaLightShapeTrianglePoint(new Vector4(bx, by, 0f, 0f));
+            Vector4 c = GetSafeAreaLightShapeTrianglePoint(new Vector4(cx, cy, 0f, 0f));
+            if (AreaLightUseCustomShape && CookieCropsMatch(AreaLightShapeTriangleA, a) && CookieCropsMatch(AreaLightShapeTriangleB, b) && CookieCropsMatch(AreaLightShapeTriangleC, c)) return;
+            AreaLightUseCustomShape = true;
+            AreaLightShapeTriangleA = a;
+            AreaLightShapeTriangleB = b;
+            AreaLightShapeTriangleC = c;
             MarkRangeDirtyAndNotify(false, false, false);
         }
 
@@ -734,6 +755,10 @@ namespace VRCLightVolumes {
         // Clamps a custom triangle point to normalized crop-local coordinates.
         private Vector4 GetSafeAreaCookieCropTrianglePoint(Vector4 point) {
             return new Vector4(Mathf.Clamp01(point.x), Mathf.Clamp01(point.y), 0f, 0f);
+        }
+
+        private Vector4 GetSafeAreaLightShapeTrianglePoint(Vector4 point) {
+            return new Vector4(Mathf.Clamp(point.x, -0.5f, 0.5f), Mathf.Clamp(point.y, -0.5f, 0.5f), 0f, 0f);
         }
 
         // Clamps shape to the supported Area Light emitter shapes.
