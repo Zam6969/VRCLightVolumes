@@ -161,7 +161,7 @@ uniform float4 _UdonPointLightVolumeDirection[VRCLV_MAX_LIGHTS_COUNT];
 // W = signed inverse depth range for v3 Point and Spot shadows. A negative value marks a world-space shadow whose bake origin exactly matches the light position.
 // Area stores shape in the hundredths fraction. Textured Area also keeps its tag/mirror enum here: +1 none, -1 X, +2 Y, -2 XY. Near clip is stored in ExtraData.W.
 uniform float4 _UdonPointLightVolumeCustomID[VRCLV_MAX_LIGHTS_COUNT];
-// Custom Area Light triangle: [A.xy, B.xy], then [C.xy, normalized area, unused]. Points are normalized to the emitter rectangle.
+// Custom Area Light triangle: [A.xy, B.xy], then [C.xy, normalized area, range fade power]. Points are normalized to the emitter rectangle.
 uniform float4 _UdonPointLightVolumeAreaTriangleData[VRCLV_MAX_LIGHTS_COUNT * 2];
 
 #ifndef SHADER_TARGET_SURFACE_ANALYSIS
@@ -585,10 +585,15 @@ inline float2 LV_AreaLightClosestXY(float2 localXY, float2 halfSize, float shape
 }
 
 inline float LV_AreaLightShapeFootprint(float2 localXY, float2 halfSize, float shape, float4 customTriangle0, float4 customTriangle1) {
-    [branch] if (shape < 0.5) return all(abs(localXY) <= halfSize) ? 1.0 : 0.0;
-    float2 a, b, c;
-    LV_AreaLightTriangleVertices(halfSize, shape, customTriangle0, customTriangle1, a, b, c);
-    return LV_PointInTriangleMask(localXY, a, b, c);
+    float footprint = 0.0;
+    [branch] if (shape < 0.5) {
+        footprint = all(abs(localXY) <= halfSize) ? 1.0 : 0.0;
+    } else {
+        float2 a = 0.0, b = 0.0, c = 0.0;
+        LV_AreaLightTriangleVertices(halfSize, shape, customTriangle0, customTriangle1, a, b, c);
+        footprint = LV_PointInTriangleMask(localXY, a, b, c);
+    }
+    return footprint;
 }
 
 // Projects a front-facing rectangle or triangle light into L1 SH using a cheap solid-angle approximation.
@@ -856,7 +861,8 @@ bool LV_PointLightVolumeContribution(uint id, float3 worldPos, float3 pointLight
                     float3 areaPointLightShadingDir;
                     float sourceSpreadSq = dot(areaSize, areaSize) * (0.25 * rcp(distSq));
                     float4 areaLightSH = LV_ProjectFastQuadLightIrradianceSH(lightToWorldPos, areaLocalPos, distSq, areaXAxis, areaYAxis, areaSize, areaShape, areaTriangle0, areaTriangle1, areaPointLightShadingDir);
-                    float areaAttenuation = saturate(1 - distSq * rcp(rangeSq));
+                    float areaRangeFade = areaTriangle1.w > 0 ? areaTriangle1.w : 1.0;
+                    float areaAttenuation = pow(saturate(1 - distSq * rcp(rangeSq)), areaRangeFade);
 
                     [branch] if (areaLightSH.w > 0 && areaAttenuation > 0) { // Area projection has non-zero solid angle and remains inside its culling range
                         float invDist = rsqrt(distSq);

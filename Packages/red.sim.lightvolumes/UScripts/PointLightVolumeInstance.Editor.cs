@@ -270,6 +270,7 @@ namespace VRCLightVolumes {
             Vector4 safeAreaLightShapeTriangleA = GetSafeAreaLightShapeTrianglePoint(AreaLightShapeTriangleA);
             Vector4 safeAreaLightShapeTriangleB = GetSafeAreaLightShapeTrianglePoint(AreaLightShapeTriangleB);
             Vector4 safeAreaLightShapeTriangleC = GetSafeAreaLightShapeTrianglePoint(AreaLightShapeTriangleC);
+            float safeAreaLightRangeFade = GetSafeAreaLightRangeFade(AreaLightRangeFade);
             Transform instanceTransform = transform;
             Vector3 transformPosition = instanceTransform.position;
             Quaternion transformRotation = instanceTransform.rotation;
@@ -292,6 +293,7 @@ namespace VRCLightVolumes {
             AreaLightShapeTriangleA = safeAreaLightShapeTriangleA;
             AreaLightShapeTriangleB = safeAreaLightShapeTriangleB;
             AreaLightShapeTriangleC = safeAreaLightShapeTriangleC;
+            AreaLightRangeFade = safeAreaLightRangeFade;
             ShadingStrength = Mathf.Clamp01(ShadingStrength);
 
             Texture customTexture = GetCustomTexture();

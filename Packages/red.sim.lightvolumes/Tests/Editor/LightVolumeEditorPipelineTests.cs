@@ -227,6 +227,7 @@ namespace VRCLightVolumes.Tests {
             source.AreaLightShapeTriangleA = new Vector4(-0.4f, -0.35f, 0f, 0f);
             source.AreaLightShapeTriangleB = new Vector4(0.45f, -0.3f, 0f, 0f);
             source.AreaLightShapeTriangleC = new Vector4(0.05f, 0.45f, 0f, 0f);
+            source.AreaLightRangeFade = 4.5f;
             source.AreaCookieCropPreview = cookie;
             source.Shadows = true;
             source.BakeInGame = true;
@@ -259,6 +260,7 @@ namespace VRCLightVolumes.Tests {
             Assert.That(destination.AreaLightShapeTriangleA, Is.EqualTo(source.AreaLightShapeTriangleA));
             Assert.That(destination.AreaLightShapeTriangleB, Is.EqualTo(source.AreaLightShapeTriangleB));
             Assert.That(destination.AreaLightShapeTriangleC, Is.EqualTo(source.AreaLightShapeTriangleC));
+            Assert.That(destination.AreaLightRangeFade, Is.EqualTo(4.5f).Within(Epsilon));
             Assert.That(destination.AreaCookieCropPreview, Is.SameAs(cookie));
             UnityEngine.Object.DestroyImmediate(cookie);
         }

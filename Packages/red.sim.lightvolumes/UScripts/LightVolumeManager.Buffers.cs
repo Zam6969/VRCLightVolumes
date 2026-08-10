@@ -558,8 +558,9 @@ namespace VRCLightVolumes {
             Vector4 triangleB = instance.AreaLightShapeTriangleB;
             Vector4 triangleC = instance.AreaLightShapeTriangleC;
             float triangleAreaScale = GetAreaLightShapeAreaScale(instance.Width, instance.Height, 6, triangleA, triangleB, triangleC);
+            float areaRangeFade = instance.AreaLightRangeFade == instance.AreaLightRangeFade && instance.AreaLightRangeFade > 0f ? Mathf.Clamp(instance.AreaLightRangeFade, 0.25f, 8f) : 1f;
             _pointLightAreaTriangleData[areaTriangleIndex] = new Vector4(triangleA.x, triangleA.y, triangleB.x, triangleB.y);
-            _pointLightAreaTriangleData[areaTriangleIndex + 1] = new Vector4(triangleC.x, triangleC.y, triangleAreaScale, 0f);
+            _pointLightAreaTriangleData[areaTriangleIndex + 1] = new Vector4(triangleC.x, triangleC.y, triangleAreaScale, areaRangeFade);
             if (hasShadow) {
                 bool usesCubemapShadow = resolvedShadowId < ShadowCubemapsCount;
                 Vector3 shadowBakePosition = instance.ShadowBakePosition;

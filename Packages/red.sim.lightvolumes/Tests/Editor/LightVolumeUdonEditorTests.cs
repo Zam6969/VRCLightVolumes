@@ -3042,6 +3042,33 @@ namespace VRCLightVolumes.Tests {
         }
 
         [Test]
+        public void AreaLightRangeFadePacksAndClamps() {
+            LightVolumeManager manager = CreateManager("Area Light Range Fade Manager", false);
+            PointLightVolumeInstance point = CreatePointLight(manager, "Area Light Range Fade", true);
+            point.SetAreaLight();
+            point.SetAreaLightRangeFade(4f);
+            manager.PointLightVolumeInstances = new[] { point };
+            manager.UpdateVolumes();
+
+            Vector4[] areaData = Shader.GetGlobalVectorArray(_pointLightAreaTriangleDataID);
+            Assert.That(areaData[1].w, Is.EqualTo(4f).Within(Epsilon));
+
+            point.SetAreaLightRangeFade(20f);
+            manager.UpdateVolumes();
+
+            areaData = Shader.GetGlobalVectorArray(_pointLightAreaTriangleDataID);
+            Assert.That(point.AreaLightRangeFade, Is.EqualTo(8f).Within(Epsilon));
+            Assert.That(areaData[1].w, Is.EqualTo(8f).Within(Epsilon));
+
+            point.SetAreaLightRangeFade(0f);
+            manager.UpdateVolumes();
+
+            areaData = Shader.GetGlobalVectorArray(_pointLightAreaTriangleDataID);
+            Assert.That(point.AreaLightRangeFade, Is.EqualTo(1f).Within(Epsilon));
+            Assert.That(areaData[1].w, Is.EqualTo(1f).Within(Epsilon));
+        }
+
+        [Test]
         public void AreaLightCustomTrianglePacksCornerBufferWithoutCookie() {
             LightVolumeManager manager = CreateManager("Area Light Custom Triangle Manager", false);
             PointLightVolumeInstance point = CreatePointLight(manager, "Area Light Custom Triangle", true);
@@ -4356,9 +4383,9 @@ namespace VRCLightVolumes.Tests {
             string footprintSource = shaderSource.Substring(footprintStart, projectionStart - footprintStart);
             string projectionSource = shaderSource.Substring(projectionStart, attenuationStart - projectionStart);
             Assert.That(footprintSource, Does.Contain("shape < 0.5"));
-            Assert.That(footprintSource, Does.Contain("all(abs(localXY) <= halfSize) ? 1.0 : 0.0"));
+            Assert.That(footprintSource, Does.Contain("footprint = all(abs(localXY) <= halfSize) ? 1.0 : 0.0"));
             Assert.That(footprintSource, Does.Contain("LV_PointInTriangleMask"));
-            Assert.That(footprintSource, Does.Contain("return LV_PointInTriangleMask(localXY, a, b, c)"));
+            Assert.That(footprintSource, Does.Contain("footprint = LV_PointInTriangleMask(localXY, a, b, c)"));
             Assert.That(footprintSource, Does.Not.Contain("outsideDelta"));
             Assert.That(footprintSource, Does.Not.Contain("edgeSoftness"));
             Assert.That(footprintSource, Does.Not.Contain("abs(localZ) * 0.02"));
@@ -4369,6 +4396,8 @@ namespace VRCLightVolumes.Tests {
             Assert.That(shaderSource, Does.Not.Contain("_UdonLightVolumeVersion >= 3 ? customID_data.w : 0.0"));
             Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeFootprint(localPos.xy, halfSize, shape, customTriangle0, customTriangle1)"));
             Assert.That(projectionSource, Does.Contain("* footprint"));
+            Assert.That(shaderSource, Does.Contain("areaTriangle1.w > 0 ? areaTriangle1.w : 1.0"));
+            Assert.That(shaderSource, Does.Contain("pow(saturate(1 - distSq * rcp(rangeSq)), areaRangeFade)"));
         }
 
         [Test]

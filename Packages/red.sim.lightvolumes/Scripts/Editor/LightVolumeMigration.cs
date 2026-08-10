@@ -864,6 +864,7 @@ namespace VRCLightVolumes {
             destination.AreaLightShapeTriangleA = source.AreaLightShapeTriangleA;
             destination.AreaLightShapeTriangleB = source.AreaLightShapeTriangleB;
             destination.AreaLightShapeTriangleC = source.AreaLightShapeTriangleC;
+            destination.AreaLightRangeFade = source.AreaLightRangeFade;
             destination.AreaCookieCropPreview = source.AreaCookieCropPreview;
             destination.Cubemap = cubemap;
             destination.BakeIntoProbes = source.BakeIntoProbes;
