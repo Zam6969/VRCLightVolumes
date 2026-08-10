@@ -44,6 +44,7 @@ namespace VRCLightVolumes {
             public Material[] PostProcessorProjectionMaterials;
             public string[] PostProcessorProjectionTextureNames;
             public Action AtlasPostProcessorsChanged;
+            public bool ForceRuntimeProxyRefresh;
         }
 
         private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<LightVolumeManager, EditorState> EditorStates
@@ -278,7 +279,19 @@ namespace VRCLightVolumes {
 
         // Returns true when the editor C# proxy must not write runtime shader data while backed Udon drives Play Mode.
         private bool ShouldSkipEditorProxyRuntimeUpdate() {
-            return Application.isPlaying && GetComponent("VRC.Udon.UdonBehaviour") != null;
+            return Application.isPlaying && GetComponent("VRC.Udon.UdonBehaviour") != null && !EditorData.ForceRuntimeProxyRefresh;
+        }
+
+        // Forces the editor proxy to publish shader globals once after an Inspector edit in Play Mode.
+        internal void EditorRefreshRuntimeShaderGlobalsFromProxy() {
+            EditorState editorState = EditorData;
+            if (editorState.ForceRuntimeProxyRefresh) return;
+            editorState.ForceRuntimeProxyRefresh = true;
+            try {
+                UpdateVolumes();
+            } finally {
+                editorState.ForceRuntimeProxyRefresh = false;
+            }
         }
 
         // Captures the effective custom source state and reports direct edits that bypassed the normal notify API.

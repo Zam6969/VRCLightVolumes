@@ -164,6 +164,8 @@ namespace VRCLightVolumes {
         [HideInInspector] public UnityEngine.Object FalloffLUT;
         [Tooltip("Texture or material projected by a Spot Light, or used as the textured emitter surface of an Area Light.")]
         [HideInInspector] public UnityEngine.Object Cookie;
+        [Tooltip("Editor-only image shown behind the Area Cookie Crop picker. Use this as an alignment guide when the runtime cookie source is blank, generated, or hard to inspect.")]
+        [HideInInspector] public Texture AreaCookieCropPreview;
         [Tooltip("Cubemap texture or material projected by a Point Light.")]
         [HideInInspector] public UnityEngine.Object Cubemap;
         [Tooltip("Bakes this light into light probes so it can affect objects without Light Volumes support. Intended for static lights.")]

@@ -23,6 +23,8 @@ namespace VRCLightVolumes.Tests {
         private const string CustomRenderTextureInfoProperty = "_CustomRenderTextureInfo";
         private const string LightVolumesIncludePath = "Shaders/LightVolumes.cginc";
         private const string RuntimeShadowBlurShaderPath = "Shaders/Internal/PointLightShadowRuntimeBlur.shader";
+        private const string LightVolumeManagerEditorSourcePath = "UScripts/LightVolumeManager.Editor.cs";
+        private const string LightVolumeManagerEditorBackendSourcePath = "Scripts/Editor/LightVolumeManagerEditorBackend.cs";
         private const BindingFlags PublicInstanceDeclared = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
 
         private static readonly int _lightVolumeInvLocalEdgeSmoothID = Shader.PropertyToID("_UdonLightVolumeInvLocalEdgeSmooth");
@@ -386,6 +388,18 @@ namespace VRCLightVolumes.Tests {
             }
         }
 
+        // Play Mode Inspector edits should publish shader globals from the C# proxy too, so stale Udon program assets cannot leave Area Shape stuck as a rectangle in Scene view.
+        [Test]
+        public void RuntimeEditorRefreshPublishesProxyShaderGlobals() {
+            string managerEditorSource = ReadPackageSource(LightVolumeManagerEditorSourcePath);
+            string backendSource = ReadPackageSource(LightVolumeManagerEditorBackendSourcePath);
+
+            Assert.That(managerEditorSource, Does.Contain("ForceRuntimeProxyRefresh"));
+            Assert.That(managerEditorSource, Does.Contain("EditorRefreshRuntimeShaderGlobalsFromProxy"));
+            Assert.That(managerEditorSource, Does.Contain("&& !EditorData.ForceRuntimeProxyRefresh"));
+            Assert.That(backendSource.Split(new[] { "manager.EditorRefreshRuntimeShaderGlobalsFromProxy();" }, StringSplitOptions.None).Length - 1, Is.GreaterThanOrEqualTo(3));
+        }
+
         private static void AssertPublicProperty(string propertyName, Type propertyType) {
             PropertyInfo property = typeof(LightVolumeManager).GetProperty(propertyName, PublicInstanceDeclared);
             Assert.That(property, Is.Not.Null, "Missing public property " + propertyName);
@@ -498,20 +512,21 @@ namespace VRCLightVolumes.Tests {
 
         // Reads the runtime blur shader from either a Unity project root or this package directory.
         private static string ReadRuntimeShadowBlurShaderSource() {
-            string projectPackagePath = Path.Combine("Packages", "red.sim.lightvolumes", RuntimeShadowBlurShaderPath);
-            string packagePath = RuntimeShadowBlurShaderPath;
-            string shaderPath = File.Exists(projectPackagePath) ? projectPackagePath : packagePath;
-            Assert.That(File.Exists(shaderPath), Is.True, shaderPath + " was not found");
-            return File.ReadAllText(shaderPath);
+            return ReadPackageSource(RuntimeShadowBlurShaderPath);
         }
 
         // Reads the public lighting include from either a Unity project root or this package directory.
         private static string ReadLightVolumesIncludeSource() {
-            string projectPackagePath = Path.Combine("Packages", "red.sim.lightvolumes", LightVolumesIncludePath);
-            string packagePath = LightVolumesIncludePath;
-            string shaderPath = File.Exists(projectPackagePath) ? projectPackagePath : packagePath;
-            Assert.That(File.Exists(shaderPath), Is.True, shaderPath + " was not found");
-            return File.ReadAllText(shaderPath);
+            return ReadPackageSource(LightVolumesIncludePath);
+        }
+
+        // Reads a package-relative source file from either a Unity project root or this package directory.
+        private static string ReadPackageSource(string packageRelativePath) {
+            string projectPackagePath = Path.Combine("Packages", "red.sim.lightvolumes", packageRelativePath);
+            string packagePath = packageRelativePath;
+            string sourcePath = File.Exists(projectPackagePath) ? projectPackagePath : packagePath;
+            Assert.That(File.Exists(sourcePath), Is.True, sourcePath + " was not found");
+            return File.ReadAllText(sourcePath);
         }
 
         // Depth slice count must scale only Z; it must never silently trade away camera angular resolution.

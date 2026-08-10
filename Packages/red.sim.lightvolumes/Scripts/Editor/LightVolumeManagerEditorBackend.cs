@@ -529,6 +529,7 @@ namespace VRCLightVolumes {
             var backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(manager);
             if (backingBehaviour == null) return false;
             backingBehaviour.SendCustomEvent(nameof(LightVolumeManager.UpdateVolumes));
+            manager.EditorRefreshRuntimeShaderGlobalsFromProxy();
             return true;
 #else
             return false;
@@ -549,6 +550,7 @@ namespace VRCLightVolumes {
             if (reinitializeCustomTextures) backingBehaviour.SendCustomEvent(nameof(LightVolumeManager.ReinitializeCustomTextures));
             if (reinitializeShadowTextures) backingBehaviour.SendCustomEvent(nameof(LightVolumeManager.ReinitializeShadowTextures));
             backingBehaviour.SendCustomEvent(nameof(LightVolumeManager.UpdateVolumes));
+            manager.EditorRefreshRuntimeShaderGlobalsFromProxy();
             UdonSharpEditorUtility.CopyUdonToProxy(manager, ProxySerializationPolicy.All);
             return true;
 #else
@@ -602,6 +604,7 @@ namespace VRCLightVolumes {
             if (reinitializeCustomTextures) backingBehaviour.SendCustomEvent(nameof(LightVolumeManager.ReinitializeCustomTextures));
             if (reinitializeShadowTextures) backingBehaviour.SendCustomEvent(nameof(LightVolumeManager.ReinitializeShadowTextures));
             backingBehaviour.SendCustomEvent(nameof(LightVolumeManager.UpdateVolumes));
+            manager.EditorRefreshRuntimeShaderGlobalsFromProxy();
         }
 #endif
     }

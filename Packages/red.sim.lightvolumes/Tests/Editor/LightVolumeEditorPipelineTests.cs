@@ -111,10 +111,12 @@ namespace VRCLightVolumes.Tests {
         }
 
         [Test]
-        public void PointLightRuntimeSourceDoesNotDeclareEditorPreviewTexture() {
-            string source = File.ReadAllText("Packages/red.sim.lightvolumes/UScripts/PointLightVolumeInstance.cs");
+        public void PointLightPreviewTextureIsHiddenAndClearedFromBuilds() {
+            string pointSource = File.ReadAllText("Packages/red.sim.lightvolumes/UScripts/PointLightVolumeInstance.cs");
+            string buildSource = File.ReadAllText("Packages/red.sim.lightvolumes/Scripts/Editor/LightVolumeBuildPreprocessor.cs");
 
-            Assert.That(source, Does.Not.Contain("AreaCookieCropPreview"));
+            Assert.That(pointSource, Does.Contain("[HideInInspector] public Texture AreaCookieCropPreview"));
+            Assert.That(buildSource, Does.Contain("pointLight.AreaCookieCropPreview = null"));
         }
 
         // Optional plugins must never become hard dependencies of the VRCLV core or stale global-define gates.
