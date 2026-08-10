@@ -1,4 +1,4 @@
-[VRC Light Volumes](../README.md) | **How to Use** | [Best Practices](../Documentation/BestPractices.md) | [Udon Sharp API](../Documentation/UdonSharpAPI.md) | [For Shader Developers](../Documentation/ForShaderDevelopers.md) | [Compatible Shaders](../Documentation/CompatibleShaders.md)
+[VRC Light Volumes](../README.md) | **How to Use** | [Best Practices](../Documentation/BestPractices.md) | [Udon Sharp API](../Documentation/UdonSharpAPI.md) | [For Developers](../Documentation/ForDevelopers.md) | [Compatible Shaders](../Documentation/CompatibleShaders.md)
 
 # How to Use
 
@@ -26,7 +26,7 @@ The `Point Light Volume` component is an editor-only script that helps you confi
 
 The `Point Light Volume Instance` component is a VRChat Udon script that stores all the data required by the Light Volumes system to render the light. You generally shouldn’t modify its values manually in the editor - use the `Point Light Volume` script instead. However, if you’re writing game logic that changes light parameters at runtime, you should reference the `Point Light Volume Instance` component, since it is the one that actually functions as the real light in-game.
 
-For runtime changes from Udon, prefer `Point Light Volume Instance` setter methods such as `SetColor()`, `SetIntensity()`, `SetDynamic()`, `SetLightSourceSize()`, `SetPointLight()`, `SetSpotLight()` and `SetShadowSettings()` so the manager receives only the update it actually needs.
+For runtime changes from Udon, prefer `Point Light Volume Instance` setter methods such as `SetColor()`, `SetIntensity()`, `SetDynamic()`, `SetLightSourceSize()`, `SetPointLight()` and `SetSpotLight()` where they exist, so the manager receives only the update it actually needs. Shadow bake fields are public; assign them directly and call `BakeShadows()` when you want the instance to run its native runtime shadow bake.
 
 ## Point Light Volumes Placement
 
@@ -39,6 +39,8 @@ If you just have a lot of point light sources that are static and don't change a
 Area Lights are a bit heavier than Point and Spot Lights, but they are not dramatically heavier anymore. You can safely use them for movable and scalable runtime soft boxes. If you assign a Cookie to an Area Light, it becomes a textured emitter for TV screens, signs, windows and similar panels. See [Area Light Emission](../Documentation/HowToUse_AreaLightEmission.md) for setup details. Just avoid excessive overlaps, and still prefer baking a regular Light Volume in a shape of an area light when the light is fully static.
 
 Note that more point lights you have active in your scene, the less performance you'll have. So, consider manually turning off unused point lights if you have a lot of them at your scene.
+
+The manager excludes a Point Light Volume from the shader-visible list when its `Intensity` is exactly `0`, its `Color` is black, its GameObject is inactive, or its instance is otherwise inactive. This is global light culling. A non-black shadowed light remains active because EVSM visibility is different for every receiver pixel; the Point/Spot shader paths skip their remaining contribution work locally when that per-pixel shadow visibility reaches zero.
 
 The **more** point light volumes overlap, the **less** performance you'll have! 
 
@@ -94,7 +96,7 @@ If you want just to project a light cookie texture, you can use `Custom` project
 
 Point Light in `Custom` projection mode can project a cubemap instead of a regular cookie. So it's a perfect solution to make disco balls, lamps that projects stars or anything else you want.
 
-Area Lights do not expose the `Projection` dropdown. Assigning a `Cookie` source automatically enables textured Area Light Emission. Close to the light it keeps the rectangular texture detail, and with distance it blends through mip levels toward the average emitted color.
+Area Lights do not expose the `Projection` dropdown. Assigning a `Cookie` source automatically enables textured Area Light Emission. Close to the light it keeps the selected crop detail, and with distance it blends through mip levels toward the average emitted color. Use `Crop` and `Crop Shape` on Area Lights when one cookie atlas contains several panels, or when the emitter should be triangular instead of rectangular.
 
 If the projection source is a Material, see [Point Light Material Sources](../Documentation/HowToUse_PointLightMaterialSources.md) for the required shader contract, cubemap face layout and single-slice cookie behavior.
 
@@ -118,7 +120,7 @@ Area Light cookies use the mip chain of this shared texture array to approximate
 > [!IMPORTANT]
 > It’s recommended to completely disable compression for any texture used as a Cookie or a LUT. The Light Volumes system does not inherit the compression settings, but compression artifacts will still remain and affect the result.
 
-For shadow setup, baked shadows, the Realtime Shadow Baker and runtime script control, see [Point Light Volume Shadows](../Documentation/HowToUse_Shadows.md).
+For shadow setup, baked shadows, `Bake In Game`, the Realtime Shadow Baker and runtime script control, see [Point Light Volume Shadows](../Documentation/HowToUse_Shadows.md).
 
 ## Point Light Volume Component Description
 

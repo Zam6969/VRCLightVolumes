@@ -1,795 +1,458 @@
-using System.Collections;
-using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace VRCLightVolumes.Tests {
     [Category("Editor")]
     public class LightVolumeEditorPipelineTests {
+
         private const float Epsilon = 0.0001f;
-        private static readonly BindingFlags _nonPublicInstanceFlags = BindingFlags.Instance | BindingFlags.NonPublic;
-        private static readonly FieldInfo _customTexturesDepthField = typeof(LightVolumeManager).GetField("_customTextureArrayDepth", _nonPublicInstanceFlags);
+        private const string TargetSwitchUdonSharpGuard = "#if !UDONSHARP && (UNITY_EDITOR || COMPILER_UDONSHARP)\n#define UDONSHARP\n#endif";
 
-        private readonly List<UnityEngine.Object> _createdObjects = new List<UnityEngine.Object>();
+        private static readonly string[] UdonSharpSourcePaths = {
+            "Packages/red.sim.lightvolumes/UScripts/LightVolumeManager.cs",
+            "Packages/red.sim.lightvolumes/UScripts/LightVolumeManager.Buffers.cs",
+            "Packages/red.sim.lightvolumes/UScripts/LightVolumeManager.Clustering.cs",
+            "Packages/red.sim.lightvolumes/UScripts/LightVolumeManager.Core.cs",
+            "Packages/red.sim.lightvolumes/UScripts/LightVolumeManager.Textures.cs",
+            "Packages/red.sim.lightvolumes/UScripts/LightVolumeInstance.cs",
+            "Packages/red.sim.lightvolumes/UScripts/PointLightVolumeInstance.cs",
+            "Packages/red.sim.lightvolumes/Extra/Audio Link/LightVolumeAudioLink.cs",
+            "Packages/red.sim.lightvolumes/Extra/TV Global Illumination/LightVolumeTVGI.cs",
+            "Packages/red.sim.lightvolumes/Extra/Shadow Runtime Baker/PointLightShadowRuntimeBaker.cs"
+        };
 
-        // Destroys all temporary scene and texture objects created by a test case.
+        private GameObject _legacyObject;
+        private GameObject _unifiedObject;
+
         [TearDown]
         public void TearDown() {
-            for (int i = _createdObjects.Count - 1; i >= 0; i--) {
-                DestroyTestObject(_createdObjects[i]);
-            }
-            _createdObjects.Clear();
+            if (_legacyObject != null) UnityEngine.Object.DestroyImmediate(_legacyObject);
+            if (_unifiedObject != null) UnityEngine.Object.DestroyImmediate(_unifiedObject);
         }
 
-        // Verifies PointLightVolume infers auto-update on projection source assignment and preserves manual overrides until the next assignment.
+        // The unified Udon component owns every persistent Light Volume authoring value.
         [Test]
-        public void PointLightVolumeInfersAutoUpdateFromProjectionSourceType() {
-            GameObject setupObject = CreateGameObject("Projection Auto Update Setup", true);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-            LightVolumeManager manager = setup.LightVolumeManager;
-            if (manager == null) manager = setupObject.GetComponent<LightVolumeManager>();
-            Assert.That(manager, Is.Not.Null);
+        public void MigrationCopiesLegacyLightVolumePersistentData() {
+            _legacyObject = new GameObject("Legacy Light Volume");
+            _unifiedObject = new GameObject("Unified Light Volume");
+            LightVolume legacy = _legacyObject.AddComponent<LightVolume>();
+            LightVolumeInstance unified = _unifiedObject.AddComponent<LightVolumeInstance>();
+            Texture3D texture0 = new Texture3D(1, 1, 1, TextureFormat.RGBAHalf, false);
+            Texture3D texture1 = new Texture3D(1, 1, 1, TextureFormat.RGBAHalf, false);
+            Texture3D texture2 = new Texture3D(1, 1, 1, TextureFormat.RGBAHalf, false);
 
-            GameObject lightObject = CreateGameObject("Projection Auto Update Light", true);
-            PointLightVolumeInstance instance = lightObject.AddComponent<PointLightVolumeInstance>();
-            PointLightVolume pointLight = lightObject.AddComponent<PointLightVolume>();
-            pointLight.LightVolumeSetup = setup;
-            pointLight.PointLightVolumeInstance = instance;
-            pointLight.Type = PointLightVolume.LightType.SpotLight;
-            pointLight.Projection = PointLightVolume.LightProjection.Custom;
-            instance.LightVolumeManager = manager;
+            legacy.Dynamic = true;
+            legacy.Additive = true;
+            legacy.Color = new Color(0.25f, 0.5f, 0.75f);
+            legacy.Intensity = 2.5f;
+            legacy.SmoothBlending = 0.4f;
+            legacy.Texture0 = texture0;
+            legacy.Texture1 = texture1;
+            legacy.Texture2 = texture2;
+            legacy.Exposure = 1.25f;
+            legacy.Shadows = -0.2f;
+            legacy.Highlights = 0.3f;
+            legacy.Bake = false;
+            legacy.ReserveUVSpace = true;
+            legacy.AdaptiveResolution = false;
+            legacy.VoxelsPerUnit = 4.5f;
+            legacy.Resolution = new Vector3Int(7, 8, 9);
 
-            pointLight.Cookie = CreateTexture2D("Static Cookie Source");
-            pointLight.SyncUdonScript();
+            MethodInfo copy = typeof(LightVolumeMigration).GetMethod("CopyLegacyLightVolume", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(copy, Is.Not.Null);
+            copy.Invoke(null, new object[] { legacy, unified });
 
-            Assert.That(instance.AutoUpdateCustomTexture, Is.False);
+            Assert.That(unified.IsDynamic, Is.True);
+            Assert.That(unified.IsAdditive, Is.True);
+            Assert.That(unified.Color, Is.EqualTo(legacy.Color));
+            Assert.That(unified.Intensity, Is.EqualTo(legacy.Intensity).Within(Epsilon));
+            Assert.That(unified.SmoothBlending, Is.EqualTo(legacy.SmoothBlending).Within(Epsilon));
+            Assert.That(unified.Texture0, Is.SameAs(texture0));
+            Assert.That(unified.Texture1, Is.SameAs(texture1));
+            Assert.That(unified.Texture2, Is.SameAs(texture2));
+            Assert.That(unified.Exposure, Is.EqualTo(legacy.Exposure).Within(Epsilon));
+            Assert.That(unified.Shadows, Is.EqualTo(legacy.Shadows).Within(Epsilon));
+            Assert.That(unified.Highlights, Is.EqualTo(legacy.Highlights).Within(Epsilon));
+            Assert.That(unified.Bake, Is.False);
+            Assert.That(unified.ReserveUVSpace, Is.True);
+            Assert.That(unified.AdaptiveResolution, Is.False);
+            Assert.That(unified.VoxelsPerUnit, Is.EqualTo(legacy.VoxelsPerUnit).Within(Epsilon));
+            Assert.That(unified.Resolution, Is.EqualTo(legacy.Resolution));
 
-            pointLight.Cookie = CreateRenderTexture("Render Cookie Source", 4, 4, 1, TextureDimension.Tex2D);
-            pointLight.SyncUdonScript();
-
-            Assert.That(instance.AutoUpdateCustomTexture, Is.True);
-
-            instance.AutoUpdateCustomTexture = false;
-            pointLight.Intensity = 2f;
-            pointLight.SyncUdonScript();
-
-            Assert.That(instance.AutoUpdateCustomTexture, Is.False);
-
-            pointLight.Cookie = CreateMaterial("Hidden/CubeFace");
-            pointLight.SyncUdonScript();
-
-            Assert.That(instance.AutoUpdateCustomTexture, Is.True);
-            Assert.That(instance.ProjectionType, Is.EqualTo(2)); // 2: material
-
-            pointLight.Cookie = CreateTexture2D("Static Cookie Source After Material");
-            pointLight.SyncUdonScript();
-
-            Assert.That(instance.AutoUpdateCustomTexture, Is.False);
-
-            instance.AutoUpdateCustomTexture = true;
-            pointLight.ShadingStrength = 0.5f;
-            pointLight.SyncUdonScript();
-
-            Assert.That(instance.AutoUpdateCustomTexture, Is.True);
-
-            pointLight.Cookie = CreateTexture2D("Static Cookie Source After Manual Override");
-            pointLight.SyncUdonScript();
-
-            Assert.That(instance.AutoUpdateCustomTexture, Is.False);
+            UnityEngine.Object.DestroyImmediate(texture0);
+            UnityEngine.Object.DestroyImmediate(texture1);
+            UnityEngine.Object.DestroyImmediate(texture2);
         }
 
-        // Verifies editor sync copies changed projection source references before texture array rebuilds.
         [Test]
-        public void PointLightVolumeEditorSyncTargetsCopiesChangedProjectionSources() {
-            GameObject setupObject = CreateGameObject("Editor Projection Sync Setup", true);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
+        public void UnifiedComponentInspectorTitlesUsePublicNames() {
+            AddComponentMenu volume = typeof(LightVolumeInstance).GetCustomAttribute<AddComponentMenu>();
+            AddComponentMenu point = typeof(PointLightVolumeInstance).GetCustomAttribute<AddComponentMenu>();
+            AddComponentMenu manager = typeof(LightVolumeManager).GetCustomAttribute<AddComponentMenu>();
 
-            GameObject lightObject = CreateGameObject("Editor Projection Sync Light", true);
-            PointLightVolumeInstance instance = lightObject.AddComponent<PointLightVolumeInstance>();
-            PointLightVolume pointLight = lightObject.AddComponent<PointLightVolume>();
-            pointLight.LightVolumeSetup = setup;
-            pointLight.PointLightVolumeInstance = instance;
-            pointLight.Type = PointLightVolume.LightType.SpotLight;
-            pointLight.Projection = PointLightVolume.LightProjection.Custom;
-            pointLight.Cookie = CreateTexture2D("Editor Cookie Source");
-
-            Editor editor = Editor.CreateEditor(pointLight);
-            _createdObjects.Add(editor);
-            MethodInfo syncTargets = typeof(PointLightVolumeEditor).GetMethod("SyncTargets", _nonPublicInstanceFlags);
-            Assert.That(syncTargets, Is.Not.Null);
-
-            syncTargets.Invoke(editor, new object[] { true });
-
-            Assert.That(instance.CustomTexture, Is.SameAs(pointLight.Cookie));
-            Assert.That(instance.ProjectionType, Is.EqualTo(1)); // 1: texture
-            Assert.That(instance.ProjectionMode, Is.EqualTo(2)); // 2: cookie/cubemap
+            Assert.That(volume?.componentMenu, Is.EqualTo("VRC Light Volumes/Light Volume (U# Script)"));
+            Assert.That(point?.componentMenu, Is.EqualTo("VRC Light Volumes/Point Light Volume (U# Script)"));
+            Assert.That(manager?.componentMenu, Is.EqualTo("VRC Light Volumes/Light Volume Manager (U# Script)"));
         }
 
-        // Verifies area light cookies are copied even though area lights hide the projection mode enum.
+        // UdonSharp adds its project define after a new build-target group has already reloaded once.
+        // Every U# source must keep the U# branch active during that Editor reload and direct U# compilation.
         [Test]
-        public void AreaLightVolumeEditorSyncTargetsCopiesCookieProjectionSource() {
-            GameObject setupObject = CreateGameObject("Editor Area Cookie Sync Setup", true);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-
-            GameObject lightObject = CreateGameObject("Editor Area Cookie Sync Light", true);
-            PointLightVolumeInstance instance = lightObject.AddComponent<PointLightVolumeInstance>();
-            PointLightVolume pointLight = lightObject.AddComponent<PointLightVolume>();
-            pointLight.LightVolumeSetup = setup;
-            pointLight.PointLightVolumeInstance = instance;
-            pointLight.Type = PointLightVolume.LightType.AreaLight;
-            pointLight.Cookie = CreateTexture2D("Editor Area Cookie Source");
-            pointLight.AreaCookieCrop = new Vector4(0.25f, 0.1f, 0.5f, 0.75f);
-
-            Editor editor = Editor.CreateEditor(pointLight);
-            _createdObjects.Add(editor);
-            MethodInfo syncTargets = typeof(PointLightVolumeEditor).GetMethod("SyncTargets", _nonPublicInstanceFlags);
-            Assert.That(syncTargets, Is.Not.Null);
-
-            syncTargets.Invoke(editor, new object[] { true });
-
-            Assert.That(pointLight.GetProjectionSource(), Is.SameAs(pointLight.Cookie));
-            Assert.That(instance.CustomTexture, Is.SameAs(pointLight.Cookie));
-            Assert.That(instance.ProjectionType, Is.EqualTo(1)); // 1: texture
-            Assert.That(instance.ProjectionMode, Is.EqualTo(2)); // 2: cookie/cubemap
-            Assert.That(instance.LightType, Is.EqualTo(2)); // 2: area
-            Assert.That(instance.AreaCookieCrop, Is.EqualTo(pointLight.AreaCookieCrop));
-        }
-
-        // Verifies no-op LightVolume sync does not dirty the runtime Udon instance after scene load.
-        [Test]
-        public void LightVolumeNoOpSyncDoesNotDirtyRuntimeInstance() {
-            GameObject setupObject = CreateGameObject("No Op Light Volume Setup", true);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-
-            GameObject lightObject = CreateGameObject("No Op Light Volume", true);
-            LightVolumeInstance instance = lightObject.AddComponent<LightVolumeInstance>();
-            LightVolume lightVolume = lightObject.AddComponent<LightVolume>();
-            lightVolume.LightVolumeSetup = setup;
-            lightVolume.LightVolumeInstance = instance;
-
-            lightVolume.SyncUdonScript();
-            EditorUtility.ClearDirty(instance);
-
-            lightVolume.SyncUdonScript();
-
-            Assert.That(EditorUtility.IsDirty(instance), Is.False);
-
-            lightVolume.Intensity = 2f;
-            lightVolume.SyncUdonScript();
-
-            Assert.That(EditorUtility.IsDirty(instance), Is.True);
-        }
-
-        // Verifies no-op PointLightVolume sync does not dirty the runtime Udon instance after scene load.
-        [Test]
-        public void PointLightVolumeNoOpSyncDoesNotDirtyRuntimeInstance() {
-            GameObject setupObject = CreateGameObject("No Op Point Light Setup", true);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-
-            GameObject lightObject = CreateGameObject("No Op Point Light", true);
-            PointLightVolumeInstance instance = lightObject.AddComponent<PointLightVolumeInstance>();
-            PointLightVolume pointLight = lightObject.AddComponent<PointLightVolume>();
-            pointLight.LightVolumeSetup = setup;
-            pointLight.PointLightVolumeInstance = instance;
-
-            pointLight.SyncUdonScript();
-            instance.IsRangeDirty = false;
-            EditorUtility.ClearDirty(instance);
-
-            pointLight.SyncUdonScript();
-
-            Assert.That(EditorUtility.IsDirty(instance), Is.False);
-            Assert.That(instance.IsRangeDirty, Is.False);
-
-            float previousSquaredRange = instance.SquaredRange;
-            pointLight.Intensity = 2f;
-            pointLight.SyncUdonScript();
-
-            Assert.That(EditorUtility.IsDirty(instance), Is.True);
-            Assert.That(instance.IsRangeDirty || instance.SquaredRange > previousSquaredRange, Is.True);
-        }
-
-        // Verifies migration re-sync rebuilds custom texture arrays from authoring PointLightVolume sources.
-        [Test]
-        public void MigrationAuthoringSyncRebuildsCustomTexturesFromPointSources() {
-            GameObject setupObject = CreateGameObject("Migration Texture Sync Setup", true);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-            setup.CookieResolution = LightVolumeSetup.TextureArrayResolution._16x16;
-            LightVolumeManager manager = setup.LightVolumeManager;
-            Assert.That(manager, Is.Not.Null);
-
-            GameObject lightObject = CreateGameObject("Migration Texture Sync Light", true);
-            PointLightVolumeInstance instance = lightObject.AddComponent<PointLightVolumeInstance>();
-            PointLightVolume pointLight = lightObject.AddComponent<PointLightVolume>();
-            pointLight.LightVolumeSetup = setup;
-            pointLight.PointLightVolumeInstance = instance;
-            pointLight.Type = PointLightVolume.LightType.SpotLight;
-            pointLight.Projection = PointLightVolume.LightProjection.Custom;
-            pointLight.Cookie = CreateTexture2D("Migration Cookie Source");
-            setup.PointLightVolumes.Clear();
-            setup.PointLightVolumes.Add(pointLight);
-
-            instance.CustomTexture = null;
-            instance.LightVolumeManager = null;
-            manager.CustomTextures = null;
-            setup.LightVolumeManager = null;
-
-            MethodInfo syncAuthoring = typeof(LightVolumeUdonComponentSanitizer).GetMethod("SyncAuthoringComponentsToMigratedRuntime", BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.That(syncAuthoring, Is.Not.Null);
-
-            syncAuthoring.Invoke(null, null);
-
-            Assert.That(setup.LightVolumeManager, Is.SameAs(manager));
-            Assert.That(instance.LightVolumeManager, Is.SameAs(manager));
-            Assert.That(instance.CustomTexture, Is.SameAs(pointLight.Cookie));
-            Assert.That(manager.CustomTextures, Is.Not.Null);
-            Assert.That(manager.CustomTextures.dimension, Is.EqualTo(TextureDimension.Tex2DArray));
-            Assert.That(manager.CustomTextures.width, Is.EqualTo(16));
-            Assert.That(manager.CustomTextures.height, Is.EqualTo(16));
-            Assert.That(GetManagerField<int>(manager, _customTexturesDepthField), Is.EqualTo(1));
-        }
-
-        // Verifies migration re-sync discovers inactive authoring Point Light Volumes without resurrecting them in the manager registry.
-        [Test]
-        public void MigrationAuthoringSyncDiscoversInactivePointLightVolumes() {
-            GameObject setupObject = CreateGameObject("Migration Inactive Point Setup", true);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-            LightVolumeManager manager = setup.LightVolumeManager;
-            Assert.That(manager, Is.Not.Null);
-
-            GameObject lightObject = CreateGameObject("Migration Inactive Point Light", false);
-            PointLightVolumeInstance instance = lightObject.AddComponent<PointLightVolumeInstance>();
-            PointLightVolume pointLight = lightObject.AddComponent<PointLightVolume>();
-            pointLight.LightVolumeSetup = setup;
-            pointLight.PointLightVolumeInstance = instance;
-            pointLight.Type = PointLightVolume.LightType.SpotLight;
-            pointLight.Projection = PointLightVolume.LightProjection.Custom;
-            pointLight.Cookie = CreateTexture2D("Migration Inactive Cookie Source");
-
-            setup.PointLightVolumes.Clear();
-            manager.PointLightVolumeInstances = new PointLightVolumeInstance[0];
-            instance.CustomTexture = null;
-            instance.LightVolumeManager = null;
-
-            MethodInfo syncAuthoring = typeof(LightVolumeUdonComponentSanitizer).GetMethod("SyncAuthoringComponentsToMigratedRuntime", BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.That(syncAuthoring, Is.Not.Null);
-
-            syncAuthoring.Invoke(null, null);
-
-            Assert.That(setup.PointLightVolumes, Does.Contain(pointLight));
-            Assert.That(manager.PointLightVolumeInstances, Has.No.Member(instance));
-            Assert.That(instance.LightVolumeManager, Is.SameAs(manager));
-            Assert.That(instance.CustomTexture, Is.SameAs(pointLight.Cookie));
-            Assert.That(instance.ProjectionType, Is.EqualTo(1)); // 1: texture
-            Assert.That(instance.ProjectionMode, Is.EqualTo(2)); // 2: cookie/cubemap
-        }
-
-        // Verifies cubemap RenderTextures are unfolded as cubemaps instead of copied as a single 2D slice.
-        [Test]
-        public void PointLightVolumeDetectsCubemapRenderTextureSources() {
-            GameObject setupObject = CreateGameObject("Cubemap RenderTexture Setup", true);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-            LightVolumeManager manager = setup.LightVolumeManager;
-            if (manager == null) manager = setupObject.GetComponent<LightVolumeManager>();
-
-            GameObject lightObject = CreateGameObject("Cubemap RenderTexture Light", true);
-            PointLightVolumeInstance instance = lightObject.AddComponent<PointLightVolumeInstance>();
-            PointLightVolume pointLight = lightObject.AddComponent<PointLightVolume>();
-            pointLight.LightVolumeSetup = setup;
-            pointLight.PointLightVolumeInstance = instance;
-            pointLight.Type = PointLightVolume.LightType.PointLight;
-            pointLight.Projection = PointLightVolume.LightProjection.Custom;
-            pointLight.Cubemap = CreateRenderTexture("Animated Cubemap Source", 4, 4, 1, TextureDimension.Cube);
-            pointLight.Shadows = true;
-            pointLight.Bias = 0.42f;
-            pointLight.LayerMask = 1 << 6;
-            pointLight.NearPlane = 0.15f;
-            pointLight.FarPlane = 6.5f;
-            pointLight.Blur = 2.5f;
-            pointLight.ContactHardening = 0.08f;
-            pointLight.ShadingStrength = 0.42f;
-            pointLight.ShadowMap = CreateRenderTexture("Animated Shadow Cubemap Source", 4, 4, 1, TextureDimension.Cube);
-            instance.LightVolumeManager = manager;
-
-            pointLight.SyncUdonScript();
-
-            Assert.That(instance.CustomTextureIsCubemap, Is.True);
-            Assert.That(instance.AutoUpdateCustomTexture, Is.True);
-            Assert.That(instance.ShadowMapTextureIsCubemap, Is.True);
-            Assert.That(instance.AutoUpdateShadowMap, Is.True);
-            Assert.That(instance.Bias, Is.EqualTo(0.42f).Within(0.0001f));
-            Assert.That(instance.LayerMask, Is.EqualTo(1 << 6));
-            Assert.That(instance.NearClip, Is.EqualTo(0.15f).Within(0.0001f));
-            Assert.That(instance.FarClip, Is.EqualTo(6.5f).Within(0.0001f));
-            Assert.That(instance.Blur, Is.EqualTo(2.5f).Within(0.0001f));
-            Assert.That(instance.ContactHardening, Is.EqualTo(0.08f).Within(0.0001f));
-            Assert.That(instance.ShadingStrength, Is.EqualTo(0.42f).Within(0.0001f));
-
-            Texture shadowSource = instance.ShadowMapTexture;
-            pointLight.ShadowMap = CreateCubemap("Static Shadow Cubemap After Data Sync");
-            pointLight.Intensity = 2.25f;
-            pointLight.Bias = 0.5f;
-            pointLight.SyncUdonScript(false);
-
-            Assert.That(instance.Intensity, Is.EqualTo(2.25f).Within(0.0001f));
-            Assert.That(instance.Bias, Is.EqualTo(0.5f).Within(0.0001f));
-            Assert.That(instance.ShadowMapTexture, Is.SameAs(shadowSource));
-            Assert.That(instance.AutoUpdateShadowMap, Is.True);
-        }
-
-        // Verifies spot shadow authoring selects single texture layout unless the source or force flag requires a cubemap.
-        [Test]
-        public void PointLightVolumeSyncsSpotSingleShadowMetadata() {
-            GameObject setupObject = CreateGameObject("Spot Single Shadow Metadata Setup", true);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-
-            GameObject lightObject = CreateGameObject("Spot Single Shadow Metadata Light", true);
-            PointLightVolumeInstance instance = lightObject.AddComponent<PointLightVolumeInstance>();
-            PointLightVolume pointLight = lightObject.AddComponent<PointLightVolume>();
-            pointLight.LightVolumeSetup = setup;
-            pointLight.PointLightVolumeInstance = instance;
-            pointLight.Type = PointLightVolume.LightType.SpotLight;
-            pointLight.Angle = 60f;
-            pointLight.Shadows = true;
-            pointLight.ShadowMap = CreateTexture2D("Spot Single Shadow Texture");
-
-            pointLight.SyncUdonScript();
-
-            Assert.That(pointLight.ShouldBakeCubemapShadows(), Is.False);
-            Assert.That(pointLight.UsesCubemapShadows(), Is.False);
-            Assert.That(instance.ShadowMapUsesCubemap, Is.False);
-
-            pointLight.ForceCubemapShadows = true;
-            pointLight.SyncUdonScript();
-
-            Assert.That(pointLight.ShouldBakeCubemapShadows(), Is.True);
-            Assert.That(pointLight.UsesCubemapShadows(), Is.True);
-            Assert.That(instance.ShadowMapUsesCubemap, Is.True);
-
-            pointLight.ForceCubemapShadows = false;
-            pointLight.ShadowMap = CreateCubemap("Spot Existing Cubemap Shadow");
-            pointLight.SyncUdonScript();
-
-            Assert.That(pointLight.ShouldBakeCubemapShadows(), Is.False);
-            Assert.That(pointLight.UsesCubemapShadows(), Is.True);
-            Assert.That(instance.ShadowMapUsesCubemap, Is.True);
-        }
-
-        // Verifies data-only sync updates Shading Strength without refreshing projection or shadow texture metadata.
-        [Test]
-        public void PointLightVolumeDataOnlySyncUpdatesShadingStrength() {
-            GameObject setupObject = CreateGameObject("Shading Strength Setup", true);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-
-            GameObject lightObject = CreateGameObject("Shading Strength Light", true);
-            PointLightVolumeInstance instance = lightObject.AddComponent<PointLightVolumeInstance>();
-            PointLightVolume pointLight = lightObject.AddComponent<PointLightVolume>();
-            pointLight.LightVolumeSetup = setup;
-            pointLight.PointLightVolumeInstance = instance;
-            pointLight.Type = PointLightVolume.LightType.SpotLight;
-            pointLight.Projection = PointLightVolume.LightProjection.Custom;
-            pointLight.Cookie = CreateRenderTexture("Animated Cookie Before Shading Sync", 4, 4, 1, TextureDimension.Tex2D);
-
-            pointLight.SyncUdonScript();
-            Assert.That(instance.AutoUpdateCustomTexture, Is.True);
-
-            pointLight.Cookie = CreateTexture2D("Static Cookie After Shading Sync");
-            pointLight.ShadingStrength = 0.25f;
-            pointLight.SyncUdonScript(false);
-
-            Assert.That(instance.ShadingStrength, Is.EqualTo(0.25f).Within(0.0001f));
-            Assert.That(instance.AutoUpdateCustomTexture, Is.True);
-        }
-
-        // Verifies the authoring Shadows toggle controls runtime shadow usage even when a shadow map asset exists.
-        [Test]
-        public void PointLightVolumeShadowsToggleControlsRuntimeShadowId() {
-            GameObject gameObject = CreateGameObject("Shadow Toggle Point Light Volume", false);
-            PointLightVolume pointLightVolume = gameObject.AddComponent<PointLightVolume>();
-            Cubemap shadowMap = CreateCubemap("Shadow Toggle Cubemap");
-            MethodInfo method = typeof(PointLightVolume).GetMethod("GetShadowRuntimeID", _nonPublicInstanceFlags);
-            Assert.That(method, Is.Not.Null);
-
-            pointLightVolume.ShadowMap = shadowMap;
-            pointLightVolume.Shadows = false;
-
-            Assert.That((int)method.Invoke(pointLightVolume, null), Is.EqualTo(-1));
-
-            pointLightVolume.Shadows = true;
-
-            Assert.That((int)method.Invoke(pointLightVolume, null), Is.EqualTo(0));
-        }
-
-        // Verifies zero Far Plane always recalculates from the current light range instead of reusing stale baked instance metadata.
-        [Test]
-        public void PointLightVolumeZeroFarPlaneRecalculatesFromCurrentRange() {
-            GameObject gameObject = CreateGameObject("Zero Far Plane Point Light Volume", false);
-            PointLightVolumeInstance instance = gameObject.AddComponent<PointLightVolumeInstance>();
-            PointLightVolume pointLightVolume = gameObject.AddComponent<PointLightVolume>();
-            pointLightVolume.PointLightVolumeInstance = instance;
-            pointLightVolume.Type = PointLightVolume.LightType.PointLight;
-            pointLightVolume.Projection = PointLightVolume.LightProjection.LUT;
-            pointLightVolume.FalloffLUT = CreateTexture2D("Zero Far Plane LUT");
-            pointLightVolume.FarPlane = 0f;
-            pointLightVolume.Range = 8f;
-            instance.FarClip = 2f;
-
-            Assert.That(pointLightVolume.GetShadowFarClip(), Is.EqualTo(8f).Within(Epsilon));
-
-            pointLightVolume.Range = 5f;
-
-            Assert.That(pointLightVolume.GetShadowFarClip(), Is.EqualTo(5f).Within(Epsilon));
-        }
-
-        // Verifies manager-created runtime texture arrays are hidden from scene and asset serialization.
-        [Test]
-        public void RuntimeTextureArraysUseHideAndDontSave() {
-            LightVolumeManager manager = CreateManager("Runtime Hide Flags Manager", false);
-            manager.CustomTexturesWidth = 4;
-            manager.CustomTexturesHeight = 4;
-            manager.ShadowTexturesWidth = 4;
-            manager.ShadowTexturesHeight = 4;
-
-            RenderTexture customSource = CreateRenderTexture("Runtime Hide Flags Cookie Source", 4, 4, 1, TextureDimension.Tex2D);
-            RenderTexture shadowSource = CreateRenderTexture("Runtime Hide Flags Shadow Source", 4, 4, 6, TextureDimension.Tex2DArray);
-            PointLightVolumeInstance point = CreatePointLight(manager, "Runtime Hide Flags Point", true);
-            point.SetCustomTexture();
-            point.CustomTexture = customSource;
-            point.ProjectionType = 1; // 1: texture
-            point.AutoUpdateCustomTexture = true;
-            point.ShadowMapID = 0;
-            point.ShadowMapTexture = shadowSource;
-            point.AutoUpdateShadowMap = true;
-            point.ShadowMapTextureHasDepthSlices = true;
-            manager.PointLightVolumeInstances = new[] { point };
-
-            manager.ReinitializeCustomTextures();
-            manager.ReinitializeShadowTextures();
-
-            Assert.That(manager.CustomTextures, Is.TypeOf<RenderTexture>());
-            Assert.That(manager.ShadowTextures, Is.TypeOf<RenderTexture>());
-            Assert.That(manager.CustomTextures.hideFlags, Is.EqualTo(HideFlags.HideAndDontSave));
-            Assert.That(manager.ShadowTextures.hideFlags, Is.EqualTo(HideFlags.HideAndDontSave));
-        }
-
-        // Verifies setup sync can restore manager volume instances even when serialized LightVolumeDataList is missing.
-        [Test]
-        public void SetupSyncUsesAuthoringVolumesWhenDataListIsEmpty() {
-            GameObject setupObject = CreateGameObject("Empty Data List Setup", false);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-            LightVolumeManager manager = setup.LightVolumeManager;
-            if (manager == null) manager = setupObject.GetComponent<LightVolumeManager>();
-            Texture3D atlas = CreateAtlas("Empty Data List Atlas");
-            manager.LightVolumeAtlas = atlas;
-            manager.LightVolumeAtlasBase = atlas;
-
-            LightVolumeInstance regularInstance = CreateLightVolume(setup, manager, "Regular Volume", false);
-            LightVolumeInstance additiveInstance = CreateLightVolume(setup, manager, "Additive Volume", true);
-            setup.LightVolumesWeights.Add(10);
-            setup.LightVolumesWeights.Add(0);
-            setup.LightVolumeDataList.Clear();
-
-            setup.SyncUdonScript();
-
-            Assert.That(manager.LightVolumeInstances, Has.Length.EqualTo(2));
-            Assert.That(manager.LightVolumeInstances[0], Is.SameAs(additiveInstance));
-            Assert.That(manager.LightVolumeInstances[1], Is.SameAs(regularInstance));
-        }
-
-        // Verifies setup sync restores stale runtime additive flags before sorting manager instances.
-        [Test]
-        public void SetupSyncCopiesAuthoringAdditiveBeforeSortingInstances() {
-            GameObject setupObject = CreateGameObject("Stale Additive Setup", false);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-            LightVolumeManager manager = setup.LightVolumeManager;
-            if (manager == null) manager = setupObject.GetComponent<LightVolumeManager>();
-            Texture3D atlas = CreateAtlas("Stale Additive Atlas");
-            manager.LightVolumeAtlas = atlas;
-            manager.LightVolumeAtlasBase = atlas;
-
-            LightVolumeInstance regularInstance = CreateLightVolume(setup, manager, "Regular Volume", false);
-            LightVolumeInstance additiveInstance = CreateLightVolume(setup, manager, "Additive Volume", true);
-            additiveInstance.IsAdditive = false;
-            setup.LightVolumesWeights.Add(10);
-            setup.LightVolumesWeights.Add(0);
-            setup.LightVolumeDataList.Clear();
-
-            setup.SyncUdonScript();
-
-            Assert.That(additiveInstance.IsAdditive, Is.True);
-            Assert.That(manager.LightVolumeInstances, Has.Length.EqualTo(2));
-            Assert.That(manager.LightVolumeInstances[0], Is.SameAs(additiveInstance));
-            Assert.That(manager.LightVolumeInstances[1], Is.SameAs(regularInstance));
-        }
-
-        // Verifies setup sync does not resurrect inactive Light Volumes into the manager registry.
-        [Test]
-        public void SetupSyncExcludesInactiveLightVolumesFromManagerInstances() {
-            GameObject setupObject = CreateGameObject("Inactive Light Volume Setup", false);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-            LightVolumeManager manager = setup.LightVolumeManager;
-            if (manager == null) manager = setupObject.GetComponent<LightVolumeManager>();
-            Texture3D atlas = CreateAtlas("Inactive Light Volume Atlas");
-            manager.LightVolumeAtlas = atlas;
-            manager.LightVolumeAtlasBase = atlas;
-
-            LightVolumeInstance instance = CreateLightVolume(setup, manager, "Inactive Light Volume", false);
-            setup.SyncUdonScript();
-            Assert.That(manager.LightVolumeInstances, Has.Length.EqualTo(1));
-
-            instance.gameObject.SetActive(false);
-            setup.SyncUdonScript();
-
-            Assert.That(manager.LightVolumeInstances, Has.Length.EqualTo(0));
-            Assert.That(instance.LightVolumeManager, Is.SameAs(manager));
-        }
-
-        // Verifies setup sync clears stale manager arrays after every authoring Light Volume is removed.
-        [Test]
-        public void SetupSyncClearsStaleLightVolumeManagerArrayWhenListIsEmpty() {
-            GameObject setupObject = CreateGameObject("Empty Light Volume Setup", false);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-            LightVolumeManager manager = setup.LightVolumeManager;
-            if (manager == null) manager = setupObject.GetComponent<LightVolumeManager>();
-            LightVolumeInstance staleInstance = CreateLightVolume(setup, manager, "Deleted Light Volume", false);
-            manager.LightVolumeInstances = new[] { staleInstance };
-            setup.LightVolumes.Clear();
-
-            setup.SyncUdonScript();
-
-            Assert.That(manager.LightVolumeInstances, Has.Length.EqualTo(0));
-        }
-
-        // Verifies setup sync does not resurrect inactive Point Light Volumes into the manager registry.
-        [Test]
-        public void SetupSyncExcludesInactivePointLightVolumesFromManagerInstances() {
-            GameObject setupObject = CreateGameObject("Inactive Point Light Volume Setup", false);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-            LightVolumeManager manager = setup.LightVolumeManager;
-            if (manager == null) manager = setupObject.GetComponent<LightVolumeManager>();
-
-            GameObject lightObject = CreateGameObject("Inactive Point Light Volume", true);
-            PointLightVolumeInstance instance = lightObject.AddComponent<PointLightVolumeInstance>();
-            PointLightVolume pointLight = lightObject.AddComponent<PointLightVolume>();
-            pointLight.LightVolumeSetup = setup;
-            pointLight.PointLightVolumeInstance = instance;
-            setup.PointLightVolumes.Add(pointLight);
-
-            setup.SyncUdonScript();
-            Assert.That(manager.PointLightVolumeInstances, Has.Length.EqualTo(1));
-
-            lightObject.SetActive(false);
-            setup.SyncUdonScript();
-
-            Assert.That(manager.PointLightVolumeInstances, Has.Length.EqualTo(0));
-            Assert.That(instance.LightVolumeManager, Is.SameAs(manager));
-        }
-
-        // Verifies setup sync clears stale manager arrays after every authoring Point Light Volume is removed.
-        [Test]
-        public void SetupSyncClearsStalePointLightVolumeManagerArrayWhenListIsEmpty() {
-            GameObject setupObject = CreateGameObject("Empty Point Light Volume Setup", false);
-            LightVolumeSetup setup = setupObject.AddComponent<LightVolumeSetup>();
-            setup.SetupDependencies();
-            LightVolumeManager manager = setup.LightVolumeManager;
-            if (manager == null) manager = setupObject.GetComponent<LightVolumeManager>();
-
-            PointLightVolumeInstance staleInstance = CreatePointLight(manager, "Deleted Point Light Volume", false);
-            manager.PointLightVolumeInstances = new[] { staleInstance };
-            setup.PointLightVolumes.Clear();
-
-            setup.SyncUdonScript();
-
-            Assert.That(manager.PointLightVolumeInstances, Has.Length.EqualTo(0));
-        }
-
-        // Verifies reserved UV space creates unique atlas islands filled with neutral SH data.
-        [Test]
-        public void ReservedUVSpaceCreatesUniqueWhiteAtlasIslands() {
-            LightVolume first = CreateReservedLightVolume("Reserved UV Space A");
-            LightVolume second = CreateReservedLightVolume("Reserved UV Space B");
-            Atlas3D result = new Atlas3D();
-
-            IEnumerator routine = Texture3DAtlasGenerator.CreateAtlas(new[] { first, second }, atlas => {
-                result = atlas;
-                _createdObjects.Add(atlas.Texture);
-            });
-            RunEnumerator(routine);
-
-            Assert.That(result.Texture, Is.Not.Null);
-            Assert.That(result.BoundsUvwMin, Has.Length.EqualTo(6));
-            Assert.That(BoundsDiffer(result.BoundsUvwMin[0], result.BoundsUvwMin[1]), Is.True);
-            Assert.That(BoundsDiffer(result.BoundsUvwMin[1], result.BoundsUvwMin[2]), Is.True);
-            Assert.That(BoundsDiffer(result.BoundsUvwMin[0], result.BoundsUvwMin[3]), Is.True);
-            AssertColorClose(new Color(1, 1, 1, 0), SampleAtlasPixel(result.Texture, result.BoundsUvwMin[0]));
-            AssertColorClose(Color.clear, SampleAtlasPixel(result.Texture, result.BoundsUvwMin[1]));
-            AssertColorClose(Color.clear, SampleAtlasPixel(result.Texture, result.BoundsUvwMin[2]));
-        }
-
-        // Creates a manager with deterministic defaults.
-        private LightVolumeManager CreateManager(string name, bool withAtlas) {
-            GameObject gameObject = CreateGameObject(name, false);
-            LightVolumeManager manager = gameObject.AddComponent<LightVolumeManager>();
-            manager.LightVolumeAtlas = withAtlas ? CreateAtlas("Editor Test Light Volume Atlas") : null;
-            manager.LightVolumeInstances = new LightVolumeInstance[0];
-            manager.PointLightVolumeInstances = new PointLightVolumeInstance[0];
-            gameObject.SetActive(true);
-            return manager;
-        }
-
-        // Creates a scene point light volume instance and optionally lets Unity call OnEnable.
-        private PointLightVolumeInstance CreatePointLight(LightVolumeManager manager, string name, bool active) {
-            GameObject gameObject = CreateGameObject(name, false);
-            PointLightVolumeInstance point = gameObject.AddComponent<PointLightVolumeInstance>();
-            point.LightVolumeManager = manager;
-            point.Color = Color.white;
-            point.Intensity = 1;
-            point.IsDynamic = true;
-            point.LightSourceSize = 1;
-            point.InverseSquaredRange = 1;
-            point.Direction = Vector3.forward;
-            point.ConeFalloff = 1;
-            point.Angle = 30 * Mathf.Deg2Rad;
-            point.OuterAngleCos = Mathf.Cos(point.Angle);
-            gameObject.SetActive(active);
-            if (active && manager != null) manager.InitializePointLightVolume(point);
-            return point;
-        }
-
-        // Creates a scene Light Volume authoring/runtime pair.
-        private LightVolumeInstance CreateLightVolume(LightVolumeSetup setup, LightVolumeManager manager, string name, bool additive) {
-            GameObject gameObject = CreateGameObject(name, false);
-            LightVolumeInstance instance = gameObject.AddComponent<LightVolumeInstance>();
-            LightVolume volume = gameObject.AddComponent<LightVolume>();
-            volume.LightVolumeSetup = setup;
-            volume.LightVolumeInstance = instance;
-            volume.Intensity = 1;
-            volume.Color = Color.white;
-            volume.Additive = additive;
-            instance.LightVolumeManager = manager;
-            instance.Intensity = 1;
-            instance.Color = Color.white;
-            instance.IsAdditive = additive;
-            setup.LightVolumes.Add(volume);
-            gameObject.SetActive(true);
-            return instance;
-        }
-
-        // Creates a Light Volume configured to reserve atlas space instead of using baked textures.
-        private LightVolume CreateReservedLightVolume(string name) {
-            GameObject gameObject = CreateGameObject(name, false);
-            LightVolume volume = gameObject.AddComponent<LightVolume>();
-            volume.Bake = false;
-            volume.ReserveUVSpace = true;
-            volume.Resolution = new Vector3Int(2, 2, 2);
-            volume.Exposure = 2;
-            volume.Highlights = 1;
-            volume.Shadows = -1;
-            return volume;
-        }
-
-        // Runs a simple iterator-based editor coroutine to completion in a synchronous test.
-        private static void RunEnumerator(IEnumerator routine) {
-            int guard = 10000;
-            while (routine.MoveNext()) {
-                guard--;
-                if (guard < 0) Assert.Fail("Atlas generation coroutine did not finish.");
+        public void UdonSharpSourcesKeepStableProxyTypesDuringTargetDefineInitialization() {
+            for (int i = 0; i < UdonSharpSourcePaths.Length; i++) {
+                string path = UdonSharpSourcePaths[i];
+                string source = File.ReadAllText(path).Replace("\r\n", "\n");
+                Assert.That(source, Does.StartWith(TargetSwitchUdonSharpGuard),
+                    path + " can temporarily change its serialized proxy layout during a build-target switch.");
             }
         }
 
-        // Samples the first voxel inside a packed atlas island.
-        private static Color SampleAtlasPixel(Texture3D atlas, Vector3 boundsMin) {
-            int x = Mathf.Clamp(Mathf.RoundToInt(boundsMin.x * atlas.width), 0, atlas.width - 1);
-            int y = Mathf.Clamp(Mathf.RoundToInt(boundsMin.y * atlas.height), 0, atlas.height - 1);
-            int z = Mathf.Clamp(Mathf.RoundToInt(boundsMin.z * atlas.depth), 0, atlas.depth - 1);
-            Color[] pixels = atlas.GetPixels();
-            return pixels[x + y * atlas.width + z * atlas.width * atlas.height];
+        // Optional plugins must never become hard dependencies of the VRCLV core or stale global-define gates.
+        [Test]
+        public void OptionalPluginAssembliesRemainConditionalAndCoreIndependent() {
+            const string audioLinkGuid = "58281da7f948e9644aceb5d0178bf06b";
+            const string bakeryRuntimeGuid = "a1653399f63795746b1857281d1e400d";
+            const string bakeryEditorGuid = "290dd5870d0ead646bcb6ea5c6a60af5";
+            string[] coreAsmdefs = {
+                "Packages/red.sim.lightvolumes/UScripts/red.sim.LightVolumesUdon.asmdef",
+                "Packages/red.sim.lightvolumes/Scripts/red.sim.LightVolumes.asmdef",
+                "Packages/red.sim.lightvolumes/Scripts/Editor/red.sim.LightVolumesEditor.asmdef"
+            };
+            for (int i = 0; i < coreAsmdefs.Length; i++) {
+                string asmdef = File.ReadAllText(coreAsmdefs[i]);
+                Assert.That(asmdef, Does.Not.Contain(audioLinkGuid), coreAsmdefs[i]);
+                Assert.That(asmdef, Does.Not.Contain(bakeryRuntimeGuid), coreAsmdefs[i]);
+                Assert.That(asmdef, Does.Not.Contain(bakeryEditorGuid), coreAsmdefs[i]);
+            }
+
+            const string optionalAsmdefPath = "Packages/red.sim.lightvolumes/Extra/Audio Link/red.sim.LightVolumes.AudioLinkUdon.asmdef";
+            const string optionalAssemblyAssetPath = "Packages/red.sim.lightvolumes/Extra/Audio Link/red.sim.LightVolumes.AudioLinkUdon.asset";
+            string optionalAsmdef = File.ReadAllText(optionalAsmdefPath);
+            Assert.That(optionalAsmdef, Does.Contain("com.llealloo.audiolink"));
+            Assert.That(optionalAsmdef, Does.Contain("VRCLV_AUDIOLINK"));
+            Assert.That(optionalAsmdef, Does.Contain("\"defineConstraints\""));
+            Assert.That(optionalAsmdef, Does.Contain("\"versionDefines\""));
+            Assert.That(optionalAsmdef, Does.Contain(audioLinkGuid));
+            Assert.That(File.Exists(optionalAssemblyAssetPath), Is.True);
+            Assert.That(File.ReadAllText(optionalAssemblyAssetPath), Does.Contain(AssetDatabase.AssetPathToGUID(optionalAsmdefPath)));
+            Assert.That(File.Exists("Packages/red.sim.lightvolumes/Extra/Audio Link/UdonLightVolumesRef.asmref"), Is.False);
+
+            string[] productionRoots = {
+                "Packages/red.sim.lightvolumes/UScripts",
+                "Packages/red.sim.lightvolumes/Scripts",
+                "Packages/red.sim.lightvolumes/Extra"
+            };
+            for (int rootIndex = 0; rootIndex < productionRoots.Length; rootIndex++) {
+                string[] sources = Directory.GetFiles(productionRoots[rootIndex], "*.cs", SearchOption.AllDirectories);
+                for (int i = 0; i < sources.Length; i++) {
+                    string source = File.ReadAllText(sources[i]);
+                    Assert.That(source, Does.Not.Contain("BAKERY_INCLUDED"), sources[i]);
+                    Assert.That(source, Does.Not.Contain("#if AUDIOLINK"), sources[i]);
+                    Assert.That(source, Does.Not.Contain("#elif AUDIOLINK"), sources[i]);
+                }
+            }
         }
 
-        // Checks whether two atlas bounds point to different islands.
-        private static bool BoundsDiffer(Vector3 a, Vector3 b) {
-            return Mathf.Abs(a.x - b.x) > Epsilon || Mathf.Abs(a.y - b.y) > Epsilon || Mathf.Abs(a.z - b.z) > Epsilon;
+        // A unique co-located Udon component is authoritative even when an obsolete serialized link points elsewhere.
+        [Test]
+        public void MigrationResolverUsesUniqueCoLocatedDestination() {
+            _legacyObject = new GameObject("Legacy Pair Source");
+            _unifiedObject = new GameObject("Foreign Unified Destination");
+            LightVolume legacy = _legacyObject.AddComponent<LightVolume>();
+            LightVolumeInstance attached = _legacyObject.AddComponent<LightVolumeInstance>();
+            LightVolumeInstance foreign = _unifiedObject.AddComponent<LightVolumeInstance>();
+            MethodInfo resolve = typeof(LightVolumeMigration).GetMethod(
+                "ResolveLightVolumeInstance",
+                BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.That(resolve, Is.Not.Null);
+
+            legacy.LightVolumeInstance = foreign;
+            Assert.That(resolve.Invoke(null, new object[] { legacy }), Is.SameAs(attached));
+
+            legacy.LightVolumeInstance = attached;
+            Assert.That(resolve.Invoke(null, new object[] { legacy }), Is.SameAs(attached));
         }
 
-        // Asserts colors with the shared editor-test tolerance.
-        private static void AssertColorClose(Color expected, Color actual) {
-            Assert.That(actual.r, Is.EqualTo(expected.r).Within(Epsilon));
-            Assert.That(actual.g, Is.EqualTo(expected.g).Within(Epsilon));
-            Assert.That(actual.b, Is.EqualTo(expected.b).Within(Epsilon));
-            Assert.That(actual.a, Is.EqualTo(expected.a).Within(Epsilon));
+        // Resolving an incomplete old payload is read-only and must never create a replacement Udon component.
+        [Test]
+        public void MigrationResolverDoesNotCreateMissingDestination() {
+            _legacyObject = new GameObject("Incomplete Migration Source");
+            LightVolume legacy = _legacyObject.AddComponent<LightVolume>();
+            MethodInfo resolve = typeof(LightVolumeMigration).GetMethod(
+                "ResolveLightVolumeInstance",
+                BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.That(resolve, Is.Not.Null);
+            Assert.That(resolve.Invoke(null, new object[] { legacy }), Is.Null);
+            Assert.That(_legacyObject.GetComponents<LightVolumeInstance>(), Is.Empty);
         }
 
-        // Creates a temporary GameObject tracked by teardown.
-        private GameObject CreateGameObject(string name, bool active) {
-            GameObject gameObject = new GameObject(name);
-            _createdObjects.Add(gameObject);
-            gameObject.SetActive(active);
-            return gameObject;
+        // Applying the same compatibility payload twice must produce the same unified serialized state.
+        [Test]
+        public void MigrationPointLightPayloadCopyIsIdempotent() {
+            _legacyObject = new GameObject("Point Light Migration Source");
+            _unifiedObject = new GameObject("Point Light Migration Destination");
+            PointLightVolume source = _legacyObject.AddComponent<PointLightVolume>();
+            PointLightVolumeInstance destination = _unifiedObject.AddComponent<PointLightVolumeInstance>();
+            Texture2D cookie = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            source.Dynamic = true;
+            source.Type = PointLightVolume.LightType.SpotLight;
+            source.Projection = PointLightVolume.LightProjection.Custom;
+            source.Cookie = cookie;
+            source.Range = 17f;
+            source.Intensity = 3.5f;
+            source.Angle = 42f;
+            source.Falloff = 0.6f;
+            source.AreaCookieCrop = new Vector4(0.125f, 0.25f, 0.5f, 0.75f);
+            source.AreaCookieCropShape = 3;
+            source.AreaCookieCropPreview = cookie;
+            source.Shadows = true;
+            source.BakeInGame = true;
+            MethodInfo copy = typeof(LightVolumeMigration).GetMethod(
+                "CopyLegacyPointLight",
+                BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.That(copy, Is.Not.Null);
+            copy.Invoke(null, new object[] { source, destination });
+            destination.EditorApplyAuthoringData(true, true, false);
+            string firstState = JsonUtility.ToJson(destination);
+            copy.Invoke(null, new object[] { source, destination });
+            destination.EditorApplyAuthoringData(true, true, false);
+
+            Assert.That(JsonUtility.ToJson(destination), Is.EqualTo(firstState));
+            Assert.That(destination.LightType, Is.EqualTo(1));
+            Assert.That(destination.Projection, Is.EqualTo(2));
+            Assert.That(destination.ProjectionMode, Is.EqualTo(2));
+            Assert.That(destination.Cookie, Is.SameAs(cookie));
+            Assert.That(destination.CustomTexture, Is.SameAs(cookie));
+            Assert.That(destination.Intensity, Is.EqualTo(3.5f).Within(Epsilon));
+            Assert.That(destination.AreaCookieCrop, Is.EqualTo(source.AreaCookieCrop));
+            Assert.That(destination.AreaCookieCropShape, Is.EqualTo(3));
+            Assert.That(destination.AreaCookieCropPreview, Is.SameAs(cookie));
+            UnityEngine.Object.DestroyImmediate(cookie);
         }
 
-        // Creates a temporary 3D atlas texture tracked by teardown.
-        private Texture3D CreateAtlas(string name) {
-            Texture3D texture = new Texture3D(1, 1, 1, TextureFormat.RGBA32, false);
-            texture.name = name;
-            _createdObjects.Add(texture);
-            return texture;
+        // The affected upgrade retained a matching effective runtime source while losing the duplicate cookie field.
+        [Test]
+        public void MigrationRecoversMissingSpotCookieFromMatchingLegacyRuntimeState() {
+            _legacyObject = new GameObject("Partially Deserialized Point Light Source");
+            _unifiedObject = new GameObject("Working Legacy Runtime Destination");
+            PointLightVolume source = _legacyObject.AddComponent<PointLightVolume>();
+            PointLightVolumeInstance destination = _unifiedObject.AddComponent<PointLightVolumeInstance>();
+            Texture2D cookie = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            source.Type = PointLightVolume.LightType.SpotLight;
+            source.Projection = PointLightVolume.LightProjection.Custom;
+            destination.LightType = 1;
+            destination.ProjectionMode = 2;
+            destination.ProjectionType = 1;
+            destination.CustomTexture = cookie;
+            MethodInfo copy = typeof(LightVolumeMigration).GetMethod(
+                "CopyLegacyPointLight",
+                BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.That(copy, Is.Not.Null);
+            copy.Invoke(null, new object[] { source, destination });
+            destination.EditorApplyAuthoringData(true, true, false);
+
+            Assert.That(destination.LightType, Is.EqualTo(1));
+            Assert.That(destination.Projection, Is.EqualTo(2));
+            Assert.That(destination.ProjectionMode, Is.EqualTo(2));
+            Assert.That(destination.Cookie, Is.SameAs(cookie));
+            Assert.That(destination.CustomTexture, Is.SameAs(cookie));
+            UnityEngine.Object.DestroyImmediate(cookie);
         }
 
-        // Creates a temporary 2D texture for authoring sync checks.
-        private Texture2D CreateTexture2D(string name) {
-            Texture2D texture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-            texture.name = name;
-            _createdObjects.Add(texture);
-            return texture;
+        // Runtime fields are derived cache and must not override a different legacy authoring type or mode.
+        [Test]
+        public void MigrationDoesNotImportMismatchedLegacyRuntimeProjectionState() {
+            _legacyObject = new GameObject("Authoritative Parametric Point Source");
+            _unifiedObject = new GameObject("Stale Spot Cookie Runtime Destination");
+            PointLightVolume source = _legacyObject.AddComponent<PointLightVolume>();
+            PointLightVolumeInstance destination = _unifiedObject.AddComponent<PointLightVolumeInstance>();
+            Texture2D staleCookie = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            destination.LightType = 1;
+            destination.ProjectionMode = 2;
+            destination.ProjectionType = 1;
+            destination.CustomTexture = staleCookie;
+            MethodInfo copy = typeof(LightVolumeMigration).GetMethod(
+                "CopyLegacyPointLight",
+                BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.That(copy, Is.Not.Null);
+            copy.Invoke(null, new object[] { source, destination });
+            destination.EditorApplyAuthoringData(true, true, false);
+
+            Assert.That(destination.LightType, Is.Zero);
+            Assert.That(destination.Projection, Is.Zero);
+            Assert.That(destination.ProjectionMode, Is.Zero);
+            Assert.That(destination.GetProjectionSource(), Is.Null);
+            Assert.That(destination.CustomTexture, Is.Null);
+            UnityEngine.Object.DestroyImmediate(staleCookie);
         }
 
-        // Creates a temporary cubemap tracked by teardown.
-        private Cubemap CreateCubemap(string name) {
-            Cubemap cubemap = new Cubemap(1, TextureFormat.RGBA32, false);
-            cubemap.name = name;
-            cubemap.SetPixel(CubemapFace.PositiveX, 0, 0, Color.white);
-            cubemap.SetPixel(CubemapFace.NegativeX, 0, 0, Color.white);
-            cubemap.SetPixel(CubemapFace.PositiveY, 0, 0, Color.white);
-            cubemap.SetPixel(CubemapFace.NegativeY, 0, 0, Color.white);
-            cubemap.SetPixel(CubemapFace.PositiveZ, 0, 0, Color.white);
-            cubemap.SetPixel(CubemapFace.NegativeZ, 0, 0, Color.white);
-            cubemap.Apply(false);
-            _createdObjects.Add(cubemap);
-            return cubemap;
+        [Test]
+        public void LegacyObjectMaskIsNotAliasedToExclusionMask() {
+            FieldInfo field = typeof(PointLightVolume).GetField(nameof(PointLightVolume.ExclusionMask));
+            object[] aliases = field?.GetCustomAttributes(typeof(UnityEngine.Serialization.FormerlySerializedAsAttribute), false);
+            bool aliasesObjectMask = false;
+            if (aliases != null) {
+                for (int i = 0; i < aliases.Length; i++) {
+                    UnityEngine.Serialization.FormerlySerializedAsAttribute alias =
+                        (UnityEngine.Serialization.FormerlySerializedAsAttribute)aliases[i];
+                    if (alias.oldName == "ObjectMask") aliasesObjectMask = true;
+                }
+            }
+
+            Assert.That(field, Is.Not.Null);
+            Assert.That(aliasesObjectMask, Is.False);
         }
 
-        // Creates a temporary render texture source tracked by teardown.
-        private RenderTexture CreateRenderTexture(string name, int width, int height, int depth, TextureDimension dimension) {
-            RenderTexture texture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-            texture.name = name;
-            texture.dimension = dimension;
-            texture.volumeDepth = Mathf.Max(depth, 1);
-            texture.wrapMode = TextureWrapMode.Clamp;
-            texture.filterMode = FilterMode.Point;
-            texture.Create();
-            _createdObjects.Add(texture);
-            return texture;
+        [Test]
+        public void MigrationPreservesProjectionSourcesForEveryLightTypeAndMode() {
+            MethodInfo copy = typeof(LightVolumeMigration).GetMethod(
+                "CopyLegacyPointLight",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Texture2D lut = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            Texture2D cookie = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            Cubemap cubemap = new Cubemap(2, TextureFormat.RGBA32, false);
+            Assert.That(copy, Is.Not.Null);
+
+            AssertProjectionCopy(copy, PointLightVolume.LightType.PointLight, PointLightVolume.LightProjection.Parametric, null, 0);
+            AssertProjectionCopy(copy, PointLightVolume.LightType.PointLight, PointLightVolume.LightProjection.LUT, lut, 1);
+            AssertProjectionCopy(copy, PointLightVolume.LightType.PointLight, PointLightVolume.LightProjection.Custom, cubemap, 2);
+            AssertProjectionCopy(copy, PointLightVolume.LightType.SpotLight, PointLightVolume.LightProjection.Parametric, null, 0);
+            AssertProjectionCopy(copy, PointLightVolume.LightType.SpotLight, PointLightVolume.LightProjection.LUT, lut, 1);
+            AssertProjectionCopy(copy, PointLightVolume.LightType.SpotLight, PointLightVolume.LightProjection.Custom, cookie, 2);
+            AssertProjectionCopy(copy, PointLightVolume.LightType.AreaLight, PointLightVolume.LightProjection.Parametric, null, 0);
+            AssertProjectionCopy(copy, PointLightVolume.LightType.AreaLight, PointLightVolume.LightProjection.Parametric, cookie, 2);
+
+            UnityEngine.Object.DestroyImmediate(lut);
+            UnityEngine.Object.DestroyImmediate(cookie);
+            UnityEngine.Object.DestroyImmediate(cubemap);
         }
 
-        // Creates a temporary material tracked by teardown.
-        private Material CreateMaterial(string shaderName) {
-            Shader shader = Shader.Find(shaderName);
-            Assert.That(shader, Is.Not.Null, shaderName + " shader was not found");
-            Material material = new Material(shader);
-            material.name = "Editor Test Material";
-            _createdObjects.Add(material);
-            return material;
+        [Test]
+        public void MigrationPreservesShadowMapForEveryLightTypeAndWhenShadowsAreDisabled() {
+            MethodInfo copy = typeof(LightVolumeMigration).GetMethod(
+                "CopyLegacyPointLight",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Texture2D shadowMap = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            Assert.That(copy, Is.Not.Null);
+
+            AssertShadowCopy(copy, PointLightVolume.LightType.PointLight, shadowMap, true, true);
+            AssertShadowCopy(copy, PointLightVolume.LightType.SpotLight, shadowMap, true, false);
+            AssertShadowCopy(copy, PointLightVolume.LightType.AreaLight, shadowMap, true, true);
+            AssertShadowCopy(copy, PointLightVolume.LightType.SpotLight, shadowMap, false, false);
+
+            UnityEngine.Object.DestroyImmediate(shadowMap);
         }
 
-        // Destroys test objects immediately and releases render textures first.
-        private static void DestroyTestObject(UnityEngine.Object target) {
-            if (target == null) return;
-            RenderTexture renderTexture = target as RenderTexture;
-            if (renderTexture != null) renderTexture.Release();
-            Object.DestroyImmediate(target);
+        // Resolution validation belongs to unified authoring and rejects invalid or overflowing grids.
+        [Test]
+        public void UnifiedVoxelCountRejectsInvalidAndOverflowingResolution() {
+            Assert.That(LightVolumeTools.GetVoxelCount(new Vector3Int(2, 3, 4)), Is.EqualTo(24));
+            Assert.That(LightVolumeTools.GetVoxelCount(new Vector3Int(0, 3, 4)), Is.EqualTo(-1));
+            Assert.That(LightVolumeTools.GetVoxelCount(new Vector3Int(int.MaxValue, 2, 2)), Is.EqualTo(-1));
         }
 
-        // Returns a private LightVolumeManager field used by focused regression tests.
-        private static T GetManagerField<T>(LightVolumeManager manager, FieldInfo field) {
-            return (T)field.GetValue(manager);
+        // Destroyed Unity texture wrappers still satisfy C# type patterns and must be rejected with
+        // Unity's overloaded null comparison before their native properties are read.
+        [Test]
+        public void ManagerStatsIgnoreDestroyedShadowTextures() {
+            MethodInfo getTextureTexels = typeof(LightVolumeManagerEditor).GetMethod(
+                "GetTextureTexels",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Cubemap destroyedCubemap = new Cubemap(4, TextureFormat.RGBAHalf, false);
+            Assert.That(getTextureTexels, Is.Not.Null);
+            UnityEngine.Object.DestroyImmediate(destroyedCubemap);
+
+            Assert.That((ulong)getTextureTexels.Invoke(null, new object[] { destroyedCubemap }), Is.Zero);
+        }
+
+        // Two same-name lights receive separate shadow assets, while a rebake keeps the path already
+        // owned by that light.
+        [Test]
+        public void ShadowBakePathsDoNotCollideForSameNameLights() {
+            MethodInfo resolvePath = typeof(PointLightShadowBaker).GetMethod(
+                "ResolveShadowAssetPath",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            string firstPath = AssetDatabase.GenerateUniqueAssetPath("Assets/VRCLightVolumesShadowPathTest.asset");
+            GameObject firstObject = new GameObject("Point Light");
+            GameObject secondObject = new GameObject("Point Light");
+            Texture2D firstShadow = new Texture2D(2, 2, TextureFormat.RGBAHalf, false);
+
+            try {
+                Assert.That(resolvePath, Is.Not.Null);
+                AssetDatabase.CreateAsset(firstShadow, firstPath);
+                PointLightVolumeInstance first = firstObject.AddComponent<PointLightVolumeInstance>();
+                PointLightVolumeInstance second = secondObject.AddComponent<PointLightVolumeInstance>();
+                first.ShadowMap = firstShadow;
+
+                string rebakePath = (string)resolvePath.Invoke(null, new object[] { first, firstPath });
+                string secondPath = (string)resolvePath.Invoke(null, new object[] { second, firstPath });
+
+                Assert.That(rebakePath, Is.EqualTo(firstPath));
+                Assert.That(secondPath, Is.Not.EqualTo(firstPath));
+            } finally {
+                UnityEngine.Object.DestroyImmediate(firstObject);
+                UnityEngine.Object.DestroyImmediate(secondObject);
+                AssetDatabase.DeleteAsset(firstPath);
+            }
+        }
+
+        private static void AssertProjectionCopy(MethodInfo copy, PointLightVolume.LightType lightType, PointLightVolume.LightProjection projection, UnityEngine.Object sourceObject, int expectedMode) {
+            GameObject legacyObject = new GameObject($"Legacy {lightType} {projection}");
+            GameObject unifiedObject = new GameObject($"Unified {lightType} {projection}");
+            try {
+                PointLightVolume source = legacyObject.AddComponent<PointLightVolume>();
+                PointLightVolumeInstance destination = unifiedObject.AddComponent<PointLightVolumeInstance>();
+                source.Type = lightType;
+                source.Projection = projection;
+                if (lightType == PointLightVolume.LightType.AreaLight) source.Cookie = sourceObject;
+                else if (projection == PointLightVolume.LightProjection.LUT) source.FalloffLUT = sourceObject;
+                else if (lightType == PointLightVolume.LightType.PointLight) source.Cubemap = sourceObject;
+                else source.Cookie = sourceObject;
+
+                copy.Invoke(null, new object[] { source, destination });
+                destination.EditorApplyAuthoringData(true, true, false);
+
+                Assert.That(destination.LightType, Is.EqualTo((int)lightType), $"{lightType} {projection} type");
+                Assert.That(destination.ProjectionMode, Is.EqualTo(expectedMode), $"{lightType} {projection} mode");
+                Assert.That(destination.GetProjectionSource(), Is.SameAs(sourceObject), $"{lightType} {projection} source");
+                Assert.That(destination.CustomTexture, Is.SameAs(sourceObject as Texture), $"{lightType} {projection} runtime texture");
+            } finally {
+                UnityEngine.Object.DestroyImmediate(legacyObject);
+                UnityEngine.Object.DestroyImmediate(unifiedObject);
+            }
+        }
+
+        private static void AssertShadowCopy(MethodInfo copy, PointLightVolume.LightType lightType, UnityEngine.Object shadowMap, bool shadows, bool expectedCubemap) {
+            GameObject legacyObject = new GameObject($"Legacy {lightType} Shadows {shadows}");
+            GameObject unifiedObject = new GameObject($"Unified {lightType} Shadows {shadows}");
+            try {
+                PointLightVolume source = legacyObject.AddComponent<PointLightVolume>();
+                PointLightVolumeInstance destination = unifiedObject.AddComponent<PointLightVolumeInstance>();
+                source.Type = lightType;
+                source.Shadows = shadows;
+                source.ShadowMap = shadowMap;
+
+                copy.Invoke(null, new object[] { source, destination });
+                destination.EditorApplyAuthoringData(true, true, false);
+
+                Assert.That(destination.LightType, Is.EqualTo((int)lightType));
+                Assert.That(destination.Shadows, Is.EqualTo(shadows));
+                Assert.That(destination.ShadowMap, Is.SameAs(shadowMap), $"{lightType} authoring shadow source");
+                Assert.That(destination.ShadowMapTexture, shadows ? Is.SameAs(shadowMap) : Is.Null, $"{lightType} runtime shadow source");
+                Assert.That(destination.ShadowMapID, shadows ? Is.Zero : Is.EqualTo(-1f));
+                Assert.That(destination.ShadowMapUsesCubemap, Is.EqualTo(shadows && expectedCubemap));
+            } finally {
+                UnityEngine.Object.DestroyImmediate(legacyObject);
+                UnityEngine.Object.DestroyImmediate(unifiedObject);
+            }
         }
     }
 }
