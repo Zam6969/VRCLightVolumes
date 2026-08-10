@@ -4242,6 +4242,26 @@ namespace VRCLightVolumes.Tests {
             Assert.That(shaderSource, Does.Contain("#pragma multi_compile_local_fragment __ VRCLV_RUNTIME_SHADOW_BLUR_SPHERICAL"));
         }
 
+        // Area Shape is an emitter setting, so triangles must affect plain Area Light contribution even without a cookie.
+        [Test]
+        public void AreaLightTriangleShapeMasksPlainFootprint() {
+            string shaderSource = ReadLightVolumesIncludeSource();
+            int footprintStart = shaderSource.IndexOf("inline float LV_AreaLightShapeFootprint", StringComparison.Ordinal);
+            int projectionStart = shaderSource.IndexOf("inline float4 LV_ProjectFastQuadLightIrradianceSH", StringComparison.Ordinal);
+            int attenuationStart = shaderSource.IndexOf("// Calculates point light attenuation.", StringComparison.Ordinal);
+
+            Assert.That(footprintStart, Is.GreaterThanOrEqualTo(0));
+            Assert.That(projectionStart, Is.GreaterThan(footprintStart));
+            Assert.That(attenuationStart, Is.GreaterThan(projectionStart));
+
+            string footprintSource = shaderSource.Substring(footprintStart, projectionStart - footprintStart);
+            string projectionSource = shaderSource.Substring(projectionStart, attenuationStart - projectionStart);
+            Assert.That(footprintSource, Does.Contain("shape < 0.5"));
+            Assert.That(footprintSource, Does.Contain("outsideDelta = localXY - closestXY"));
+            Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeFootprint(localPos.xy, closestXY, halfSize, shape, localPos.z)"));
+            Assert.That(projectionSource, Does.Contain("* footprint"));
+        }
+
         // MaxOverdraw is a performance budget: completed shadow/cookie/LUT work consumes a slot even when RGB is zero.
         [Test]
         public void PointLightOverdrawCountsCompletedEvaluations() {

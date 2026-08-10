@@ -69,7 +69,7 @@ The same Texture, RenderTexture or Material source can be reused by several Area
 
 ## Runtime Updates
 
-Changing `Color`, `Intensity`, enable state, `Area Shape` or transform data does not require rebuilding the texture array. The manager updates the light data separately.
+Changing `Color`, `Intensity`, enable state, `Area Shape` or transform data does not require rebuilding the texture array. The manager updates the light data separately. Triangle Area Shapes also affect the plain untextured Area Light footprint, not only the Scene View outline.
 
 Changing Area Light scale, including crossing an X/Y axis through zero into negative scale, updates both the positive physical size and the cookie mirror metadata. With `Dynamic` and `Auto Update Volumes` enabled this happens automatically; otherwise call the instance's `UpdateScale()` after changing the transform from Udon.
 

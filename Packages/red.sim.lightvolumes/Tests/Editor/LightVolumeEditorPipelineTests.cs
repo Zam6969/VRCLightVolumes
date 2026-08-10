@@ -110,6 +110,13 @@ namespace VRCLightVolumes.Tests {
             }
         }
 
+        [Test]
+        public void PointLightRuntimeSourceDoesNotDeclareEditorPreviewTexture() {
+            string source = File.ReadAllText("Packages/red.sim.lightvolumes/UScripts/PointLightVolumeInstance.cs");
+
+            Assert.That(source, Does.Not.Contain("AreaCookieCropPreview"));
+        }
+
         // Optional plugins must never become hard dependencies of the VRCLV core or stale global-define gates.
         [Test]
         public void OptionalPluginAssembliesRemainConditionalAndCoreIndependent() {

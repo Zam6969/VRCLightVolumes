@@ -556,6 +556,17 @@ inline float2 LV_AreaLightClosestXY(float2 localXY, float2 halfSize, float shape
     return LV_ClosestPointOnTriangle(localXY, a, b, c);
 }
 
+inline float LV_AreaLightShapeFootprint(float2 localXY, float2 closestXY, float2 halfSize, float shape, float localZ) {
+    [branch] if (shape < 0.5) return 1.0;
+    float2 outsideDelta = localXY - closestXY;
+    float outsideDistSq = dot(outsideDelta, outsideDelta);
+    [branch] if (outsideDistSq <= 1e-8) return 1.0;
+
+    float maxExtent = max(max(halfSize.x, halfSize.y), 0.0001);
+    float edgeSoftness = max(abs(localZ) * 0.02, maxExtent * 0.002);
+    return 1.0 - LV_Smoothstep01(saturate(sqrt(outsideDistSq) * rcp(edgeSoftness)));
+}
+
 // Projects a front-facing rectangle or triangle light into L1 SH using a cheap solid-angle approximation.
 // Caller must cull localPos.z <= 0 before calling.
 inline float4 LV_ProjectFastQuadLightIrradianceSH(float3 lightToWorldPos, float3 localPos, float centerSqDist, float3 xAxis, float3 yAxis, float2 size, float shape, out float3 pointLightShadingDir) {
@@ -567,13 +578,14 @@ inline float4 LV_ProjectFastQuadLightIrradianceSH(float3 lightToWorldPos, float3
     float2 rectDelta = localPos.xy - closestXY;
     float rectDeltaSq = dot(rectDelta, rectDelta);
     float planeRectSq = rectDeltaSq + localPos.z * localPos.z;
+    float footprint = LV_AreaLightShapeFootprint(localPos.xy, closestXY, halfSize, shape, localPos.z);
     float closestSqDist = max(planeRectSq, 1e-6);
     float distanceBlend = planeRectSq * rcp(planeRectSq + extentSq);
     float solidSqDist = lerp(closestSqDist, centerSqDist, distanceBlend);
     float invSolidDist = rsqrt(solidSqDist);
     float invExtendedDist = rsqrt(solidSqDist + extentSq);
 
-    float solidAngle = LV_FastAtanPositive(area * localPos.z * invSolidDist * invSolidDist * invExtendedDist * 0.25);
+    float solidAngle = LV_FastAtanPositive(area * localPos.z * invSolidDist * invSolidDist * invExtendedDist * 0.25) * footprint;
     float l0 = solidAngle * LV_INV_PI;
 
     float2 representativeXY = lerp(closestXY, 0, distanceBlend);

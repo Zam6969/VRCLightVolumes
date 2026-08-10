@@ -20,6 +20,8 @@ namespace VRCLightVolumes {
         private Vector4 _editorAreaCookieCrop = new Vector4(0f, 0f, 1f, 1f);
         private int _editorAreaCookieCropShape = 0;
         private float _editorAreaCookieCropRotation = 0f;
+        [Tooltip("Editor-only image shown behind the Area Cookie Crop picker. Use this as an alignment guide when the runtime cookie source is blank, generated, or hard to inspect.")]
+        [HideInInspector] public Texture AreaCookieCropPreview;
 
         // Caches editor-observed scalar values after the editor coordinator mirrors them without proxy polling.
         internal void CacheEditorObservedValues() {
