@@ -161,7 +161,7 @@ uniform float4 _UdonPointLightVolumeDirection[VRCLV_MAX_LIGHTS_COUNT];
 // W = signed inverse depth range for v3 Point and Spot shadows. A negative value marks a world-space shadow whose bake origin exactly matches the light position.
 // Area stores shape in the hundredths fraction. Textured Area also keeps its tag/mirror enum here: +1 none, -1 X, +2 Y, -2 XY. Near clip is stored in ExtraData.W.
 uniform float4 _UdonPointLightVolumeCustomID[VRCLV_MAX_LIGHTS_COUNT];
-// Custom Area Light triangle: [A.xy, B.xy], then [C.xy, normalized area, range fade power]. Points are normalized to the emitter rectangle.
+// Custom Area Light triangle: [A.xy, B.xy], then [C.xy, normalized area, shape spread + 1]. Points are normalized to the emitter rectangle.
 uniform float4 _UdonPointLightVolumeAreaTriangleData[VRCLV_MAX_LIGHTS_COUNT * 2];
 
 #ifndef SHADER_TARGET_SURFACE_ANALYSIS
@@ -584,14 +584,16 @@ inline float2 LV_AreaLightClosestXY(float2 localXY, float2 halfSize, float shape
     return LV_ClosestPointOnTriangle(localXY, a, b, c);
 }
 
-inline float LV_AreaLightShapeFootprint(float2 localXY, float2 halfSize, float shape, float4 customTriangle0, float4 customTriangle1) {
-    float footprint = 0.0;
-    [branch] if (shape < 0.5) {
-        footprint = all(abs(localXY) <= halfSize) ? 1.0 : 0.0;
-    } else {
-        float2 a = 0.0, b = 0.0, c = 0.0;
-        LV_AreaLightTriangleVertices(halfSize, shape, customTriangle0, customTriangle1, a, b, c);
-        footprint = LV_PointInTriangleMask(localXY, a, b, c);
+inline float LV_AreaLightShapeFootprint(float2 localXY, float localZ, float2 halfSize, float shape, float shapeSpread, float4 customTriangle0, float4 customTriangle1) {
+    float2 closestXY = LV_AreaLightClosestXY(localXY, halfSize, shape, customTriangle0, customTriangle1);
+    float outsideDistance = length(localXY - closestXY);
+    float spreadRadius = max(localZ, 0.0) * saturate(shapeSpread);
+    float footprint = outsideDistance <= 0.00001 ? 1.0 : 0.0;
+    [branch] if (spreadRadius > 0.00001) {
+        float fadeWidth = max(spreadRadius * 0.35, 0.001);
+        float fadeStart = max(spreadRadius - fadeWidth, 0.0);
+        float fade = saturate((outsideDistance - fadeStart) * rcp(fadeWidth));
+        footprint = 1.0 - LV_Smoothstep01(fade);
     }
     return footprint;
 }
@@ -607,7 +609,8 @@ inline float4 LV_ProjectFastQuadLightIrradianceSH(float3 lightToWorldPos, float3
     float2 rectDelta = localPos.xy - closestXY;
     float rectDeltaSq = dot(rectDelta, rectDelta);
     float planeRectSq = rectDeltaSq + localPos.z * localPos.z;
-    float footprint = LV_AreaLightShapeFootprint(localPos.xy, halfSize, shape, customTriangle0, customTriangle1);
+    float shapeSpread = customTriangle1.w > 0 ? saturate(customTriangle1.w - 1.0) : 1.0;
+    float footprint = LV_AreaLightShapeFootprint(localPos.xy, localPos.z, halfSize, shape, shapeSpread, customTriangle0, customTriangle1);
     float closestSqDist = max(planeRectSq, 1e-6);
     float distanceBlend = planeRectSq * rcp(planeRectSq + extentSq);
     float solidSqDist = lerp(closestSqDist, centerSqDist, distanceBlend);
@@ -861,8 +864,7 @@ bool LV_PointLightVolumeContribution(uint id, float3 worldPos, float3 pointLight
                     float3 areaPointLightShadingDir;
                     float sourceSpreadSq = dot(areaSize, areaSize) * (0.25 * rcp(distSq));
                     float4 areaLightSH = LV_ProjectFastQuadLightIrradianceSH(lightToWorldPos, areaLocalPos, distSq, areaXAxis, areaYAxis, areaSize, areaShape, areaTriangle0, areaTriangle1, areaPointLightShadingDir);
-                    float areaRangeFade = areaTriangle1.w > 0 ? areaTriangle1.w : 1.0;
-                    float areaAttenuation = pow(saturate(1 - distSq * rcp(rangeSq)), areaRangeFade);
+                    float areaAttenuation = saturate(1 - distSq * rcp(rangeSq));
 
                     [branch] if (areaLightSH.w > 0 && areaAttenuation > 0) { // Area projection has non-zero solid angle and remains inside its culling range
                         float invDist = rsqrt(distSq);

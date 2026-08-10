@@ -405,7 +405,7 @@ namespace VRCLightVolumes {
             SetUdonProgramVariable(udonBehaviour, "AreaLightShapeTriangleA", pointLight.AreaLightShapeTriangleA);
             SetUdonProgramVariable(udonBehaviour, "AreaLightShapeTriangleB", pointLight.AreaLightShapeTriangleB);
             SetUdonProgramVariable(udonBehaviour, "AreaLightShapeTriangleC", pointLight.AreaLightShapeTriangleC);
-            SetUdonProgramVariable(udonBehaviour, "AreaLightRangeFade", pointLight.AreaLightRangeFade);
+            SetUdonProgramVariable(udonBehaviour, "AreaLightShapeSpread", pointLight.AreaLightShapeSpread);
 #endif
         }
 

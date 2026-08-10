@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 using System;
 #if UDONSHARP
 using UdonSharp;
@@ -27,9 +28,6 @@ namespace VRCLightVolumes {
     public partial class PointLightVolumeInstance : MonoBehaviour
 #endif
     {
-        private const float MinAreaLightRangeFade = 0.25f;
-        private const float MaxAreaLightRangeFade = 8f;
-
         [Tooltip("Defines whether this point light volume can be moved at runtime. Disabling this option slightly improves performance. Don't forget to enable \"Auto Update Volumes\" in your Light Volumes Setup to get these dynamic updates!")]
         public bool IsDynamic = false;
         [Tooltip("Point Light is the most performant type. For static lighting, prefer baked additive Light Volumes.")]
@@ -86,8 +84,9 @@ namespace VRCLightVolumes {
         [HideInInspector] public Vector4 AreaLightShapeTriangleA = new Vector4(0f, 0.5f, 0f, 0f);
         [HideInInspector] public Vector4 AreaLightShapeTriangleB = new Vector4(0.5f, -0.5f, 0f, 0f);
         [HideInInspector] public Vector4 AreaLightShapeTriangleC = new Vector4(-0.5f, -0.5f, 0f, 0f);
-        [Tooltip("Controls how quickly Area Light brightness fades toward its range boundary. 1 keeps the standard fade; higher values fade earlier and more strongly.")]
-        [Range(MinAreaLightRangeFade, MaxAreaLightRangeFade)] public float AreaLightRangeFade = 1f;
+        [Tooltip("Controls how much the Area Light shape expands and softens with distance. 0 keeps straight hard edges; 1 spreads broadly into the round range boundary.")]
+        [FormerlySerializedAs("AreaLightRangeFade")]
+        [Range(0f, 1f)] public float AreaLightShapeSpread = 1f;
         [Tooltip("Area Light height in meters. Affects textured Area Light emission and size-aware Area Light speculars in modern compatible shaders.")]
         [Min(0.001f)] public float Height = 1f;
 
@@ -623,7 +622,7 @@ namespace VRCLightVolumes {
             AreaLightShapeTriangleA = GetSafeAreaLightShapeTrianglePoint(AreaLightShapeTriangleA);
             AreaLightShapeTriangleB = GetSafeAreaLightShapeTrianglePoint(AreaLightShapeTriangleB);
             AreaLightShapeTriangleC = GetSafeAreaLightShapeTrianglePoint(AreaLightShapeTriangleC);
-            AreaLightRangeFade = GetSafeAreaLightRangeFade(AreaLightRangeFade);
+            AreaLightShapeSpread = GetSafeAreaLightShapeSpread(AreaLightShapeSpread);
             UpdateRotationCore(transformRotation, instanceTransform.localToWorldMatrix);
             MarkRangeDirtyAndNotify(true, CustomTexture != null || CustomTextureMaterial != null, shadowTexturesChanged);
         }
@@ -694,11 +693,11 @@ namespace VRCLightVolumes {
             MarkRangeDirtyAndNotify(false, false, false);
         }
 
-        // Sets the Area Light distance-fade power used toward its culling range boundary.
-        public void SetAreaLightRangeFade(float fade) {
-            float safeFade = GetSafeAreaLightRangeFade(fade);
-            if (AreaLightRangeFade == safeFade) return;
-            AreaLightRangeFade = safeFade;
+        // Sets how much the Area Light shape expands and softens with distance.
+        public void SetAreaLightShapeSpread(float spread) {
+            float safeSpread = GetSafeAreaLightShapeSpread(spread);
+            if (AreaLightShapeSpread == safeSpread) return;
+            AreaLightShapeSpread = safeSpread;
             NotifyManager(false, false, false);
         }
 
@@ -780,8 +779,8 @@ namespace VRCLightVolumes {
             return Mathf.Clamp(shape, 0, 5);
         }
 
-        private float GetSafeAreaLightRangeFade(float fade) {
-            return fade == fade && fade > 0f ? Mathf.Clamp(fade, MinAreaLightRangeFade, MaxAreaLightRangeFade) : 1f;
+        private float GetSafeAreaLightShapeSpread(float spread) {
+            return spread == spread ? Mathf.Clamp01(spread) : 1f;
         }
 
         // Keeps rotations bounded for serialized data and cache-key comparisons.

@@ -479,7 +479,7 @@ namespace VRCLightVolumes {
                 }
             }
             DrawAreaLightCornerEditControls(areaShapeProperty);
-            DrawProperty("AreaLightRangeFade", "Range Fade");
+            DrawProperty("AreaLightShapeSpread", "Shape Spread");
 
             DrawTextureMaterialField("Cookie", _textureMaterialHint, false);
 
