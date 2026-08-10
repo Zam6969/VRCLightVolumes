@@ -4328,12 +4328,13 @@ namespace VRCLightVolumes.Tests {
             string projectionSource = shaderSource.Substring(projectionStart, attenuationStart - projectionStart);
             Assert.That(footprintSource, Does.Contain("shape < 0.5"));
             Assert.That(footprintSource, Does.Contain("LV_PointInTriangleMask"));
-            Assert.That(footprintSource, Does.Contain("outsideDelta = localXY - closestXY"));
-            Assert.That(footprintSource, Does.Contain("edgeSoftness = max(maxExtent * 0.002, 0.0001)"));
+            Assert.That(footprintSource, Does.Contain("return LV_PointInTriangleMask(localXY, a, b, c)"));
+            Assert.That(footprintSource, Does.Not.Contain("outsideDelta"));
+            Assert.That(footprintSource, Does.Not.Contain("edgeSoftness"));
             Assert.That(footprintSource, Does.Not.Contain("abs(localZ) * 0.02"));
             Assert.That(projectionSource, Does.Contain("packedAreaData = customID_data.w"));
             Assert.That(projectionSource, Does.Not.Contain("_UdonLightVolumeVersion >= 3 ? customID_data.w : 0.0"));
-            Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeFootprint(localPos.xy, closestXY, halfSize, shape)"));
+            Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeFootprint(localPos.xy, halfSize, shape)"));
             Assert.That(projectionSource, Does.Contain("* footprint"));
         }
 

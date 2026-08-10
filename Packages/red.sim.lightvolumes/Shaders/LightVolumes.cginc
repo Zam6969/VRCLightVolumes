@@ -565,17 +565,11 @@ inline float2 LV_AreaLightClosestXY(float2 localXY, float2 halfSize, float shape
     return LV_ClosestPointOnTriangle(localXY, a, b, c);
 }
 
-inline float LV_AreaLightShapeFootprint(float2 localXY, float2 closestXY, float2 halfSize, float shape) {
+inline float LV_AreaLightShapeFootprint(float2 localXY, float2 halfSize, float shape) {
     [branch] if (shape < 0.5) return 1.0;
     float2 a, b, c;
     LV_AreaLightTriangleVertices(halfSize, shape, a, b, c);
-    [branch] if (LV_PointInTriangleMask(localXY, a, b, c) > 0.5) return 1.0;
-
-    float2 outsideDelta = localXY - closestXY;
-    float outsideDistSq = dot(outsideDelta, outsideDelta);
-    float maxExtent = max(max(halfSize.x, halfSize.y), 0.0001);
-    float edgeSoftness = max(maxExtent * 0.002, 0.0001);
-    return 1.0 - LV_Smoothstep01(saturate(sqrt(outsideDistSq) * rcp(edgeSoftness)));
+    return LV_PointInTriangleMask(localXY, a, b, c);
 }
 
 // Projects a front-facing rectangle or triangle light into L1 SH using a cheap solid-angle approximation.
@@ -589,7 +583,7 @@ inline float4 LV_ProjectFastQuadLightIrradianceSH(float3 lightToWorldPos, float3
     float2 rectDelta = localPos.xy - closestXY;
     float rectDeltaSq = dot(rectDelta, rectDelta);
     float planeRectSq = rectDeltaSq + localPos.z * localPos.z;
-    float footprint = LV_AreaLightShapeFootprint(localPos.xy, closestXY, halfSize, shape);
+    float footprint = LV_AreaLightShapeFootprint(localPos.xy, halfSize, shape);
     float closestSqDist = max(planeRectSq, 1e-6);
     float distanceBlend = planeRectSq * rcp(planeRectSq + extentSq);
     float solidSqDist = lerp(closestSqDist, centerSqDist, distanceBlend);
