@@ -217,6 +217,9 @@ namespace VRCLightVolumes.Tests {
             source.AreaCookieCrop = new Vector4(0.125f, 0.25f, 0.5f, 0.75f);
             source.AreaCookieCropShape = 3;
             source.AreaCookieCropRotation = 37.5f;
+            source.AreaCookieCropTriangleA = new Vector4(0.1f, 0.2f, 0f, 0f);
+            source.AreaCookieCropTriangleB = new Vector4(0.8f, 0.15f, 0f, 0f);
+            source.AreaCookieCropTriangleC = new Vector4(0.35f, 0.9f, 0f, 0f);
             source.AreaLightShape = 4;
             source.AreaCookieCropPreview = cookie;
             source.Shadows = true;
@@ -242,6 +245,9 @@ namespace VRCLightVolumes.Tests {
             Assert.That(destination.AreaCookieCrop, Is.EqualTo(source.AreaCookieCrop));
             Assert.That(destination.AreaCookieCropShape, Is.EqualTo(3));
             Assert.That(destination.AreaCookieCropRotation, Is.EqualTo(37.5f).Within(Epsilon));
+            Assert.That(destination.AreaCookieCropTriangleA, Is.EqualTo(source.AreaCookieCropTriangleA));
+            Assert.That(destination.AreaCookieCropTriangleB, Is.EqualTo(source.AreaCookieCropTriangleB));
+            Assert.That(destination.AreaCookieCropTriangleC, Is.EqualTo(source.AreaCookieCropTriangleC));
             Assert.That(destination.AreaLightShape, Is.EqualTo(4));
             Assert.That(destination.AreaCookieCropPreview, Is.SameAs(cookie));
             UnityEngine.Object.DestroyImmediate(cookie);

@@ -131,8 +131,11 @@ When changing a Point Light Volume from another Udon script, prefer the setter m
 |`float OuterAngleTan` | Tangent of the spotlight outer angle used by cookie projection and single-slice spot shadows. |
 |`float SpotCookieAspect` | Width / height aspect used by custom Spot Light cookie projection. |
 |`Vector4 AreaCookieCrop` | Normalized Area Light cookie crop rectangle. `x/y` are the lower-left offset, `z/w` are width and height. |
-|`int AreaCookieCropShape` | Area Light cookie crop shape. `0` = rectangle, `1` = lower-left triangle, `2` = lower-right triangle, `3` = upper-left triangle, `4` = upper-right triangle. |
+|`int AreaCookieCropShape` | Area Light cookie crop shape. `0` = rectangle, `1` = lower-left triangle, `2` = lower-right triangle, `3` = upper-left triangle, `4` = upper-right triangle, `5` = custom clicked triangle. |
 |`float AreaCookieCropRotation` | Area Light cookie crop rotation in degrees. Rotates the cropped rectangle or triangle around its center while fitting inside the selected crop. |
+|`Vector4 AreaCookieCropTriangleA` | First custom crop-local triangle point used when `AreaCookieCropShape` is `5`; `x/y` are normalized inside `AreaCookieCrop`. |
+|`Vector4 AreaCookieCropTriangleB` | Second custom crop-local triangle point used when `AreaCookieCropShape` is `5`; `x/y` are normalized inside `AreaCookieCrop`. |
+|`Vector4 AreaCookieCropTriangleC` | Third custom crop-local triangle point used when `AreaCookieCropShape` is `5`; `x/y` are normalized inside `AreaCookieCrop`. |
 |`int AreaLightShape` | Area Light emitter shape. `0` = rectangle, `1` = lower-left triangle, `2` = lower-right triangle, `3` = upper-left triangle, `4` = upper-right triangle. |
 |`float Height` | Area light height in meters. Affects textured Area Light emission and size-aware Area Light speculars in modern compatible shaders. |
 |`float AreaCookieMirror` | Internal Area Cookie X/Y reflection metadata derived from the transform, including reflected parent transforms. Do not set it manually; `UpdateRotation()`, `UpdateScale()` and the manager keep it synchronized. |
@@ -196,6 +199,7 @@ When changing a Point Light Volume from another Udon script, prefer the setter m
 |`void SetAreaCookieCrop(float offsetX, float offsetY, float width, float height, int shape, float rotation)` | Sets normalized Area Light cookie crop rectangle, shape and rotation. Rotation is in degrees. |
 |`void SetAreaCookieCropShape(int shape)` | Sets only the Area Light cookie crop shape while keeping the current crop rectangle. |
 |`void SetAreaCookieCropRotation(float rotation)` | Sets only the Area Light cookie crop rotation while keeping the current crop rectangle and shape. |
+|`void SetAreaCookieCropTriangle(float ax, float ay, float bx, float by, float cx, float cy)` | Sets the custom crop-local triangle points and switches `AreaCookieCropShape` to `5`. |
 |`void SetColor(Color color)` | Sets light source color, updates the internal change cache and marks range dirty only when the value changes. |
 |`void SetIntensity(float intensity)` | Sets light source intensity, updates the internal change cache and marks range dirty only when the value changes. |
 |`void SetShadingStrength(float shadingStrength)` | Sets per-surface Point Light Volume shading and shadow strength in the `0..1` range, updating the internal change cache only when the value changes. |

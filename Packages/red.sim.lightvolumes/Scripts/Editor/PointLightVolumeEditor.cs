@@ -30,6 +30,8 @@ namespace VRCLightVolumes {
         private const float AreaCookiePreviewMaxHeight = 280f;
         private const float AreaCookieCropMinSize = 0.001f;
         private const float AreaCookieCropMinPreviewPixels = 1f;
+        private const int AreaCookieCustomTriangleShape = 5;
+        private const float AreaCookieTrianglePointRadius = 4f;
         private static readonly Color _shadowClipVisibleColor = new Color(0.2f, 0.65f, 1f, 0.75f);
         private static readonly Color _shadowClipHiddenColor = new Color(0.2f, 0.65f, 1f, 0.18f);
         private static readonly Color _areaCookiePreviewBackgroundColor = new Color(0.04f, 0.04f, 0.04f, 1f);
@@ -42,7 +44,10 @@ namespace VRCLightVolumes {
         private static readonly Color _shapePickerGuideColor = new Color(1f, 1f, 1f, 0.22f);
         private static GUIStyle _projectionSourceHintStyle;
         private Vector2 _areaCookieCropDragStart;
+        private readonly Vector2[] _areaCookieTrianglePickPoints = new Vector2[3];
+        private int _areaCookieTrianglePickCount;
         private bool _isDraggingAreaCookieCrop;
+        private bool _isPickingAreaCookieTriangle;
         private bool _areaCookieCropHasDragged;
         private bool _debugExpanded;
 
@@ -266,8 +271,10 @@ namespace VRCLightVolumes {
             }
 
             HandleShapePickerInput(rectangleRect, cornerRect, property);
-            if (Event.current.type == EventType.Repaint)
-                DrawShapePickerVisuals(rectangleRect, cornerRect, property.hasMultipleDifferentValues ? -1 : Mathf.Clamp(property.intValue, 0, 4));
+            if (Event.current.type == EventType.Repaint) {
+                int selectedShape = property.hasMultipleDifferentValues ? -1 : property.intValue;
+                DrawShapePickerVisuals(rectangleRect, cornerRect, selectedShape > 4 ? -1 : Mathf.Clamp(selectedShape, 0, 4));
+            }
             EditorGUI.EndProperty();
         }
 
@@ -437,6 +444,11 @@ namespace VRCLightVolumes {
             }
 
             SerializedProperty cropProperty = serializedObject.FindProperty("AreaCookieCrop");
+            SerializedProperty triangleAProperty = serializedObject.FindProperty("AreaCookieCropTriangleA");
+            SerializedProperty triangleBProperty = serializedObject.FindProperty("AreaCookieCropTriangleB");
+            SerializedProperty triangleCProperty = serializedObject.FindProperty("AreaCookieCropTriangleC");
+            DrawAreaCookieTrianglePickerButton(shapeProperty);
+
             using (new EditorGUILayout.HorizontalScope()) {
                 EditorGUILayout.PropertyField(cropProperty, new GUIContent("Crop", cropProperty.tooltip));
                 if (GUILayout.Button("Full", GUILayout.Width(44f))) cropProperty.vector4Value = new Vector4(0f, 0f, 1f, 1f);
@@ -444,16 +456,36 @@ namespace VRCLightVolumes {
 
             UnityEngine.Object previewSource = previewProperty != null ? previewProperty.objectReferenceValue : null;
             UnityEngine.Object cookieSource = serializedObject.FindProperty("Cookie").objectReferenceValue;
-            DrawAreaCookieCropPreview(cropProperty, shapeProperty, rotationProperty, previewSource, cookieSource);
+            DrawAreaCookieCropPreview(cropProperty, shapeProperty, rotationProperty, triangleAProperty, triangleBProperty, triangleCProperty, previewSource, cookieSource);
         }
 
-        // Draws the assigned guide image, cookie image, or a blank 1920x1080 canvas, then applies drag selections to AreaCookieCrop.
-        private void DrawAreaCookieCropPreview(SerializedProperty cropProperty, SerializedProperty shapeProperty, SerializedProperty rotationProperty, UnityEngine.Object previewSource, UnityEngine.Object cookieSource) {
+        // Draws the triangle-picking command row.
+        private void DrawAreaCookieTrianglePickerButton(SerializedProperty shapeProperty) {
+            using (new EditorGUILayout.HorizontalScope()) {
+                GUILayout.Space(EditorGUIUtility.labelWidth);
+                bool nextPicking = GUILayout.Toggle(_isPickingAreaCookieTriangle, "Pick Triangle", EditorStyles.miniButton, GUILayout.Width(110f));
+                if (nextPicking != _isPickingAreaCookieTriangle) {
+                    _isPickingAreaCookieTriangle = nextPicking;
+                    _areaCookieTrianglePickCount = 0;
+                    _isDraggingAreaCookieCrop = false;
+                    GUIUtility.hotControl = 0;
+                    Repaint();
+                }
+                using (new EditorGUI.DisabledScope(!_isPickingAreaCookieTriangle)) {
+                    GUILayout.Label(_areaCookieTrianglePickCount + "/3", GUILayout.Width(28f));
+                }
+                if (shapeProperty != null && !shapeProperty.hasMultipleDifferentValues && shapeProperty.intValue == AreaCookieCustomTriangleShape)
+                    GUILayout.Label("Custom", GUILayout.Width(54f));
+            }
+        }
+
+        // Draws the assigned guide image, cookie image, or a blank 1920x1080 canvas, then applies drag or point-click selections to AreaCookieCrop.
+        private void DrawAreaCookieCropPreview(SerializedProperty cropProperty, SerializedProperty shapeProperty, SerializedProperty rotationProperty, SerializedProperty triangleAProperty, SerializedProperty triangleBProperty, SerializedProperty triangleCProperty, UnityEngine.Object previewSource, UnityEngine.Object cookieSource) {
             float previewAspect = GetAreaCookiePreviewAspect(previewSource, cookieSource);
             float previewHeight = Mathf.Clamp((EditorGUIUtility.currentViewWidth - 40f) / previewAspect, AreaCookiePreviewMinHeight, AreaCookiePreviewMaxHeight);
             Rect previewRect = EditorGUI.IndentedRect(EditorGUILayout.GetControlRect(false, previewHeight));
             Rect canvasRect = FitRectToAspect(previewRect, previewAspect);
-            HandleAreaCookieCropPreviewInput(canvasRect, cropProperty);
+            HandleAreaCookieCropPreviewInput(canvasRect, cropProperty, shapeProperty, rotationProperty, triangleAProperty, triangleBProperty, triangleCProperty);
 
             if (Event.current.type != EventType.Repaint) return;
             EditorGUI.DrawRect(previewRect, _areaCookiePreviewBackgroundColor);
@@ -464,12 +496,19 @@ namespace VRCLightVolumes {
             DrawRectOutline(canvasRect, _areaCookiePreviewBorderColor, 1f);
             Rect cropRect = CropToPreviewRect(canvasRect, GetSafeAreaCookieCrop(cropProperty.vector4Value));
             int shape = shapeProperty != null ? Mathf.Clamp(shapeProperty.intValue, 0, 4) : 0;
+            if (shapeProperty != null && shapeProperty.intValue == AreaCookieCustomTriangleShape) shape = AreaCookieCustomTriangleShape;
             float rotation = rotationProperty != null ? GetSafeAreaCookieCropRotation(rotationProperty.floatValue) : 0f;
-            DrawAreaCookieCropShapeOverlay(cropRect, shape, rotation);
+            DrawAreaCookieCropShapeOverlay(cropRect, shape, rotation, GetVectorPropertyXY(triangleAProperty, GetDefaultAreaCookieTriangleA()), GetVectorPropertyXY(triangleBProperty, GetDefaultAreaCookieTriangleB()), GetVectorPropertyXY(triangleCProperty, GetDefaultAreaCookieTriangleC()));
+            if (_isPickingAreaCookieTriangle) DrawAreaCookieTrianglePickOverlay(canvasRect);
         }
 
-        // Handles click-drag crop selection. Hold Shift to force a square selection in image pixels.
-        private void HandleAreaCookieCropPreviewInput(Rect canvasRect, SerializedProperty cropProperty) {
+        // Handles click-drag crop selection or the three-click custom triangle picker.
+        private void HandleAreaCookieCropPreviewInput(Rect canvasRect, SerializedProperty cropProperty, SerializedProperty shapeProperty, SerializedProperty rotationProperty, SerializedProperty triangleAProperty, SerializedProperty triangleBProperty, SerializedProperty triangleCProperty) {
+            if (_isPickingAreaCookieTriangle) {
+                HandleAreaCookieTrianglePickerInput(canvasRect, cropProperty, shapeProperty, rotationProperty, triangleAProperty, triangleBProperty, triangleCProperty);
+                return;
+            }
+
             int controlID = GUIUtility.GetControlID(FocusType.Passive, canvasRect);
             Event currentEvent = Event.current;
             switch (currentEvent.GetTypeForControl(controlID)) {
@@ -496,6 +535,91 @@ namespace VRCLightVolumes {
                     currentEvent.Use();
                     break;
             }
+        }
+
+        // Collects three preview clicks and converts them into a custom crop-local triangle.
+        private void HandleAreaCookieTrianglePickerInput(Rect canvasRect, SerializedProperty cropProperty, SerializedProperty shapeProperty, SerializedProperty rotationProperty, SerializedProperty triangleAProperty, SerializedProperty triangleBProperty, SerializedProperty triangleCProperty) {
+            int controlID = GUIUtility.GetControlID(FocusType.Passive, canvasRect);
+            Event currentEvent = Event.current;
+            switch (currentEvent.GetTypeForControl(controlID)) {
+                case EventType.MouseDown:
+                    if (!canvasRect.Contains(currentEvent.mousePosition)) return;
+                    if (currentEvent.button == 1) {
+                        CancelAreaCookieTrianglePick();
+                        currentEvent.Use();
+                        return;
+                    }
+                    if (currentEvent.button != 0) return;
+                    GUIUtility.hotControl = controlID;
+                    _areaCookieTrianglePickPoints[Mathf.Clamp(_areaCookieTrianglePickCount, 0, 2)] = PreviewPointToAreaCookieUv(currentEvent.mousePosition, canvasRect);
+                    _areaCookieTrianglePickCount++;
+                    if (_areaCookieTrianglePickCount >= 3) ApplyAreaCookieTrianglePick(canvasRect, cropProperty, shapeProperty, rotationProperty, triangleAProperty, triangleBProperty, triangleCProperty);
+                    GUI.changed = true;
+                    currentEvent.Use();
+                    Repaint();
+                    break;
+                case EventType.MouseUp:
+                    if (GUIUtility.hotControl != controlID) return;
+                    GUIUtility.hotControl = 0;
+                    currentEvent.Use();
+                    break;
+                case EventType.KeyDown:
+                    if (currentEvent.keyCode != KeyCode.Escape) return;
+                    CancelAreaCookieTrianglePick();
+                    currentEvent.Use();
+                    break;
+                case EventType.MouseMove:
+                    if (canvasRect.Contains(currentEvent.mousePosition)) Repaint();
+                    break;
+            }
+        }
+
+        // Applies the collected absolute preview points as a crop rectangle plus crop-local triangle points.
+        private void ApplyAreaCookieTrianglePick(Rect canvasRect, SerializedProperty cropProperty, SerializedProperty shapeProperty, SerializedProperty rotationProperty, SerializedProperty triangleAProperty, SerializedProperty triangleBProperty, SerializedProperty triangleCProperty) {
+            if (cropProperty == null || shapeProperty == null || triangleAProperty == null || triangleBProperty == null || triangleCProperty == null) {
+                CancelAreaCookieTrianglePick();
+                return;
+            }
+
+            Vector2 a = _areaCookieTrianglePickPoints[0];
+            Vector2 b = _areaCookieTrianglePickPoints[1];
+            Vector2 c = _areaCookieTrianglePickPoints[2];
+            float left = Mathf.Min(a.x, Mathf.Min(b.x, c.x));
+            float right = Mathf.Max(a.x, Mathf.Max(b.x, c.x));
+            float bottom = Mathf.Min(a.y, Mathf.Min(b.y, c.y));
+            float top = Mathf.Max(a.y, Mathf.Max(b.y, c.y));
+            ExpandAreaCookieTriangleBounds(ref left, ref right, Mathf.Max(AreaCookieCropMinSize, AreaCookieCropMinPreviewPixels / Mathf.Max(canvasRect.width, 1f)));
+            ExpandAreaCookieTriangleBounds(ref bottom, ref top, Mathf.Max(AreaCookieCropMinSize, AreaCookieCropMinPreviewPixels / Mathf.Max(canvasRect.height, 1f)));
+
+            Vector4 crop = GetSafeAreaCookieCrop(new Vector4(left, bottom, right - left, top - bottom));
+            cropProperty.vector4Value = crop;
+            shapeProperty.intValue = AreaCookieCustomTriangleShape;
+            if (rotationProperty != null) rotationProperty.floatValue = 0f;
+            triangleAProperty.vector4Value = AreaCookieUvToCropLocalPoint(a, crop);
+            triangleBProperty.vector4Value = AreaCookieUvToCropLocalPoint(b, crop);
+            triangleCProperty.vector4Value = AreaCookieUvToCropLocalPoint(c, crop);
+            CancelAreaCookieTrianglePick();
+        }
+
+        // Keeps a clicked triangle crop from becoming too small to edit or bake.
+        private void ExpandAreaCookieTriangleBounds(ref float min, ref float max, float minSize) {
+            min = Mathf.Clamp01(min);
+            max = Mathf.Clamp01(max);
+            if (max - min >= minSize) return;
+            float size = Mathf.Min(minSize, 1f);
+            float center = (min + max) * 0.5f;
+            min = Mathf.Clamp(center - size * 0.5f, 0f, 1f - size);
+            max = min + size;
+        }
+
+        // Stops the point picker without changing the current crop.
+        private void CancelAreaCookieTrianglePick() {
+            _isPickingAreaCookieTriangle = false;
+            _areaCookieTrianglePickCount = 0;
+            _isDraggingAreaCookieCrop = false;
+            _areaCookieCropHasDragged = false;
+            GUIUtility.hotControl = 0;
+            Repaint();
         }
 
         // Converts a preview drag rectangle into normalized lower-left crop coordinates.
@@ -525,6 +649,30 @@ namespace VRCLightVolumes {
             );
             cropProperty.vector4Value = GetSafeAreaCookieCrop(crop);
             GUI.changed = true;
+        }
+
+        // Converts a preview-space point to normalized image UV with a lower-left origin.
+        private Vector2 PreviewPointToAreaCookieUv(Vector2 point, Rect canvasRect) {
+            Vector2 clamped = ClampPointToRect(point, canvasRect);
+            return new Vector2(
+                Mathf.Clamp01((clamped.x - canvasRect.x) / Mathf.Max(canvasRect.width, 0.0001f)),
+                Mathf.Clamp01((canvasRect.yMax - clamped.y) / Mathf.Max(canvasRect.height, 0.0001f))
+            );
+        }
+
+        // Converts normalized image UV with a lower-left origin to preview-space coordinates.
+        private Vector2 AreaCookieUvToPreviewPoint(Vector2 uv, Rect canvasRect) {
+            return new Vector2(
+                canvasRect.x + Mathf.Clamp01(uv.x) * canvasRect.width,
+                canvasRect.yMax - Mathf.Clamp01(uv.y) * canvasRect.height
+            );
+        }
+
+        // Converts an absolute image UV to the saved crop-local triangle point format.
+        private Vector4 AreaCookieUvToCropLocalPoint(Vector2 uv, Vector4 crop) {
+            float x = (Mathf.Clamp01(uv.x) - crop.x) / Mathf.Max(crop.z, AreaCookieCropMinSize);
+            float y = (Mathf.Clamp01(uv.y) - crop.y) / Mathf.Max(crop.w, AreaCookieCropMinSize);
+            return GetSafeAreaCookieCropTrianglePoint(new Vector4(x, y, 0f, 0f));
         }
 
         // Returns the drag end point adjusted to a screen-square box around the drag start.
@@ -582,6 +730,28 @@ namespace VRCLightVolumes {
             return new Vector4(offsetX, offsetY, width, height);
         }
 
+        // Clamps a custom triangle point to normalized crop-local coordinates.
+        private Vector4 GetSafeAreaCookieCropTrianglePoint(Vector4 point) {
+            return new Vector4(Mathf.Clamp01(point.x), Mathf.Clamp01(point.y), 0f, 0f);
+        }
+
+        private Vector4 GetDefaultAreaCookieTriangleA() {
+            return new Vector4(0f, 0f, 0f, 0f);
+        }
+
+        private Vector4 GetDefaultAreaCookieTriangleB() {
+            return new Vector4(1f, 0f, 0f, 0f);
+        }
+
+        private Vector4 GetDefaultAreaCookieTriangleC() {
+            return new Vector4(0f, 1f, 0f, 0f);
+        }
+
+        // Reads a Vector4 serialized point safely for preview drawing.
+        private Vector4 GetVectorPropertyXY(SerializedProperty property, Vector4 fallback) {
+            return property != null && !property.hasMultipleDifferentValues ? GetSafeAreaCookieCropTrianglePoint(property.vector4Value) : fallback;
+        }
+
         // Keeps rotations bounded for serialized data and preview math.
         private float GetSafeAreaCookieCropRotation(float rotation) {
             if (rotation != rotation) return 0f;
@@ -596,9 +766,28 @@ namespace VRCLightVolumes {
             return new Vector2(Mathf.Clamp(point.x, rect.xMin, rect.xMax), Mathf.Clamp(point.y, rect.yMin, rect.yMax));
         }
 
+        // Draws the in-progress three-click triangle points over the crop preview.
+        private void DrawAreaCookieTrianglePickOverlay(Rect canvasRect) {
+            if (_areaCookieTrianglePickCount <= 0) return;
+            Handles.BeginGUI();
+            Handles.color = _areaCookieCropBorderColor;
+            Vector3[] points = new Vector3[_areaCookieTrianglePickCount];
+            for (int i = 0; i < _areaCookieTrianglePickCount; i++) {
+                Vector2 previewPoint = AreaCookieUvToPreviewPoint(_areaCookieTrianglePickPoints[i], canvasRect);
+                points[i] = new Vector3(previewPoint.x, previewPoint.y, 0f);
+                Handles.DrawSolidDisc(points[i], Vector3.forward, AreaCookieTrianglePointRadius);
+            }
+            if (_areaCookieTrianglePickCount > 1) Handles.DrawAAPolyLine(2f, points);
+            if (_areaCookieTrianglePickCount == 2 && canvasRect.Contains(Event.current.mousePosition)) {
+                Vector2 hoverPoint = ClampPointToRect(Event.current.mousePosition, canvasRect);
+                Handles.DrawAAPolyLine(1f, points[1], new Vector3(hoverPoint.x, hoverPoint.y, 0f));
+            }
+            Handles.EndGUI();
+        }
+
         // Draws either a rectangle overlay or the selected triangular crop mask with rotation applied.
-        private void DrawAreaCookieCropShapeOverlay(Rect cropRect, int shape, float rotation) {
-            Vector3[] points = GetAreaCookieShapeOverlayPoints(cropRect, shape, rotation);
+        private void DrawAreaCookieCropShapeOverlay(Rect cropRect, int shape, float rotation, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC) {
+            Vector3[] points = GetAreaCookieShapeOverlayPoints(cropRect, shape, rotation, triangleA, triangleB, triangleC);
             if (points.Length < 3) return;
             if (shape > 0 || !Mathf.Approximately(rotation, 0f)) DrawRectOutline(cropRect, new Color(_areaCookieCropBorderColor.r, _areaCookieCropBorderColor.g, _areaCookieCropBorderColor.b, 0.35f), 1f);
             Handles.BeginGUI();
@@ -611,7 +800,12 @@ namespace VRCLightVolumes {
 
         // Returns preview-space vertices matching the shader's crop shape after rotation and clipping.
         private Vector3[] GetAreaCookieShapeOverlayPoints(Rect rect, int shape, float rotation) {
-            List<Vector2> points = GetAreaCookieShapeUnitPoints(shape);
+            return GetAreaCookieShapeOverlayPoints(rect, shape, rotation, GetDefaultAreaCookieTriangleA(), GetDefaultAreaCookieTriangleB(), GetDefaultAreaCookieTriangleC());
+        }
+
+        // Returns preview-space vertices matching the shader's crop shape after rotation and clipping.
+        private Vector3[] GetAreaCookieShapeOverlayPoints(Rect rect, int shape, float rotation, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC) {
+            List<Vector2> points = GetAreaCookieShapeUnitPoints(shape, triangleA, triangleB, triangleC);
             float aspect = rect.height > 0f ? rect.width / rect.height : 1f;
             for (int i = 0; i < points.Count; i++) points[i] = RotateAreaCookieUnitPoint(points[i], rotation, aspect);
             points = ClipAreaCookiePolygonToUnitRect(points);
@@ -622,6 +816,13 @@ namespace VRCLightVolumes {
 
         // Returns unit-space vertices in preview coordinates; Y grows downward to match IMGUI.
         private List<Vector2> GetAreaCookieShapeUnitPoints(int shape) {
+            return GetAreaCookieShapeUnitPoints(shape, GetDefaultAreaCookieTriangleA(), GetDefaultAreaCookieTriangleB(), GetDefaultAreaCookieTriangleC());
+        }
+
+        // Returns unit-space vertices in preview coordinates; Y grows downward to match IMGUI.
+        private List<Vector2> GetAreaCookieShapeUnitPoints(int shape, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC) {
+            if (shape == AreaCookieCustomTriangleShape)
+                return new List<Vector2> { new Vector2(triangleA.x, 1f - triangleA.y), new Vector2(triangleB.x, 1f - triangleB.y), new Vector2(triangleC.x, 1f - triangleC.y) };
             if (shape == 1) return new List<Vector2> { new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 0f) };
             if (shape == 2) return new List<Vector2> { new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(1f, 0f) };
             if (shape == 3) return new List<Vector2> { new Vector2(0f, 1f), new Vector2(0f, 0f), new Vector2(1f, 0f) };

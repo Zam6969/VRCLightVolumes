@@ -73,6 +73,8 @@ namespace VRCLightVolumes {
             if (_pointLightCustomIDs.Length < count || _customSourceTypes.Length < count || _customSingleTextureCrops.Length < count || _customSingleMaterialCrops.Length < count
                 || _customSingleTextureCropShapes.Length < count || _customSingleMaterialCropShapes.Length < count
                 || _customSingleTextureCropRotations.Length < count || _customSingleMaterialCropRotations.Length < count
+                || _customSingleTextureCropTriangleA.Length < count || _customSingleTextureCropTriangleB.Length < count || _customSingleTextureCropTriangleC.Length < count
+                || _customSingleMaterialCropTriangleA.Length < count || _customSingleMaterialCropTriangleB.Length < count || _customSingleMaterialCropTriangleC.Length < count
                 || _customSingleAreaCookieReceivers.Length < count || _customSingleAreaCookieReceiverIndices.Length < count || _pointLightAreaCookieAverageColors.Length < count) {
                 _customCubemapTextures = new Texture[count];
                 _customCubemapMaterials = new Material[count];
@@ -89,6 +91,12 @@ namespace VRCLightVolumes {
                 _customSingleMaterialCropShapes = new int[count];
                 _customSingleTextureCropRotations = new float[count];
                 _customSingleMaterialCropRotations = new float[count];
+                _customSingleTextureCropTriangleA = new Vector4[count];
+                _customSingleTextureCropTriangleB = new Vector4[count];
+                _customSingleTextureCropTriangleC = new Vector4[count];
+                _customSingleMaterialCropTriangleA = new Vector4[count];
+                _customSingleMaterialCropTriangleB = new Vector4[count];
+                _customSingleMaterialCropTriangleC = new Vector4[count];
                 _customSingleAreaCookieReceivers = new PointLightVolumeInstance[count];
                 _customSingleAreaCookieReceiverIndices = new int[count];
                 _pointLightCustomIDs = new int[count];
@@ -102,12 +110,18 @@ namespace VRCLightVolumes {
                     _customSingleTextureCrops[i] = GetDefaultCookieCrop();
                     _customSingleTextureCropShapes[i] = 0;
                     _customSingleTextureCropRotations[i] = 0f;
+                    _customSingleTextureCropTriangleA[i] = GetDefaultCookieCropTriangleA();
+                    _customSingleTextureCropTriangleB[i] = GetDefaultCookieCropTriangleB();
+                    _customSingleTextureCropTriangleC[i] = GetDefaultCookieCropTriangleC();
                 }
                 for (int i = 0; i < _customSingleMaterialCount; i++) {
                     _customSingleMaterials[i] = null;
                     _customSingleMaterialCrops[i] = GetDefaultCookieCrop();
                     _customSingleMaterialCropShapes[i] = 0;
                     _customSingleMaterialCropRotations[i] = 0f;
+                    _customSingleMaterialCropTriangleA[i] = GetDefaultCookieCropTriangleA();
+                    _customSingleMaterialCropTriangleB[i] = GetDefaultCookieCropTriangleB();
+                    _customSingleMaterialCropTriangleC[i] = GetDefaultCookieCropTriangleC();
                 }
             }
             // These registry-index mappings are grow-only. Clear the entire retained capacity so a
@@ -183,10 +197,16 @@ namespace VRCLightVolumes {
                         Vector4 cookieCrop = usesAreaCookieProjection ? GetSafeAreaCookieCrop(instance.AreaCookieCrop) : GetDefaultCookieCrop();
                         int cookieCropShape = usesAreaCookieProjection ? GetSafeAreaCookieCropShape(instance.AreaCookieCropShape) : 0;
                         float cookieCropRotation = usesAreaCookieProjection ? GetSafeAreaCookieCropRotation(instance.AreaCookieCropRotation) : 0f;
+                        bool usesCustomTriangle = usesAreaCookieProjection && cookieCropShape == 5;
+                        Vector4 cookieCropTriangleA = usesCustomTriangle ? GetSafeAreaCookieCropTrianglePoint(instance.AreaCookieCropTriangleA) : GetDefaultCookieCropTriangleA();
+                        Vector4 cookieCropTriangleB = usesCustomTriangle ? GetSafeAreaCookieCropTrianglePoint(instance.AreaCookieCropTriangleB) : GetDefaultCookieCropTriangleB();
+                        Vector4 cookieCropTriangleC = usesCustomTriangle ? GetSafeAreaCookieCropTrianglePoint(instance.AreaCookieCropTriangleC) : GetDefaultCookieCropTriangleC();
                         int index = -1;
                         for (int j = 0; j < singleTextureCount; j++) {
                             if (_customSingleTextures[j] == textureSource && _customSingleTextureAutoUpdates[j] == autoUpdate
-                                && CookieCropsMatch(_customSingleTextureCrops[j], cookieCrop) && _customSingleTextureCropShapes[j] == cookieCropShape && _customSingleTextureCropRotations[j] == cookieCropRotation) {
+                                && CookieCropsMatch(_customSingleTextureCrops[j], cookieCrop) && _customSingleTextureCropShapes[j] == cookieCropShape && _customSingleTextureCropRotations[j] == cookieCropRotation
+                                && CookieCropsMatch(_customSingleTextureCropTriangleA[j], cookieCropTriangleA) && CookieCropsMatch(_customSingleTextureCropTriangleB[j], cookieCropTriangleB)
+                                && CookieCropsMatch(_customSingleTextureCropTriangleC[j], cookieCropTriangleC)) {
                                 index = j;
                                 break;
                             }
@@ -198,6 +218,9 @@ namespace VRCLightVolumes {
                             _customSingleTextureCrops[singleTextureCount] = cookieCrop;
                             _customSingleTextureCropShapes[singleTextureCount] = cookieCropShape;
                             _customSingleTextureCropRotations[singleTextureCount] = cookieCropRotation;
+                            _customSingleTextureCropTriangleA[singleTextureCount] = cookieCropTriangleA;
+                            _customSingleTextureCropTriangleB[singleTextureCount] = cookieCropTriangleB;
+                            _customSingleTextureCropTriangleC[singleTextureCount] = cookieCropTriangleC;
                             singleTextureCount++;
                         }
                         if (usesPointLutProjection && index == 0) pointLutUsesFirstSingleTexture = true;
@@ -237,10 +260,16 @@ namespace VRCLightVolumes {
                         Vector4 cookieCrop = usesAreaCookieProjection ? GetSafeAreaCookieCrop(instance.AreaCookieCrop) : GetDefaultCookieCrop();
                         int cookieCropShape = usesAreaCookieProjection ? GetSafeAreaCookieCropShape(instance.AreaCookieCropShape) : 0;
                         float cookieCropRotation = usesAreaCookieProjection ? GetSafeAreaCookieCropRotation(instance.AreaCookieCropRotation) : 0f;
+                        bool usesCustomTriangle = usesAreaCookieProjection && cookieCropShape == 5;
+                        Vector4 cookieCropTriangleA = usesCustomTriangle ? GetSafeAreaCookieCropTrianglePoint(instance.AreaCookieCropTriangleA) : GetDefaultCookieCropTriangleA();
+                        Vector4 cookieCropTriangleB = usesCustomTriangle ? GetSafeAreaCookieCropTrianglePoint(instance.AreaCookieCropTriangleB) : GetDefaultCookieCropTriangleB();
+                        Vector4 cookieCropTriangleC = usesCustomTriangle ? GetSafeAreaCookieCropTrianglePoint(instance.AreaCookieCropTriangleC) : GetDefaultCookieCropTriangleC();
                         int index = -1;
                         for (int j = 0; j < singleMaterialCount; j++) {
                             if (_customSingleMaterials[j] == materialSource && _customSingleMaterialAutoUpdates[j] == autoUpdate
-                                && CookieCropsMatch(_customSingleMaterialCrops[j], cookieCrop) && _customSingleMaterialCropShapes[j] == cookieCropShape && _customSingleMaterialCropRotations[j] == cookieCropRotation) {
+                                && CookieCropsMatch(_customSingleMaterialCrops[j], cookieCrop) && _customSingleMaterialCropShapes[j] == cookieCropShape && _customSingleMaterialCropRotations[j] == cookieCropRotation
+                                && CookieCropsMatch(_customSingleMaterialCropTriangleA[j], cookieCropTriangleA) && CookieCropsMatch(_customSingleMaterialCropTriangleB[j], cookieCropTriangleB)
+                                && CookieCropsMatch(_customSingleMaterialCropTriangleC[j], cookieCropTriangleC)) {
                                 index = j;
                                 break;
                             }
@@ -252,6 +281,9 @@ namespace VRCLightVolumes {
                             _customSingleMaterialCrops[singleMaterialCount] = cookieCrop;
                             _customSingleMaterialCropShapes[singleMaterialCount] = cookieCropShape;
                             _customSingleMaterialCropRotations[singleMaterialCount] = cookieCropRotation;
+                            _customSingleMaterialCropTriangleA[singleMaterialCount] = cookieCropTriangleA;
+                            _customSingleMaterialCropTriangleB[singleMaterialCount] = cookieCropTriangleB;
+                            _customSingleMaterialCropTriangleC[singleMaterialCount] = cookieCropTriangleC;
                             singleMaterialCount++;
                         }
                         if (usesPointLutProjection && index == 0) pointLutUsesFirstSingleMaterial = true;
@@ -340,7 +372,8 @@ namespace VRCLightVolumes {
                 Texture sourceTexture = _customSingleTextures[i];
                 if (sourceTexture == null) continue;
                 int targetSlice = singleBaseSlice + i;
-                BlitTextureSlice(sourceTexture, targetSlice, CustomTextures, _customSingleTextureCrops[i], _customSingleTextureCropShapes[i], _customSingleTextureCropRotations[i]);
+                BlitTextureSlice(sourceTexture, targetSlice, CustomTextures, _customSingleTextureCrops[i], _customSingleTextureCropShapes[i], _customSingleTextureCropRotations[i],
+                    _customSingleTextureCropTriangleA[i], _customSingleTextureCropTriangleB[i], _customSingleTextureCropTriangleC[i]);
             }
 
             // Blit each 1-slice material source into 1 array slice after texture sources
@@ -349,7 +382,8 @@ namespace VRCLightVolumes {
                 Material sourceMaterial = _customSingleMaterials[i];
                 if (sourceMaterial == null) continue;
                 int targetSlice = singleBaseSlice + singleTextureCount + i;
-                BlitMaterialSlice(sourceMaterial, 0, targetSlice, false, CustomTextures, _customSingleMaterialCrops[i], _customSingleMaterialCropShapes[i], _customSingleMaterialCropRotations[i]);
+                BlitMaterialSlice(sourceMaterial, 0, targetSlice, false, CustomTextures, _customSingleMaterialCrops[i], _customSingleMaterialCropShapes[i], _customSingleMaterialCropRotations[i],
+                    _customSingleMaterialCropTriangleA[i], _customSingleMaterialCropTriangleB[i], _customSingleMaterialCropTriangleC[i]);
             }
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
@@ -867,6 +901,19 @@ namespace VRCLightVolumes {
             return new Vector4(0f, 0f, 1f, 1f);
         }
 
+        // Returns default crop-local custom triangle points.
+        private Vector4 GetDefaultCookieCropTriangleA() {
+            return new Vector4(0f, 0f, 0f, 0f);
+        }
+
+        private Vector4 GetDefaultCookieCropTriangleB() {
+            return new Vector4(1f, 0f, 0f, 0f);
+        }
+
+        private Vector4 GetDefaultCookieCropTriangleC() {
+            return new Vector4(0f, 1f, 0f, 0f);
+        }
+
         // Clamps a crop rectangle to a valid normalized subregion of the source cookie.
         private Vector4 GetSafeAreaCookieCrop(Vector4 crop) {
             float width = Mathf.Clamp(Mathf.Abs(crop.z), 0.001f, 1f);
@@ -878,7 +925,12 @@ namespace VRCLightVolumes {
 
         // Clamps shape to the supported Area Light cookie crop shapes.
         private int GetSafeAreaCookieCropShape(int shape) {
-            return Mathf.Clamp(shape, 0, 4);
+            return Mathf.Clamp(shape, 0, 5);
+        }
+
+        // Clamps a custom triangle point to normalized crop-local coordinates.
+        private Vector4 GetSafeAreaCookieCropTrianglePoint(Vector4 point) {
+            return new Vector4(Mathf.Clamp01(point.x), Mathf.Clamp01(point.y), 0f, 0f);
         }
 
         // Keeps rotations bounded for serialized data and cache-key comparisons.
@@ -901,18 +953,18 @@ namespace VRCLightVolumes {
         }
 
         // Copies one single-slice texture source into the destination array, optionally cropping or masking it.
-        private void BlitTextureSlice(Texture sourceTexture, int targetSlice, RenderTexture destination, Vector4 crop, int shape, float rotation) {
+        private void BlitTextureSlice(Texture sourceTexture, int targetSlice, RenderTexture destination, Vector4 crop, int shape, float rotation, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC) {
             if (sourceTexture == null || destination == null) return;
             rotation = GetSafeAreaCookieCropRotation(rotation);
             if (IsDefaultCookieCrop(crop, shape, rotation)) {
                 VRCGraphics.Blit(sourceTexture, destination, 0, targetSlice);
                 return;
             }
-            BlitCookieCropTexture(sourceTexture, targetSlice, destination, crop, shape, rotation);
+            BlitCookieCropTexture(sourceTexture, targetSlice, destination, crop, shape, rotation, triangleA, triangleB, triangleC);
         }
 
         // Copies a normalized source crop into a full destination slice.
-        private void BlitCookieCropTexture(Texture sourceTexture, int targetSlice, RenderTexture destination, Vector4 crop, int shape, float rotation) {
+        private void BlitCookieCropTexture(Texture sourceTexture, int targetSlice, RenderTexture destination, Vector4 crop, int shape, float rotation, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC) {
             if (sourceTexture == null || destination == null) return;
             if (!EnsureCookieCropMaterial()) {
                 VRCGraphics.Blit(sourceTexture, destination, 0, targetSlice);
@@ -922,6 +974,9 @@ namespace VRCLightVolumes {
             CookieCropMaterial.SetVector(_cookieCropRectID, GetSafeAreaCookieCrop(crop));
             CookieCropMaterial.SetFloat(_cookieCropShapeID, GetSafeAreaCookieCropShape(shape));
             CookieCropMaterial.SetFloat(_cookieCropRotationID, GetSafeAreaCookieCropRotation(rotation));
+            CookieCropMaterial.SetVector(_cookieCropTriangleAID, GetSafeAreaCookieCropTrianglePoint(triangleA));
+            CookieCropMaterial.SetVector(_cookieCropTriangleBID, GetSafeAreaCookieCropTrianglePoint(triangleB));
+            CookieCropMaterial.SetVector(_cookieCropTriangleCID, GetSafeAreaCookieCropTrianglePoint(triangleC));
             BlitMaterialToSlice(sourceTexture, CookieCropMaterial, destination, targetSlice);
         }
 
@@ -978,11 +1033,12 @@ namespace VRCLightVolumes {
 
         // Runs a material-only update into one texture array slice
         private void BlitMaterialSlice(Material sourceMaterial, int faceIndex, int targetSlice, bool isCubemapUpdate, RenderTexture destination) {
-            BlitMaterialSlice(sourceMaterial, faceIndex, targetSlice, isCubemapUpdate, destination, GetDefaultCookieCrop(), 0, 0f);
+            BlitMaterialSlice(sourceMaterial, faceIndex, targetSlice, isCubemapUpdate, destination, GetDefaultCookieCrop(), 0, 0f,
+                GetDefaultCookieCropTriangleA(), GetDefaultCookieCropTriangleB(), GetDefaultCookieCropTriangleC());
         }
 
         // Runs a material-only update into one texture array slice, optionally cropping generated single-slice output.
-        private void BlitMaterialSlice(Material sourceMaterial, int faceIndex, int targetSlice, bool isCubemapUpdate, RenderTexture destination, Vector4 crop, int shape, float rotation) {
+        private void BlitMaterialSlice(Material sourceMaterial, int faceIndex, int targetSlice, bool isCubemapUpdate, RenderTexture destination, Vector4 crop, int shape, float rotation, Vector4 triangleA, Vector4 triangleB, Vector4 triangleC) {
             if (sourceMaterial == null || destination == null) return;
             rotation = GetSafeAreaCookieCropRotation(rotation);
             float infoSlice = targetSlice;
@@ -1004,7 +1060,7 @@ namespace VRCLightVolumes {
             }
             if (!EnsureCookieCropIntermediateTexture(destination.width, destination.height)) return;
             BlitMaterialToTexture(blitSource, sourceMaterial, _cookieCropIntermediateTexture);
-            BlitCookieCropTexture(_cookieCropIntermediateTexture, targetSlice, destination, crop, shape, rotation);
+            BlitCookieCropTexture(_cookieCropIntermediateTexture, targetSlice, destination, crop, shape, rotation, triangleA, triangleB, triangleC);
         }
 
 #if UDONSHARP

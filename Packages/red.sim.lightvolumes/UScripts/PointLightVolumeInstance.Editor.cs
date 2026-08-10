@@ -20,6 +20,9 @@ namespace VRCLightVolumes {
         private Vector4 _editorAreaCookieCrop = new Vector4(0f, 0f, 1f, 1f);
         private int _editorAreaCookieCropShape = 0;
         private float _editorAreaCookieCropRotation = 0f;
+        private Vector4 _editorAreaCookieCropTriangleA = new Vector4(0f, 0f, 0f, 0f);
+        private Vector4 _editorAreaCookieCropTriangleB = new Vector4(1f, 0f, 0f, 0f);
+        private Vector4 _editorAreaCookieCropTriangleC = new Vector4(0f, 1f, 0f, 0f);
         [Tooltip("Editor-only image shown behind the Area Cookie Crop picker. Use this as an alignment guide when the runtime cookie source is blank, generated, or hard to inspect.")]
         [HideInInspector] public Texture AreaCookieCropPreview;
 
@@ -31,6 +34,9 @@ namespace VRCLightVolumes {
             _editorAreaCookieCrop = GetAreaCookieCrop();
             _editorAreaCookieCropShape = GetAreaCookieCropShape();
             _editorAreaCookieCropRotation = GetAreaCookieCropRotation();
+            _editorAreaCookieCropTriangleA = GetSafeAreaCookieCropTrianglePoint(AreaCookieCropTriangleA);
+            _editorAreaCookieCropTriangleB = GetSafeAreaCookieCropTrianglePoint(AreaCookieCropTriangleB);
+            _editorAreaCookieCropTriangleC = GetSafeAreaCookieCropTrianglePoint(AreaCookieCropTriangleC);
         }
 
 #endregion
@@ -211,8 +217,14 @@ namespace VRCLightVolumes {
             Material material = GetCustomTextureMaterial();
             int mode = GetAuthoringProjectionMode();
             int type = GetProjectionType();
+            int areaCookieCropShape = GetAreaCookieCropShape();
+            bool customTriangleChanged = (_editorAreaCookieCropShape == 5 || areaCookieCropShape == 5)
+                && (!CookieCropsMatch(_editorAreaCookieCropTriangleA, GetSafeAreaCookieCropTrianglePoint(AreaCookieCropTriangleA))
+                    || !CookieCropsMatch(_editorAreaCookieCropTriangleB, GetSafeAreaCookieCropTrianglePoint(AreaCookieCropTriangleB))
+                    || !CookieCropsMatch(_editorAreaCookieCropTriangleC, GetSafeAreaCookieCropTrianglePoint(AreaCookieCropTriangleC)));
             bool areaCropChanged = (LightType == 2 || ProjectionMode == 2)
-                && (!CookieCropsMatch(_editorAreaCookieCrop, GetAreaCookieCrop()) || _editorAreaCookieCropShape != GetAreaCookieCropShape() || _editorAreaCookieCropRotation != GetAreaCookieCropRotation());
+                && (!CookieCropsMatch(_editorAreaCookieCrop, GetAreaCookieCrop()) || _editorAreaCookieCropShape != areaCookieCropShape || _editorAreaCookieCropRotation != GetAreaCookieCropRotation()
+                    || customTriangleChanged);
             return CustomTexture != texture || CustomTextureMaterial != material || ProjectionMode != mode || ProjectionType != type
                 || CustomTextureIsCubemap != IsEditorCubemapTexture(texture) || CustomTextureHasDepthSlices != EditorTextureHasDepthSlices(texture) || areaCropChanged;
         }
@@ -240,6 +252,9 @@ namespace VRCLightVolumes {
             Vector4 safeAreaCookieCrop = GetAreaCookieCrop();
             int safeAreaCookieCropShape = GetAreaCookieCropShape();
             float safeAreaCookieCropRotation = GetAreaCookieCropRotation();
+            Vector4 safeAreaCookieCropTriangleA = GetSafeAreaCookieCropTrianglePoint(AreaCookieCropTriangleA);
+            Vector4 safeAreaCookieCropTriangleB = GetSafeAreaCookieCropTrianglePoint(AreaCookieCropTriangleB);
+            Vector4 safeAreaCookieCropTriangleC = GetSafeAreaCookieCropTrianglePoint(AreaCookieCropTriangleC);
             int safeAreaLightShape = GetAreaLightShape();
             Transform instanceTransform = transform;
             Vector3 transformPosition = instanceTransform.position;
@@ -256,6 +271,9 @@ namespace VRCLightVolumes {
             AreaCookieCrop = safeAreaCookieCrop;
             AreaCookieCropShape = safeAreaCookieCropShape;
             AreaCookieCropRotation = safeAreaCookieCropRotation;
+            AreaCookieCropTriangleA = safeAreaCookieCropTriangleA;
+            AreaCookieCropTriangleB = safeAreaCookieCropTriangleB;
+            AreaCookieCropTriangleC = safeAreaCookieCropTriangleC;
             AreaLightShape = safeAreaLightShape;
             ShadingStrength = Mathf.Clamp01(ShadingStrength);
 
@@ -322,6 +340,9 @@ namespace VRCLightVolumes {
             _editorAreaCookieCrop = safeAreaCookieCrop;
             _editorAreaCookieCropShape = safeAreaCookieCropShape;
             _editorAreaCookieCropRotation = safeAreaCookieCropRotation;
+            _editorAreaCookieCropTriangleA = safeAreaCookieCropTriangleA;
+            _editorAreaCookieCropTriangleB = safeAreaCookieCropTriangleB;
+            _editorAreaCookieCropTriangleC = safeAreaCookieCropTriangleC;
             IsRangeDirty = true;
             if (notifyManager) NotifyManager(true, customTexturesChanged, shadowTexturesChanged);
         }

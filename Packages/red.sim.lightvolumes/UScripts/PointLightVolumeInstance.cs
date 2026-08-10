@@ -67,10 +67,16 @@ namespace VRCLightVolumes {
         [Min(0.001f)] public float SpotCookieAspect = 1f;
         [Tooltip("Normalized Area Light cookie crop rectangle. X/Y are the lower-left offset, Z/W are width and height.")]
         public Vector4 AreaCookieCrop = new Vector4(0f, 0f, 1f, 1f);
-        [Tooltip("Area Light cookie crop shape. 0 = rectangle, 1 = lower-left triangle, 2 = lower-right triangle, 3 = upper-left triangle, 4 = upper-right triangle.")]
-        [Range(0, 4)] public int AreaCookieCropShape = 0;
+        [Tooltip("Area Light cookie crop shape. 0 = rectangle, 1 = lower-left triangle, 2 = lower-right triangle, 3 = upper-left triangle, 4 = upper-right triangle, 5 = custom clicked triangle.")]
+        [Range(0, 5)] public int AreaCookieCropShape = 0;
         [Tooltip("Area Light cookie crop rotation in degrees. Rotates the cropped rectangle or triangle around its center while fitting inside the selected crop.")]
         [Range(-180f, 180f)] public float AreaCookieCropRotation = 0f;
+        [Tooltip("First custom Area Light cookie crop triangle point in normalized crop-local coordinates.")]
+        public Vector4 AreaCookieCropTriangleA = new Vector4(0f, 0f, 0f, 0f);
+        [Tooltip("Second custom Area Light cookie crop triangle point in normalized crop-local coordinates.")]
+        public Vector4 AreaCookieCropTriangleB = new Vector4(1f, 0f, 0f, 0f);
+        [Tooltip("Third custom Area Light cookie crop triangle point in normalized crop-local coordinates.")]
+        public Vector4 AreaCookieCropTriangleC = new Vector4(0f, 1f, 0f, 0f);
         [Tooltip("Area Light emitter shape. 0 = rectangle, 1 = lower-left triangle, 2 = lower-right triangle, 3 = upper-left triangle, 4 = upper-right triangle.")]
         [Range(0, 4)] public int AreaLightShape = 0;
         [Tooltip("Area Light height in meters. Affects textured Area Light emission and size-aware Area Light speculars in modern compatible shaders.")]
@@ -686,6 +692,19 @@ namespace VRCLightVolumes {
             NotifyManager(false, CustomTexture != null || CustomTextureMaterial != null, false);
         }
 
+        // Sets a custom three-point Area Light cookie crop triangle inside the current crop rectangle.
+        public void SetAreaCookieCropTriangle(float ax, float ay, float bx, float by, float cx, float cy) {
+            Vector4 a = GetSafeAreaCookieCropTrianglePoint(new Vector4(ax, ay, 0f, 0f));
+            Vector4 b = GetSafeAreaCookieCropTrianglePoint(new Vector4(bx, by, 0f, 0f));
+            Vector4 c = GetSafeAreaCookieCropTrianglePoint(new Vector4(cx, cy, 0f, 0f));
+            if (AreaCookieCropShape == 5 && CookieCropsMatch(AreaCookieCropTriangleA, a) && CookieCropsMatch(AreaCookieCropTriangleB, b) && CookieCropsMatch(AreaCookieCropTriangleC, c)) return;
+            AreaCookieCropShape = 5;
+            AreaCookieCropTriangleA = a;
+            AreaCookieCropTriangleB = b;
+            AreaCookieCropTriangleC = c;
+            NotifyManager(false, CustomTexture != null || CustomTextureMaterial != null, false);
+        }
+
         // Sets only the Area Light cookie crop shape while keeping the current crop rectangle.
         public void SetAreaCookieCropShape(int shape) {
             SetAreaCookieCrop(AreaCookieCrop.x, AreaCookieCrop.y, AreaCookieCrop.z, AreaCookieCrop.w, shape, AreaCookieCropRotation);
@@ -707,7 +726,12 @@ namespace VRCLightVolumes {
 
         // Clamps shape to the supported Area Light cookie crop shapes.
         private int GetSafeAreaCookieCropShape(int shape) {
-            return Mathf.Clamp(shape, 0, 4);
+            return Mathf.Clamp(shape, 0, 5);
+        }
+
+        // Clamps a custom triangle point to normalized crop-local coordinates.
+        private Vector4 GetSafeAreaCookieCropTrianglePoint(Vector4 point) {
+            return new Vector4(Mathf.Clamp01(point.x), Mathf.Clamp01(point.y), 0f, 0f);
         }
 
         // Clamps shape to the supported Area Light emitter shapes.

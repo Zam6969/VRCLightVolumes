@@ -2879,6 +2879,49 @@ namespace VRCLightVolumes.Tests {
             AssertPointCustomData(1, secondPoint, -2, 0);
         }
 
+        // Verifies matching Area Light cookie sources split when their custom triangle points differ.
+        [Test]
+        public void AreaCookieCustomTriangleMismatchUsesSeparateRuntimeSlices() {
+            LightVolumeManager manager = CreateManager("Area Cookie Custom Triangle Split Manager", false);
+            Texture2D source = CreateTexture2D("Area Cookie Custom Triangle Shared Source");
+            manager.CustomTexturesWidth = 4;
+            manager.CustomTexturesHeight = 4;
+
+            PointLightVolumeInstance firstPoint = CreatePointLight(manager, "Area Cookie Custom Triangle A", true);
+            firstPoint.transform.localScale = new Vector3(2, 3, 1);
+            firstPoint.SetCustomTexture();
+            firstPoint.SetAreaLight();
+            firstPoint.CustomTexture = source;
+            firstPoint.ProjectionType = 1; // 1: texture
+            firstPoint.AreaCookieCropShape = 5;
+            firstPoint.AreaCookieCropTriangleA = new Vector4(0.1f, 0.1f, 0f, 0f);
+            firstPoint.AreaCookieCropTriangleB = new Vector4(0.9f, 0.15f, 0f, 0f);
+            firstPoint.AreaCookieCropTriangleC = new Vector4(0.35f, 0.85f, 0f, 0f);
+
+            PointLightVolumeInstance secondPoint = CreatePointLight(manager, "Area Cookie Custom Triangle B", true);
+            secondPoint.transform.localScale = new Vector3(2, 3, 1);
+            secondPoint.SetCustomTexture();
+            secondPoint.SetAreaLight();
+            secondPoint.CustomTexture = source;
+            secondPoint.ProjectionType = 1; // 1: texture
+            secondPoint.AreaCookieCropShape = 5;
+            secondPoint.AreaCookieCropTriangleA = firstPoint.AreaCookieCropTriangleA;
+            secondPoint.AreaCookieCropTriangleB = firstPoint.AreaCookieCropTriangleB;
+            secondPoint.AreaCookieCropTriangleC = new Vector4(0.55f, 0.85f, 0f, 0f);
+
+            manager.PointLightVolumeInstances = new[] { firstPoint, secondPoint };
+
+            manager.ReinitializeCustomTextures();
+            manager.UpdateVolumes();
+
+            Assert.That(GetManagerField<int>(manager, _customSingleTextureCountField), Is.EqualTo(2));
+            Assert.That(manager.CustomTextures, Is.Not.Null);
+            Assert.That(manager.CustomTextures.volumeDepth, Is.EqualTo(2));
+            Assert.That(GetManagerField<int[]>(manager, _pointLightCustomIDsField), Is.EqualTo(new[] { 0, 1 }));
+            AssertPointCustomData(0, firstPoint, -1, 0);
+            AssertPointCustomData(1, secondPoint, -2, 0);
+        }
+
         // Verifies runtime crop changes invalidate the custom texture cache and re-split shared sources.
         [Test]
         public void AreaCookieCropSetterRefreshesRuntimeSlices() {
@@ -2921,6 +2964,18 @@ namespace VRCLightVolumes.Tests {
             manager.UpdateVolumes();
 
             Assert.That(secondPoint.AreaCookieCropRotation, Is.EqualTo(90f));
+            Assert.That(GetManagerField<int>(manager, _customSingleTextureCountField), Is.EqualTo(2));
+            Assert.That(manager.CustomTextures, Is.Not.Null);
+            Assert.That(manager.CustomTextures.volumeDepth, Is.EqualTo(2));
+            Assert.That(GetManagerField<int[]>(manager, _pointLightCustomIDsField), Is.EqualTo(new[] { 0, 1 }));
+
+            secondPoint.SetAreaCookieCropTriangle(0.15f, 0.1f, 0.85f, 0.2f, 0.4f, 0.9f);
+            manager.UpdateVolumes();
+
+            Assert.That(secondPoint.AreaCookieCropShape, Is.EqualTo(5));
+            AssertVectorClose(new Vector4(0.15f, 0.1f, 0f, 0f), secondPoint.AreaCookieCropTriangleA);
+            AssertVectorClose(new Vector4(0.85f, 0.2f, 0f, 0f), secondPoint.AreaCookieCropTriangleB);
+            AssertVectorClose(new Vector4(0.4f, 0.9f, 0f, 0f), secondPoint.AreaCookieCropTriangleC);
             Assert.That(GetManagerField<int>(manager, _customSingleTextureCountField), Is.EqualTo(2));
             Assert.That(manager.CustomTextures, Is.Not.Null);
             Assert.That(manager.CustomTextures.volumeDepth, Is.EqualTo(2));
