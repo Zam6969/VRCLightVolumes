@@ -18,11 +18,13 @@ namespace VRCLightVolumes {
         private static readonly string _projectionSourceObjectPickerFilter = "t:Texture t:Material";
         private static readonly string[] _lightTypeNames = { "Point Light", "Spot Light", "Area Light" };
         private static readonly string[] _projectionNames = { "Parametric", "LUT", "Custom" };
-        private static readonly string[] _areaCookieCropShapeNames = { "Rectangle", "Triangle Lower Left", "Triangle Lower Right", "Triangle Upper Left", "Triangle Upper Right" };
         private const float ObjectSelectorButtonWidth = 19f;
         private const float InspectorSectionSpacing = 10f;
         private const float ShadowGroupSpacing = 6f;
         private const float ShadowButtonSpacing = 6f;
+        private const float ShapePickerSize = 48f;
+        private const float ShapePickerRectangleWidth = 42f;
+        private const float ShapePickerSpacing = 6f;
         private const float AreaCookiePreviewAspect = 1920f / 1080f;
         private const float AreaCookiePreviewMinHeight = 96f;
         private const float AreaCookiePreviewMaxHeight = 280f;
@@ -34,6 +36,10 @@ namespace VRCLightVolumes {
         private static readonly Color _areaCookiePreviewBorderColor = new Color(0f, 0f, 0f, 0.65f);
         private static readonly Color _areaCookieCropFillColor = new Color(1f, 0.84f, 0.12f, 0.16f);
         private static readonly Color _areaCookieCropBorderColor = new Color(1f, 0.84f, 0.12f, 0.95f);
+        private static readonly Color _shapePickerFillColor = new Color(1f, 0.84f, 0.12f, 0.28f);
+        private static readonly Color _shapePickerHoverColor = new Color(1f, 1f, 1f, 0.12f);
+        private static readonly Color _shapePickerBorderColor = new Color(0f, 0f, 0f, 0.55f);
+        private static readonly Color _shapePickerGuideColor = new Color(1f, 1f, 1f, 0.22f);
         private static GUIStyle _projectionSourceHintStyle;
         private Vector2 _areaCookieCropDragStart;
         private bool _isDraggingAreaCookieCrop;
@@ -246,6 +252,87 @@ namespace VRCLightVolumes {
             EditorGUI.showMixedValue = false;
         }
 
+        // Draws a visual rectangle/corner-triangle picker for Area Light and crop shapes.
+        private void DrawShapePicker(SerializedProperty property, GUIContent label) {
+            Rect rowRect = EditorGUILayout.GetControlRect(false, ShapePickerSize);
+            EditorGUI.BeginProperty(rowRect, label, property);
+            Rect fieldRect = EditorGUI.PrefixLabel(rowRect, label);
+            float availableWidth = Mathf.Max(fieldRect.width, ShapePickerRectangleWidth + ShapePickerSpacing + ShapePickerSize);
+            Rect rectangleRect = new Rect(fieldRect.x, rowRect.y, Mathf.Min(ShapePickerRectangleWidth, availableWidth), ShapePickerSize);
+            Rect cornerRect = new Rect(rectangleRect.xMax + ShapePickerSpacing, rowRect.y, ShapePickerSize, ShapePickerSize);
+            if (cornerRect.xMax > fieldRect.xMax) {
+                cornerRect.x = Mathf.Max(fieldRect.x, fieldRect.xMax - ShapePickerSize);
+                rectangleRect.x = Mathf.Max(fieldRect.x, cornerRect.x - ShapePickerSpacing - ShapePickerRectangleWidth);
+            }
+
+            HandleShapePickerInput(rectangleRect, cornerRect, property);
+            if (Event.current.type == EventType.Repaint)
+                DrawShapePickerVisuals(rectangleRect, cornerRect, property.hasMultipleDifferentValues ? -1 : Mathf.Clamp(property.intValue, 0, 4));
+            EditorGUI.EndProperty();
+        }
+
+        // Turns clicks on the visual picker into the serialized shape value.
+        private void HandleShapePickerInput(Rect rectangleRect, Rect cornerRect, SerializedProperty property) {
+            Event currentEvent = Event.current;
+            if (currentEvent.type != EventType.MouseDown || currentEvent.button != 0) return;
+
+            int newShape = -1;
+            if (rectangleRect.Contains(currentEvent.mousePosition)) newShape = 0;
+            else if (cornerRect.Contains(currentEvent.mousePosition)) newShape = GetShapeFromPickerPoint(cornerRect, currentEvent.mousePosition);
+            if (newShape < 0) return;
+
+            property.intValue = newShape;
+            GUI.changed = true;
+            currentEvent.Use();
+        }
+
+        // Maps each clicked corner of the picker square to its matching triangle shape.
+        private int GetShapeFromPickerPoint(Rect rect, Vector2 point) {
+            bool right = point.x >= rect.center.x;
+            bool lower = point.y >= rect.center.y;
+            if (!right && lower) return 1;
+            if (right && lower) return 2;
+            if (!right) return 3;
+            return 4;
+        }
+
+        // Draws the icon-only shape picker.
+        private void DrawShapePickerVisuals(Rect rectangleRect, Rect cornerRect, int selectedShape) {
+            Vector2 mousePosition = Event.current.mousePosition;
+            int hoverShape = rectangleRect.Contains(mousePosition) ? 0 : cornerRect.Contains(mousePosition) ? GetShapeFromPickerPoint(cornerRect, mousePosition) : -1;
+
+            DrawShapePickerFrame(rectangleRect, selectedShape == 0, hoverShape == 0);
+            Rect rectangleIcon = new Rect(rectangleRect.x + 9f, rectangleRect.y + 13f, rectangleRect.width - 18f, rectangleRect.height - 26f);
+            EditorGUI.DrawRect(rectangleIcon, selectedShape == 0 ? _shapePickerFillColor : new Color(1f, 1f, 1f, 0.08f));
+            DrawRectOutline(rectangleIcon, _shapePickerGuideColor, 1f);
+
+            DrawShapePickerFrame(cornerRect, selectedShape > 0, hoverShape > 0);
+            Handles.BeginGUI();
+            if (selectedShape > 0) {
+                Handles.color = _shapePickerFillColor;
+                Handles.DrawAAConvexPolygon(GetAreaCookieShapeOverlayPoints(cornerRect, selectedShape, 0f));
+            }
+            if (hoverShape > 0 && hoverShape != selectedShape) {
+                Handles.color = _shapePickerHoverColor;
+                Handles.DrawAAConvexPolygon(GetAreaCookieShapeOverlayPoints(cornerRect, hoverShape, 0f));
+            }
+            Handles.color = _shapePickerGuideColor;
+            Handles.DrawAAPolyLine(1f, new Vector3(cornerRect.xMin, cornerRect.yMax, 0f), new Vector3(cornerRect.center.x, cornerRect.center.y, 0f), new Vector3(cornerRect.xMax, cornerRect.yMin, 0f));
+            Handles.DrawAAPolyLine(1f, new Vector3(cornerRect.xMin, cornerRect.yMin, 0f), new Vector3(cornerRect.center.x, cornerRect.center.y, 0f), new Vector3(cornerRect.xMax, cornerRect.yMax, 0f));
+            if (selectedShape > 0) {
+                Handles.color = _areaCookieCropBorderColor;
+                Handles.DrawAAPolyLine(2f, CloseAreaCookiePolygon(GetAreaCookieShapeOverlayPoints(cornerRect, selectedShape, 0f)));
+            }
+            Handles.EndGUI();
+        }
+
+        // Draws the shared selectable picker frame.
+        private void DrawShapePickerFrame(Rect rect, bool selected, bool hovered) {
+            Color background = selected ? new Color(1f, 0.84f, 0.12f, 0.10f) : hovered ? _shapePickerHoverColor : new Color(1f, 1f, 1f, 0.04f);
+            EditorGUI.DrawRect(rect, background);
+            DrawRectOutline(rect, selected ? _areaCookieCropBorderColor : _shapePickerBorderColor, selected ? 2f : 1f);
+        }
+
         // Presents the runtime half-angle radians field as a full cone angle in degrees.
         private void DrawAngleDegrees() {
             SerializedProperty angleProperty = serializedObject.FindProperty("Angle");
@@ -330,7 +417,7 @@ namespace VRCLightVolumes {
         // Draws the Area Light cookie source, shape selector, normalized crop field and 16:9 visual picker.
         private void DrawAreaCookieCropControls() {
             SerializedProperty areaShapeProperty = serializedObject.FindProperty("AreaLightShape");
-            if (areaShapeProperty != null) DrawPopup(areaShapeProperty, new GUIContent("Area Shape", areaShapeProperty.tooltip), _areaCookieCropShapeNames);
+            if (areaShapeProperty != null) DrawShapePicker(areaShapeProperty, new GUIContent("Area Shape", areaShapeProperty.tooltip));
 
             DrawTextureMaterialField("Cookie", _textureMaterialHint, false);
 
@@ -338,7 +425,7 @@ namespace VRCLightVolumes {
             if (previewProperty != null) EditorGUILayout.PropertyField(previewProperty, new GUIContent("Crop Preview", previewProperty.tooltip));
 
             SerializedProperty shapeProperty = serializedObject.FindProperty("AreaCookieCropShape");
-            if (shapeProperty != null) DrawPopup(shapeProperty, new GUIContent("Crop Shape", shapeProperty.tooltip), _areaCookieCropShapeNames);
+            if (shapeProperty != null) DrawShapePicker(shapeProperty, new GUIContent("Crop Shape", shapeProperty.tooltip));
 
             SerializedProperty rotationProperty = serializedObject.FindProperty("AreaCookieCropRotation");
             if (rotationProperty != null) {
@@ -376,7 +463,7 @@ namespace VRCLightVolumes {
 
             DrawRectOutline(canvasRect, _areaCookiePreviewBorderColor, 1f);
             Rect cropRect = CropToPreviewRect(canvasRect, GetSafeAreaCookieCrop(cropProperty.vector4Value));
-            int shape = shapeProperty != null ? Mathf.Clamp(shapeProperty.intValue, 0, _areaCookieCropShapeNames.Length - 1) : 0;
+            int shape = shapeProperty != null ? Mathf.Clamp(shapeProperty.intValue, 0, 4) : 0;
             float rotation = rotationProperty != null ? GetSafeAreaCookieCropRotation(rotationProperty.floatValue) : 0f;
             DrawAreaCookieCropShapeOverlay(cropRect, shape, rotation);
         }
