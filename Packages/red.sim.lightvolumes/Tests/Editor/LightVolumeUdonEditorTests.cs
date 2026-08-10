@@ -4313,7 +4313,9 @@ namespace VRCLightVolumes.Tests {
             string projectionSource = shaderSource.Substring(projectionStart, attenuationStart - projectionStart);
             Assert.That(footprintSource, Does.Contain("shape < 0.5"));
             Assert.That(footprintSource, Does.Contain("outsideDelta = localXY - closestXY"));
-            Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeFootprint(localPos.xy, closestXY, halfSize, shape, localPos.z)"));
+            Assert.That(footprintSource, Does.Contain("edgeSoftness = max(maxExtent * 0.002, 0.0001)"));
+            Assert.That(footprintSource, Does.Not.Contain("abs(localZ) * 0.02"));
+            Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeFootprint(localPos.xy, closestXY, halfSize, shape)"));
             Assert.That(projectionSource, Does.Contain("* footprint"));
         }
 
