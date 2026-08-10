@@ -491,8 +491,12 @@ inline float LV_AreaLightPackedMirror(float packedAreaData) {
     return packedAreaData < 0 ? -mirror : mirror;
 }
 
-inline float LV_AreaLightShapeAreaScale(float shape) {
-    return shape > 0.5 ? 0.5 : 1.0;
+inline float LV_AreaLightShapeAreaScale(float2 size, float shape) {
+    [branch] if (shape < 0.5) return 1.0;
+    [branch] if (shape < 4.5) return 0.5;
+    float2 safeSize = max(abs(size), float2(0.0001, 0.0001));
+    float side = min(safeSize.x, safeSize.y * 1.1547005);
+    return saturate(0.4330127 * side * side * rcp(safeSize.x * safeSize.y));
 }
 
 inline void LV_AreaLightTriangleVertices(float2 halfSize, float shape, out float2 a, out float2 b, out float2 c) {
@@ -501,7 +505,14 @@ inline void LV_AreaLightTriangleVertices(float2 halfSize, float shape, out float
     float2 upperLeft = float2(-halfSize.x, halfSize.y);
     float2 upperRight = halfSize;
 
-    [flatten] if (shape < 1.5) {
+    [flatten] if (shape > 4.5) {
+        float2 size = halfSize * 2.0;
+        float side = min(size.x, size.y * 1.1547005);
+        float triHalfHeight = side * 0.4330127;
+        a = float2(0.0, triHalfHeight);
+        b = float2(side * 0.5, -triHalfHeight);
+        c = float2(-side * 0.5, -triHalfHeight);
+    } else [flatten] if (shape < 1.5) {
         a = lowerLeft;
         b = lowerRight;
         c = upperLeft;
@@ -576,7 +587,7 @@ inline float LV_AreaLightShapeFootprint(float2 localXY, float2 halfSize, float s
 // Caller must cull localPos.z <= 0 before calling.
 inline float4 LV_ProjectFastQuadLightIrradianceSH(float3 lightToWorldPos, float3 localPos, float centerSqDist, float3 xAxis, float3 yAxis, float2 size, float shape, out float3 pointLightShadingDir) {
     float2 halfSize = size * 0.5;
-    float area = max(size.x * size.y * LV_AreaLightShapeAreaScale(shape), 1e-6);
+    float area = max(size.x * size.y * LV_AreaLightShapeAreaScale(size, shape), 1e-6);
     float extentSq = max(dot(halfSize, halfSize), 1e-6);
 
     float2 closestXY = LV_AreaLightClosestXY(localPos.xy, halfSize, shape);
@@ -629,7 +640,7 @@ inline float4 LV_AreaLightCookie(float3 localPos, float invDist, float2 size, ui
     float2 closestXY = LV_AreaLightClosestXY(localPos.xy, halfSize, shape);
     float2 rectDelta = localPos.xy - closestXY;
     float planeRectSq = dot(rectDelta, rectDelta) + localPos.z * localPos.z;
-    float lightArea = max(safeSize.x * safeSize.y * LV_AreaLightShapeAreaScale(shape), 0.000001);
+    float lightArea = max(safeSize.x * safeSize.y * LV_AreaLightShapeAreaScale(safeSize, shape), 0.000001);
     float invLightArea = rcp(lightArea);
     float textureTexelCount = max(_UdonPointLightVolumeTextureTexelCount, 1.0);
     float filterAreaRatio = max(planeRectSq * (LV_PI * invLightArea), rcp(textureTexelCount));
@@ -826,7 +837,7 @@ bool LV_PointLightVolumeContribution(uint id, float3 worldPos, float3 pointLight
                 float3 lightToWorldPos = worldPos - pos.xyz;
                 float2 areaSize = float2(pos.w, color.w - 2);
                 float packedAreaData = customID_data.w;
-                float areaShape = min(LV_AreaLightPackedShape(packedAreaData), 4.0);
+                float areaShape = min(LV_AreaLightPackedShape(packedAreaData), 5.0);
                 float3 areaNormal, areaXAxis, areaYAxis;
                 LV_QuaternionAxes(areaRotation, areaXAxis, areaYAxis, areaNormal);
                 float3 areaLocalPos = float3(dot(lightToWorldPos, areaXAxis), dot(lightToWorldPos, areaYAxis), dot(lightToWorldPos, areaNormal));

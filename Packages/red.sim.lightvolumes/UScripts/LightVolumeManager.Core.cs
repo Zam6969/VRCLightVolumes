@@ -89,12 +89,18 @@ namespace VRCLightVolumes {
 
         // Clamps shape to the supported Area Light emitter shapes.
         private int GetSafeAreaLightShape(int shape) {
-            return Mathf.Clamp(shape, 0, 4);
+            return Mathf.Clamp(shape, 0, 5);
         }
 
-        // Triangular Area Lights use half of the rectangle's emitting surface.
-        private float GetAreaLightShapeAreaScale(int shape) {
-            return GetSafeAreaLightShape(shape) == 0 ? 1f : 0.5f;
+        // Returns emitter area relative to the bounding rectangle.
+        private float GetAreaLightShapeAreaScale(float width, float height, int shape) {
+            int safeShape = GetSafeAreaLightShape(shape);
+            if (safeShape == 0) return 1f;
+            if (safeShape < 5) return 0.5f;
+            float safeWidth = Mathf.Max(Mathf.Abs(width), 0.0001f);
+            float safeHeight = Mathf.Max(Mathf.Abs(height), 0.0001f);
+            float side = Mathf.Min(safeWidth, safeHeight * 1.1547005f);
+            return Mathf.Clamp01(0.4330127f * side * side / (safeWidth * safeHeight));
         }
 
         // Packs Area Light shape into CustomID.W without losing the legacy cookie mirror tag.
@@ -108,7 +114,7 @@ namespace VRCLightVolumes {
         // Computes a bounding sphere radius squared for area lights
         private float ComputeAreaLightSquaredBoundingSphere(float width, float height, int areaLightShape, Color color, float intensity, float cutoff) {
             float minSolidAngle = Mathf.Clamp(cutoff / (Mathf.Max(color.r, Mathf.Max(color.g, color.b)) * intensity), -Mathf.PI * 2f, Mathf.PI * 2);
-            float A = width * height * GetAreaLightShapeAreaScale(areaLightShape);
+            float A = width * height * GetAreaLightShapeAreaScale(width, height, areaLightShape);
             float w2 = width * width;
             float h2 = height * height;
             float B = 0.25f * (w2 + h2);

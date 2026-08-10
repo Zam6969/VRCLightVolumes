@@ -3030,6 +3030,12 @@ namespace VRCLightVolumes.Tests {
 
             Assert.That(point.AreaLightShape, Is.EqualTo(4));
             AssertPointCustomData(point, -1, 0);
+
+            point.SetAreaLightShape(5);
+            manager.UpdateVolumes();
+
+            Assert.That(point.AreaLightShape, Is.EqualTo(5));
+            AssertPointCustomData(point, -1, 0);
         }
 
         // Verifies the runtime manager respects a manual auto-update override on an area RenderTexture cookie.
@@ -4332,8 +4338,10 @@ namespace VRCLightVolumes.Tests {
             Assert.That(footprintSource, Does.Not.Contain("outsideDelta"));
             Assert.That(footprintSource, Does.Not.Contain("edgeSoftness"));
             Assert.That(footprintSource, Does.Not.Contain("abs(localZ) * 0.02"));
-            Assert.That(projectionSource, Does.Contain("packedAreaData = customID_data.w"));
-            Assert.That(projectionSource, Does.Not.Contain("_UdonLightVolumeVersion >= 3 ? customID_data.w : 0.0"));
+            Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeAreaScale(size, shape)"));
+            Assert.That(shaderSource, Does.Contain("packedAreaData = customID_data.w"));
+            Assert.That(shaderSource, Does.Contain("min(LV_AreaLightPackedShape(packedAreaData), 5.0)"));
+            Assert.That(shaderSource, Does.Not.Contain("_UdonLightVolumeVersion >= 3 ? customID_data.w : 0.0"));
             Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeFootprint(localPos.xy, halfSize, shape)"));
             Assert.That(projectionSource, Does.Contain("* footprint"));
         }
@@ -6134,7 +6142,7 @@ namespace VRCLightVolumes.Tests {
             Assert.That(data.z, Is.EqualTo(point.SquaredRange).Within(Epsilon));
             float expectedCustomDataW = 0f;
             if (point.LightType == 2) { // Area packs emitter shape here and, when textured, preserves the Cookie mirror tag.
-                int areaLightShape = Mathf.Clamp(point.AreaLightShape, 0, 4);
+                int areaLightShape = Mathf.Clamp(point.AreaLightShape, 0, 5);
                 float shapeData = areaLightShape * 0.01f;
                 if (customId < 0) {
                     float areaCookieMirror = Mathf.Abs(point.AreaCookieMirror) >= 0.5f ? point.AreaCookieMirror : 1f;

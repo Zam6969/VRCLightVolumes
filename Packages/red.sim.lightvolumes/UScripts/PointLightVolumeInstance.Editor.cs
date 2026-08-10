@@ -191,13 +191,23 @@ namespace VRCLightVolumes {
             if (minSolidAngle >= Mathf.PI * 2f - 0.0001f) return 0f;
             minSolidAngle = Mathf.Max(minSolidAngle, 0.000001f);
 
-            float area = width * height * (areaLightShape == 0 ? 1f : 0.5f);
+            float area = width * height * GetEditorAreaLightShapeAreaScale(width, height, areaLightShape);
             float shape = 0.25f * (width * width + height * height);
             float tangent = Mathf.Tan(0.25f * minSolidAngle);
             float tangentSquared = Mathf.Max(tangent * tangent, 0.000001f);
             float scaledShape = tangentSquared * shape;
             float discriminant = Mathf.Sqrt(scaledShape * scaledShape + 4f * tangentSquared * area * area);
             return Mathf.Max((discriminant - scaledShape) * 0.125f / tangentSquared, 0f);
+        }
+
+        // Returns emitter area relative to the bounding rectangle for editor-only range estimates.
+        private static float GetEditorAreaLightShapeAreaScale(float width, float height, int areaLightShape) {
+            if (areaLightShape <= 0) return 1f;
+            if (areaLightShape < 5) return 0.5f;
+            float safeWidth = Mathf.Max(Mathf.Abs(width), 0.0001f);
+            float safeHeight = Mathf.Max(Mathf.Abs(height), 0.0001f);
+            float side = Mathf.Min(safeWidth, safeHeight * 1.1547005f);
+            return Mathf.Clamp01(0.4330127f * side * side / (safeWidth * safeHeight));
         }
 
         // Prevents editor synchronization from replacing a live runtime-generated shadow source.

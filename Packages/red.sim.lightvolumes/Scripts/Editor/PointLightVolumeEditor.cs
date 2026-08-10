@@ -25,6 +25,7 @@ namespace VRCLightVolumes {
         private const float ShapePickerSize = 48f;
         private const float ShapePickerRectangleWidth = 42f;
         private const float ShapePickerSpacing = 6f;
+        private const int AreaLightEquilateralShape = 5;
         private const float AreaCookiePreviewAspect = 1920f / 1080f;
         private const float AreaCookiePreviewMinHeight = 96f;
         private const float AreaCookiePreviewMaxHeight = 280f;
@@ -258,34 +259,43 @@ namespace VRCLightVolumes {
         }
 
         // Draws a visual rectangle/corner-triangle picker for Area Light and crop shapes.
-        private void DrawShapePicker(SerializedProperty property, GUIContent label) {
+        private void DrawShapePicker(SerializedProperty property, GUIContent label, bool allowEquilateral = false) {
             Rect rowRect = EditorGUILayout.GetControlRect(false, ShapePickerSize);
             EditorGUI.BeginProperty(rowRect, label, property);
             Rect fieldRect = EditorGUI.PrefixLabel(rowRect, label);
-            float availableWidth = Mathf.Max(fieldRect.width, ShapePickerRectangleWidth + ShapePickerSpacing + ShapePickerSize);
+            float minimumWidth = ShapePickerRectangleWidth + ShapePickerSpacing + ShapePickerSize + (allowEquilateral ? ShapePickerSpacing + ShapePickerSize : 0f);
+            float availableWidth = Mathf.Max(fieldRect.width, minimumWidth);
             Rect rectangleRect = new Rect(fieldRect.x, rowRect.y, Mathf.Min(ShapePickerRectangleWidth, availableWidth), ShapePickerSize);
             Rect cornerRect = new Rect(rectangleRect.xMax + ShapePickerSpacing, rowRect.y, ShapePickerSize, ShapePickerSize);
+            Rect equilateralRect = allowEquilateral ? new Rect(cornerRect.xMax + ShapePickerSpacing, rowRect.y, ShapePickerSize, ShapePickerSize) : Rect.zero;
             if (cornerRect.xMax > fieldRect.xMax) {
                 cornerRect.x = Mathf.Max(fieldRect.x, fieldRect.xMax - ShapePickerSize);
                 rectangleRect.x = Mathf.Max(fieldRect.x, cornerRect.x - ShapePickerSpacing - ShapePickerRectangleWidth);
+                equilateralRect = Rect.zero;
+            } else if (allowEquilateral && equilateralRect.xMax > fieldRect.xMax) {
+                equilateralRect.x = Mathf.Max(fieldRect.x, fieldRect.xMax - ShapePickerSize);
+                cornerRect.x = Mathf.Max(fieldRect.x, equilateralRect.x - ShapePickerSpacing - ShapePickerSize);
+                rectangleRect.x = Mathf.Max(fieldRect.x, cornerRect.x - ShapePickerSpacing - ShapePickerRectangleWidth);
             }
 
-            HandleShapePickerInput(rectangleRect, cornerRect, property);
+            HandleShapePickerInput(rectangleRect, cornerRect, equilateralRect, property, allowEquilateral);
             if (Event.current.type == EventType.Repaint) {
                 int selectedShape = property.hasMultipleDifferentValues ? -1 : property.intValue;
-                DrawShapePickerVisuals(rectangleRect, cornerRect, selectedShape > 4 ? -1 : Mathf.Clamp(selectedShape, 0, 4));
+                int maxShape = allowEquilateral ? AreaLightEquilateralShape : 4;
+                DrawShapePickerVisuals(rectangleRect, cornerRect, equilateralRect, selectedShape > maxShape ? -1 : Mathf.Clamp(selectedShape, 0, maxShape), allowEquilateral);
             }
             EditorGUI.EndProperty();
         }
 
         // Turns clicks on the visual picker into the serialized shape value.
-        private void HandleShapePickerInput(Rect rectangleRect, Rect cornerRect, SerializedProperty property) {
+        private void HandleShapePickerInput(Rect rectangleRect, Rect cornerRect, Rect equilateralRect, SerializedProperty property, bool allowEquilateral) {
             Event currentEvent = Event.current;
             if (currentEvent.type != EventType.MouseDown || currentEvent.button != 0) return;
 
             int newShape = -1;
             if (rectangleRect.Contains(currentEvent.mousePosition)) newShape = 0;
             else if (cornerRect.Contains(currentEvent.mousePosition)) newShape = GetShapeFromPickerPoint(cornerRect, currentEvent.mousePosition);
+            else if (allowEquilateral && equilateralRect.Contains(currentEvent.mousePosition)) newShape = AreaLightEquilateralShape;
             if (newShape < 0) return;
 
             property.intValue = newShape;
@@ -304,9 +314,9 @@ namespace VRCLightVolumes {
         }
 
         // Draws the icon-only shape picker.
-        private void DrawShapePickerVisuals(Rect rectangleRect, Rect cornerRect, int selectedShape) {
+        private void DrawShapePickerVisuals(Rect rectangleRect, Rect cornerRect, Rect equilateralRect, int selectedShape, bool allowEquilateral) {
             Vector2 mousePosition = Event.current.mousePosition;
-            int hoverShape = rectangleRect.Contains(mousePosition) ? 0 : cornerRect.Contains(mousePosition) ? GetShapeFromPickerPoint(cornerRect, mousePosition) : -1;
+            int hoverShape = rectangleRect.Contains(mousePosition) ? 0 : cornerRect.Contains(mousePosition) ? GetShapeFromPickerPoint(cornerRect, mousePosition) : allowEquilateral && equilateralRect.Contains(mousePosition) ? AreaLightEquilateralShape : -1;
 
             DrawShapePickerFrame(rectangleRect, selectedShape == 0, hoverShape == 0);
             Rect rectangleIcon = new Rect(rectangleRect.x + 9f, rectangleRect.y + 13f, rectangleRect.width - 18f, rectangleRect.height - 26f);
@@ -315,22 +325,52 @@ namespace VRCLightVolumes {
 
             DrawShapePickerFrame(cornerRect, selectedShape > 0, hoverShape > 0);
             Handles.BeginGUI();
-            if (selectedShape > 0) {
+            if (selectedShape > 0 && selectedShape < AreaLightEquilateralShape) {
                 Handles.color = _shapePickerFillColor;
                 Handles.DrawAAConvexPolygon(GetAreaCookieShapeOverlayPoints(cornerRect, selectedShape, 0f));
             }
-            if (hoverShape > 0 && hoverShape != selectedShape) {
+            if (hoverShape > 0 && hoverShape < AreaLightEquilateralShape && hoverShape != selectedShape) {
                 Handles.color = _shapePickerHoverColor;
                 Handles.DrawAAConvexPolygon(GetAreaCookieShapeOverlayPoints(cornerRect, hoverShape, 0f));
             }
             Handles.color = _shapePickerGuideColor;
             Handles.DrawAAPolyLine(1f, new Vector3(cornerRect.xMin, cornerRect.yMax, 0f), new Vector3(cornerRect.center.x, cornerRect.center.y, 0f), new Vector3(cornerRect.xMax, cornerRect.yMin, 0f));
             Handles.DrawAAPolyLine(1f, new Vector3(cornerRect.xMin, cornerRect.yMin, 0f), new Vector3(cornerRect.center.x, cornerRect.center.y, 0f), new Vector3(cornerRect.xMax, cornerRect.yMax, 0f));
-            if (selectedShape > 0) {
+            if (selectedShape > 0 && selectedShape < AreaLightEquilateralShape) {
                 Handles.color = _areaCookieCropBorderColor;
                 Handles.DrawAAPolyLine(2f, CloseAreaCookiePolygon(GetAreaCookieShapeOverlayPoints(cornerRect, selectedShape, 0f)));
             }
+            if (allowEquilateral && equilateralRect.width > 0f) {
+                DrawShapePickerFrame(equilateralRect, selectedShape == AreaLightEquilateralShape, hoverShape == AreaLightEquilateralShape);
+                if (selectedShape == AreaLightEquilateralShape) {
+                    Handles.color = _shapePickerFillColor;
+                    Handles.DrawAAConvexPolygon(GetAreaLightEquilateralOverlayPoints(equilateralRect));
+                }
+                if (hoverShape == AreaLightEquilateralShape && hoverShape != selectedShape) {
+                    Handles.color = _shapePickerHoverColor;
+                    Handles.DrawAAConvexPolygon(GetAreaLightEquilateralOverlayPoints(equilateralRect));
+                }
+                Handles.color = _shapePickerGuideColor;
+                Handles.DrawAAPolyLine(1f, CloseAreaCookiePolygon(GetAreaLightEquilateralOverlayPoints(equilateralRect)));
+                if (selectedShape == AreaLightEquilateralShape) {
+                    Handles.color = _areaCookieCropBorderColor;
+                    Handles.DrawAAPolyLine(2f, CloseAreaCookiePolygon(GetAreaLightEquilateralOverlayPoints(equilateralRect)));
+                }
+            }
             Handles.EndGUI();
+        }
+
+        // Returns a centered equal-sided triangle fitted inside the given GUI square.
+        private Vector3[] GetAreaLightEquilateralOverlayPoints(Rect rect) {
+            float side = Mathf.Max(Mathf.Min(rect.width - 12f, (rect.height - 12f) * 1.1547005f), 1f);
+            float triHeight = side * 0.8660254f;
+            float centerX = rect.center.x;
+            float centerY = rect.center.y;
+            return new[] {
+                new Vector3(centerX, centerY - triHeight * 0.5f, 0f),
+                new Vector3(centerX + side * 0.5f, centerY + triHeight * 0.5f, 0f),
+                new Vector3(centerX - side * 0.5f, centerY + triHeight * 0.5f, 0f)
+            };
         }
 
         // Draws the shared selectable picker frame.
@@ -424,7 +464,7 @@ namespace VRCLightVolumes {
         // Draws the Area Light cookie source, shape selector, normalized crop field and 16:9 visual picker.
         private void DrawAreaCookieCropControls() {
             SerializedProperty areaShapeProperty = serializedObject.FindProperty("AreaLightShape");
-            if (areaShapeProperty != null) DrawShapePicker(areaShapeProperty, new GUIContent("Area Shape", areaShapeProperty.tooltip));
+            if (areaShapeProperty != null) DrawShapePicker(areaShapeProperty, new GUIContent("Area Shape", areaShapeProperty.tooltip), true);
 
             DrawTextureMaterialField("Cookie", _textureMaterialHint, false);
 
@@ -1063,7 +1103,7 @@ namespace VRCLightVolumes {
 
                 float x = Mathf.Max(Mathf.Abs(pointLightVolume.transform.lossyScale.x), 0.001f);
                 float y = Mathf.Max(Mathf.Abs(pointLightVolume.transform.lossyScale.y), 0.001f);
-                int shape = Mathf.Clamp(pointLightVolume.AreaLightShape, 0, 4);
+                int shape = Mathf.Clamp(pointLightVolume.AreaLightShape, 0, AreaLightEquilateralShape);
 
                 Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual;
                 Handles.color = new Color(1f, 1f, 0f, 0.6f);
@@ -1168,6 +1208,13 @@ namespace VRCLightVolumes {
             Vector3 upperLeft = center - right + up;
             Vector3 upperRight = center + right + up;
 
+            if (shape == AreaLightEquilateralShape) {
+                float side = Mathf.Min(width, height * 1.1547005f);
+                float triHeight = side * 0.8660254f;
+                Vector3 halfRight = rotation * Vector3.right * (side * 0.5f);
+                Vector3 halfUp = rotation * Vector3.up * (triHeight * 0.5f);
+                return new[] { center + halfUp, center + halfRight - halfUp, center - halfRight - halfUp };
+            }
             if (shape == 1) return new[] { lowerLeft, lowerRight, upperLeft };
             if (shape == 2) return new[] { lowerLeft, lowerRight, upperRight };
             if (shape == 3) return new[] { lowerLeft, upperLeft, upperRight };
@@ -1196,7 +1243,7 @@ namespace VRCLightVolumes {
 
         // Calculates squared Area Light range from emitter dimensions and minimum solid angle.
         float ComputeAreaLightSquaredBoundingSphere(float width, float height, int shape, float minSolidAngle) {
-            float A = width * height * (shape == 0 ? 1f : 0.5f);
+            float A = width * height * GetAreaLightShapeAreaScale(width, height, shape);
             float w2 = width * width;
             float h2 = height * height;
             float B = 0.25f * (w2 + h2);
@@ -1206,6 +1253,16 @@ namespace VRCLightVolumes {
             float discriminant = Mathf.Sqrt(TB * TB + 4.0f * T * A * A);
             float d2 = (discriminant - TB) * 0.125f / T;
             return d2;
+        }
+
+        // Returns emitter area relative to the bounding rectangle.
+        float GetAreaLightShapeAreaScale(float width, float height, int shape) {
+            if (shape == 0) return 1f;
+            if (shape < AreaLightEquilateralShape) return 0.5f;
+            float safeWidth = Mathf.Max(Mathf.Abs(width), 0.0001f);
+            float safeHeight = Mathf.Max(Mathf.Abs(height), 0.0001f);
+            float side = Mathf.Min(safeWidth, safeHeight * 1.1547005f);
+            return Mathf.Clamp01(0.4330127f * side * side / (safeWidth * safeHeight));
         }
 
         // Calculates squared Point Light range from brightness, source size and cutoff.

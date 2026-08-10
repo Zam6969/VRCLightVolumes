@@ -78,7 +78,7 @@ namespace VRCLightVolumes {
         [Tooltip("Third custom Area Light cookie crop triangle point in normalized crop-local coordinates.")]
         public Vector4 AreaCookieCropTriangleC = new Vector4(0f, 1f, 0f, 0f);
         [Tooltip("Area Light emitter shape. 0 = rectangle, 1 = lower-left triangle, 2 = lower-right triangle, 3 = upper-left triangle, 4 = upper-right triangle.")]
-        [Range(0, 4)] public int AreaLightShape = 0;
+        [Range(0, 5)] public int AreaLightShape = 0;
         [Tooltip("Area Light height in meters. Affects textured Area Light emission and size-aware Area Light speculars in modern compatible shaders.")]
         [Min(0.001f)] public float Height = 1f;
 
@@ -738,7 +738,7 @@ namespace VRCLightVolumes {
 
         // Clamps shape to the supported Area Light emitter shapes.
         private int GetSafeAreaLightShape(int shape) {
-            return Mathf.Clamp(shape, 0, 4);
+            return Mathf.Clamp(shape, 0, 5);
         }
 
         // Keeps rotations bounded for serialized data and cache-key comparisons.
