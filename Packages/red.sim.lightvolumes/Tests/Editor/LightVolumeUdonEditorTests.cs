@@ -4369,12 +4369,14 @@ namespace VRCLightVolumes.Tests {
             string specularAccumulatorSource = shaderSource.Substring(specularAccumulatorStart, diffuseAccumulatorStart - specularAccumulatorStart);
             string diffuseAccumulatorSource = shaderSource.Substring(diffuseAccumulatorStart, pointLoopStart - diffuseAccumulatorStart);
             int areaProjectionStart = contributionSource.IndexOf("LV_ProjectFastQuadLightIrradianceSH(", StringComparison.Ordinal);
+            int areaProjectionMaskStart = contributionSource.IndexOf("[branch] if (areaLightSH.w > 0 && areaAttenuation > 0)", areaProjectionStart, StringComparison.Ordinal);
             int areaBudgetStart = contributionSource.IndexOf("counted = true;", areaProjectionStart, StringComparison.Ordinal);
             int areaCookieStart = contributionSource.IndexOf("LV_AreaLightCookie(", areaProjectionStart, StringComparison.Ordinal);
 
             Assert.That(shadowMaskSource, Does.Contain("return shadowVisible;"));
-            Assert.That(areaBudgetStart, Is.GreaterThan(areaProjectionStart));
-            Assert.That(areaCookieStart, Is.GreaterThan(areaBudgetStart));
+            Assert.That(areaProjectionMaskStart, Is.GreaterThan(areaProjectionStart));
+            Assert.That(areaCookieStart, Is.GreaterThan(areaProjectionMaskStart));
+            Assert.That(areaBudgetStart, Is.GreaterThan(areaCookieStart));
             Assert.That(specularAccumulatorSource, Does.Contain("if (any(l0))"));
             Assert.That(specularAccumulatorSource, Does.Not.Contain("if (!any(l0)) return false;"));
             Assert.That(diffuseAccumulatorSource, Does.Not.Contain("if (!any(l0)) return false;"));

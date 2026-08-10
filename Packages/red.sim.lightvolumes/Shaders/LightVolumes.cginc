@@ -846,9 +846,6 @@ bool LV_PointLightVolumeContribution(uint id, float3 worldPos, float3 pointLight
                     float3 areaPointLightShadingDir;
                     float sourceSpreadSq = dot(areaSize, areaSize) * (0.25 * rcp(distSq));
                     float4 areaLightSH = LV_ProjectFastQuadLightIrradianceSH(lightToWorldPos, areaLocalPos, distSq, areaXAxis, areaYAxis, areaSize, areaShape, areaPointLightShadingDir);
-                    // Area projection is the expensive evaluation boundary, so later attenuation,
-                    // cookie, normal-mask, or shadow rejection still consumes the overdraw slot.
-                    counted = true;
                     float areaAttenuation = saturate(1 - distSq * rcp(rangeSq));
 
                     [branch] if (areaLightSH.w > 0 && areaAttenuation > 0) { // Area projection has non-zero solid angle and remains inside its culling range
