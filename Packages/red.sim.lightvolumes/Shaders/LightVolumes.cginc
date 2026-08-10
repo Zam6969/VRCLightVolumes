@@ -585,7 +585,7 @@ inline float2 LV_AreaLightClosestXY(float2 localXY, float2 halfSize, float shape
 }
 
 inline float LV_AreaLightShapeFootprint(float2 localXY, float2 halfSize, float shape, float4 customTriangle0, float4 customTriangle1) {
-    [branch] if (shape < 0.5) return 1.0;
+    [branch] if (shape < 0.5) return all(abs(localXY) <= halfSize) ? 1.0 : 0.0;
     float2 a, b, c;
     LV_AreaLightTriangleVertices(halfSize, shape, customTriangle0, customTriangle1, a, b, c);
     return LV_PointInTriangleMask(localXY, a, b, c);

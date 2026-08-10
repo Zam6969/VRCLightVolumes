@@ -4341,7 +4341,7 @@ namespace VRCLightVolumes.Tests {
             Assert.That(shaderSource, Does.Contain("#pragma multi_compile_local_fragment __ VRCLV_RUNTIME_SHADOW_BLUR_SPHERICAL"));
         }
 
-        // Area Shape is an emitter setting, so triangles must affect plain Area Light contribution even without a cookie.
+        // Area Shape is an emitter setting, so squares and triangles must mask plain Area Light contribution even without a cookie.
         [Test]
         public void AreaLightTriangleShapeMasksPlainFootprint() {
             string shaderSource = ReadLightVolumesIncludeSource();
@@ -4356,6 +4356,7 @@ namespace VRCLightVolumes.Tests {
             string footprintSource = shaderSource.Substring(footprintStart, projectionStart - footprintStart);
             string projectionSource = shaderSource.Substring(projectionStart, attenuationStart - projectionStart);
             Assert.That(footprintSource, Does.Contain("shape < 0.5"));
+            Assert.That(footprintSource, Does.Contain("all(abs(localXY) <= halfSize) ? 1.0 : 0.0"));
             Assert.That(footprintSource, Does.Contain("LV_PointInTriangleMask"));
             Assert.That(footprintSource, Does.Contain("return LV_PointInTriangleMask(localXY, a, b, c)"));
             Assert.That(footprintSource, Does.Not.Contain("outsideDelta"));
