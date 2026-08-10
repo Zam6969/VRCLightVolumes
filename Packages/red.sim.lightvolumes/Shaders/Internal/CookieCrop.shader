@@ -18,6 +18,7 @@ Shader "Hidden/VRCLV/CookieCrop"
             #include "UnityCG.cginc"
 
             sampler2D _MainTex;
+            float4 _MainTex_TexelSize;
             float4 _CookieCrop;
             float _CookieCropShape;
             float _CookieCropRotation;
@@ -45,6 +46,13 @@ Shader "Hidden/VRCLV/CookieCrop"
                 float c;
                 sincos(radians, s, c);
                 float2 centeredUv = i.uv - 0.5;
+                float absS = abs(s);
+                float absC = abs(c);
+                float cropPixelAspect = max(abs(_CookieCrop.z) * _MainTex_TexelSize.z, 0.0001) / max(abs(_CookieCrop.w) * _MainTex_TexelSize.w, 0.0001);
+                float fitScaleX = cropPixelAspect / max(absC * cropPixelAspect + absS, 0.0001);
+                float fitScaleY = 1.0 / max(absS * cropPixelAspect + absC, 0.0001);
+                float fitScale = max(min(fitScaleX, fitScaleY), 0.0001);
+                centeredUv /= fitScale;
                 float2 localUv = float2(centeredUv.x * c + centeredUv.y * s, -centeredUv.x * s + centeredUv.y * c) + 0.5;
                 float keep = localUv.x >= 0.0 && localUv.x <= 1.0 && localUv.y >= 0.0 && localUv.y <= 1.0 ? 1.0 : 0.0;
                 if (_CookieCropShape > 0.5) {

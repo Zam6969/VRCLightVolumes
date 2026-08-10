@@ -132,7 +132,7 @@ When changing a Point Light Volume from another Udon script, prefer the setter m
 |`float SpotCookieAspect` | Width / height aspect used by custom Spot Light cookie projection. |
 |`Vector4 AreaCookieCrop` | Normalized Area Light cookie crop rectangle. `x/y` are the lower-left offset, `z/w` are width and height. |
 |`int AreaCookieCropShape` | Area Light cookie crop shape. `0` = rectangle, `1` = lower-left triangle, `2` = lower-right triangle, `3` = upper-left triangle, `4` = upper-right triangle. |
-|`float AreaCookieCropRotation` | Area Light cookie crop rotation in degrees. Rotates the cropped rectangle or triangle around its center. |
+|`float AreaCookieCropRotation` | Area Light cookie crop rotation in degrees. Rotates the cropped rectangle or triangle around its center while fitting inside the selected crop. |
 |`int AreaLightShape` | Area Light emitter shape. `0` = rectangle, `1` = lower-left triangle, `2` = lower-right triangle, `3` = upper-left triangle, `4` = upper-right triangle. |
 |`float Height` | Area light height in meters. Affects textured Area Light emission and size-aware Area Light speculars in modern compatible shaders. |
 |`float AreaCookieMirror` | Internal Area Cookie X/Y reflection metadata derived from the transform, including reflected parent transforms. Do not set it manually; `UpdateRotation()`, `UpdateScale()` and the manager keep it synchronized. |

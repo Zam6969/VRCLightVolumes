@@ -612,7 +612,8 @@ namespace VRCLightVolumes {
         // Returns preview-space vertices matching the shader's crop shape after rotation and clipping.
         private Vector3[] GetAreaCookieShapeOverlayPoints(Rect rect, int shape, float rotation) {
             List<Vector2> points = GetAreaCookieShapeUnitPoints(shape);
-            for (int i = 0; i < points.Count; i++) points[i] = RotateAreaCookieUnitPoint(points[i], rotation);
+            float aspect = rect.height > 0f ? rect.width / rect.height : 1f;
+            for (int i = 0; i < points.Count; i++) points[i] = RotateAreaCookieUnitPoint(points[i], rotation, aspect);
             points = ClipAreaCookiePolygonToUnitRect(points);
             Vector3[] previewPoints = new Vector3[points.Count];
             for (int i = 0; i < points.Count; i++) previewPoints[i] = new Vector3(rect.x + points[i].x * rect.width, rect.y + points[i].y * rect.height, 0f);
@@ -628,17 +629,28 @@ namespace VRCLightVolumes {
             return new List<Vector2> { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f) };
         }
 
-        // Applies the same center rotation used by the cookie crop shader, expressed in preview unit coordinates.
-        private Vector2 RotateAreaCookieUnitPoint(Vector2 point, float rotation) {
+        // Applies the same fitted center rotation used by the cookie crop shader, expressed in preview unit coordinates.
+        private Vector2 RotateAreaCookieUnitPoint(Vector2 point, float rotation, float aspect) {
             if (Mathf.Approximately(rotation, 0f)) return point;
             float radians = rotation * Mathf.Deg2Rad;
             float sin = Mathf.Sin(radians);
             float cos = Mathf.Cos(radians);
-            Vector2 delta = point - new Vector2(0.5f, 0.5f);
+            float fitScale = GetAreaCookieRotationFitScale(sin, cos, aspect);
+            Vector2 delta = (point - new Vector2(0.5f, 0.5f)) * fitScale;
             return new Vector2(0.5f + delta.x * cos - delta.y * sin, 0.5f + delta.x * sin + delta.y * cos);
         }
 
-        // Clips a rotated overlay back into the crop box so the preview matches the baked mask.
+        // Returns the largest uniform scale that keeps a rotated crop inside its selected box.
+        private float GetAreaCookieRotationFitScale(float sin, float cos, float aspect) {
+            float safeAspect = Mathf.Max(Mathf.Abs(aspect), 0.0001f);
+            float absSin = Mathf.Abs(sin);
+            float absCos = Mathf.Abs(cos);
+            float scaleX = safeAspect / Mathf.Max(absCos * safeAspect + absSin, 0.0001f);
+            float scaleY = 1f / Mathf.Max(absSin * safeAspect + absCos, 0.0001f);
+            return Mathf.Max(Mathf.Min(scaleX, scaleY), 0.0001f);
+        }
+
+        // Clips the overlay to guard against tiny floating-point edge cases.
         private List<Vector2> ClipAreaCookiePolygonToUnitRect(List<Vector2> points) {
             points = ClipAreaCookiePolygon(points, 0);
             points = ClipAreaCookiePolygon(points, 1);

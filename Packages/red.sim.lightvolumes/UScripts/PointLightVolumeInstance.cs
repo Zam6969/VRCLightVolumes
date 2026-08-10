@@ -69,7 +69,7 @@ namespace VRCLightVolumes {
         public Vector4 AreaCookieCrop = new Vector4(0f, 0f, 1f, 1f);
         [Tooltip("Area Light cookie crop shape. 0 = rectangle, 1 = lower-left triangle, 2 = lower-right triangle, 3 = upper-left triangle, 4 = upper-right triangle.")]
         [Range(0, 4)] public int AreaCookieCropShape = 0;
-        [Tooltip("Area Light cookie crop rotation in degrees. Rotates the cropped rectangle or triangle around its center.")]
+        [Tooltip("Area Light cookie crop rotation in degrees. Rotates the cropped rectangle or triangle around its center while fitting inside the selected crop.")]
         [Range(-180f, 180f)] public float AreaCookieCropRotation = 0f;
         [Tooltip("Area Light emitter shape. 0 = rectangle, 1 = lower-left triangle, 2 = lower-right triangle, 3 = upper-left triangle, 4 = upper-right triangle.")]
         [Range(0, 4)] public int AreaLightShape = 0;
