@@ -566,6 +566,7 @@ namespace VRCLightVolumes {
             _cubemapFaceIndexID = VRCShader.PropertyToID("_FaceIndex");
             _cookieCropRectID = VRCShader.PropertyToID("_CookieCrop");
             _cookieCropShapeID = VRCShader.PropertyToID("_CookieCropShape");
+            _cookieCropRotationID = VRCShader.PropertyToID("_CookieCropRotation");
 
             // Light Volumes
             VRCShader.SetGlobalVectorArray(_lightVolumeInvLocalEdgeSmoothID, _invLocalEdgeSmooth);

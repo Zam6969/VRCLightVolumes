@@ -23,6 +23,7 @@ namespace VRCLightVolumes {
         [Min(0.001f)] public float SpotCookieAspect = 1f;
         public Vector4 AreaCookieCrop = new Vector4(0f, 0f, 1f, 1f);
         [Range(0, 4)] public int AreaCookieCropShape = 0;
+        [Range(-180f, 180f)] public float AreaCookieCropRotation = 0f;
         public Texture AreaCookieCropPreview;
         public UnityEngine.Object Cubemap;
         public bool BakeIntoProbes = false;

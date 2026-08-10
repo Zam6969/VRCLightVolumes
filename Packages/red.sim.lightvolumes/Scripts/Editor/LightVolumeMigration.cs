@@ -855,6 +855,7 @@ namespace VRCLightVolumes {
             destination.SpotCookieAspect = source.SpotCookieAspect;
             destination.AreaCookieCrop = source.AreaCookieCrop;
             destination.AreaCookieCropShape = source.AreaCookieCropShape;
+            destination.AreaCookieCropRotation = source.AreaCookieCropRotation;
             destination.AreaCookieCropPreview = source.AreaCookieCropPreview;
             destination.Cubemap = cubemap;
             destination.BakeIntoProbes = source.BakeIntoProbes;

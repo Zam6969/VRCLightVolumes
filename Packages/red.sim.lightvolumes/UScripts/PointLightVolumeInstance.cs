@@ -69,6 +69,8 @@ namespace VRCLightVolumes {
         public Vector4 AreaCookieCrop = new Vector4(0f, 0f, 1f, 1f);
         [Tooltip("Area Light cookie crop shape. 0 = rectangle, 1 = lower-left triangle, 2 = lower-right triangle, 3 = upper-left triangle, 4 = upper-right triangle.")]
         [Range(0, 4)] public int AreaCookieCropShape = 0;
+        [Tooltip("Area Light cookie crop rotation in degrees. Rotates the cropped rectangle or triangle around its center.")]
+        [Range(-180f, 180f)] public float AreaCookieCropRotation = 0f;
         [Tooltip("Area Light height in meters. Affects textured Area Light emission and size-aware Area Light speculars in modern compatible shaders.")]
         [Min(0.001f)] public float Height = 1f;
 
@@ -650,29 +652,41 @@ namespace VRCLightVolumes {
             NotifyManager(false, false, false);
         }
 
-        // Applies the currently assigned Area Light cookie crop rectangle and shape.
+        // Applies the currently assigned Area Light cookie crop rectangle, shape and rotation.
         public void SetAreaCookieCrop() {
-            SetAreaCookieCrop(AreaCookieCrop.x, AreaCookieCrop.y, AreaCookieCrop.z, AreaCookieCrop.w, AreaCookieCropShape);
+            SetAreaCookieCrop(AreaCookieCrop.x, AreaCookieCrop.y, AreaCookieCrop.z, AreaCookieCrop.w, AreaCookieCropShape, AreaCookieCropRotation);
         }
 
         // Sets a rectangular normalized Area Light cookie crop and rebuilds affected custom texture slices.
         public void SetAreaCookieCrop(float offsetX, float offsetY, float width, float height) {
-            SetAreaCookieCrop(offsetX, offsetY, width, height, 0);
+            SetAreaCookieCrop(offsetX, offsetY, width, height, 0, 0f);
         }
 
         // Sets normalized Area Light cookie crop rectangle/shape and rebuilds affected custom texture slices.
         public void SetAreaCookieCrop(float offsetX, float offsetY, float width, float height, int shape) {
+            SetAreaCookieCrop(offsetX, offsetY, width, height, shape, 0f);
+        }
+
+        // Sets normalized Area Light cookie crop rectangle/shape/rotation and rebuilds affected custom texture slices.
+        public void SetAreaCookieCrop(float offsetX, float offsetY, float width, float height, int shape, float rotation) {
             Vector4 crop = GetSafeAreaCookieCrop(new Vector4(offsetX, offsetY, width, height));
             int safeShape = GetSafeAreaCookieCropShape(shape);
-            if (CookieCropsMatch(AreaCookieCrop, crop) && AreaCookieCropShape == safeShape) return;
+            float safeRotation = GetSafeAreaCookieCropRotation(rotation);
+            if (CookieCropsMatch(AreaCookieCrop, crop) && AreaCookieCropShape == safeShape && AreaCookieCropRotation == safeRotation) return;
             AreaCookieCrop = crop;
             AreaCookieCropShape = safeShape;
+            AreaCookieCropRotation = safeRotation;
             NotifyManager(false, CustomTexture != null || CustomTextureMaterial != null, false);
         }
 
         // Sets only the Area Light cookie crop shape while keeping the current crop rectangle.
         public void SetAreaCookieCropShape(int shape) {
-            SetAreaCookieCrop(AreaCookieCrop.x, AreaCookieCrop.y, AreaCookieCrop.z, AreaCookieCrop.w, shape);
+            SetAreaCookieCrop(AreaCookieCrop.x, AreaCookieCrop.y, AreaCookieCrop.z, AreaCookieCrop.w, shape, AreaCookieCropRotation);
+        }
+
+        // Sets only the Area Light cookie crop rotation while keeping the current crop rectangle and shape.
+        public void SetAreaCookieCropRotation(float rotation) {
+            SetAreaCookieCrop(AreaCookieCrop.x, AreaCookieCrop.y, AreaCookieCrop.z, AreaCookieCrop.w, AreaCookieCropShape, rotation);
         }
 
         // Clamps a crop rectangle to a valid normalized subregion of the source cookie.
@@ -687,6 +701,15 @@ namespace VRCLightVolumes {
         // Clamps shape to the supported Area Light cookie crop shapes.
         private int GetSafeAreaCookieCropShape(int shape) {
             return Mathf.Clamp(shape, 0, 4);
+        }
+
+        // Keeps rotations bounded for serialized data and cache-key comparisons.
+        private float GetSafeAreaCookieCropRotation(float rotation) {
+            if (rotation != rotation) return 0f;
+            float safeRotation = Mathf.Clamp(rotation, -360f, 360f);
+            if (safeRotation <= -180f) safeRotation += 360f;
+            else if (safeRotation > 180f) safeRotation -= 360f;
+            return safeRotation;
         }
 
         // Exact comparison is enough here because crop values are sanitized before they are stored.

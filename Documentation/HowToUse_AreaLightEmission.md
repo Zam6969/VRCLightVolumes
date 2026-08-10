@@ -44,7 +44,7 @@ If an Area Light has no Cookie assigned, it keeps the original fast parametric A
 7. Set `Cookie Resolution` in **Light Volume Setup** as low as acceptable for the visible result.
 8. Enable `Debug Range` to check how much scene area the light affects.
 
-Use `Crop` when the cookie source is an atlas or a larger 16:9 guide image and only part of it should emit light. Drag in the crop preview to select the area, or type normalized values directly. `Crop Preview` can hold a separate alignment image; when it is empty, the picker shows the cookie texture, and when no texture preview is available it shows a blank 1920x1080 canvas. `Crop Shape` can keep the crop as a rectangle or mask it to one of the four triangle corners.
+Use `Crop` when the cookie source is an atlas or a larger 16:9 guide image and only part of it should emit light. Drag in the crop preview to select the area, or type normalized values directly. `Crop Preview` can hold a separate alignment image; when it is empty, the picker shows the cookie texture, and when no texture preview is available it shows a blank 1920x1080 canvas. `Crop Shape` can keep the crop as a rectangle or mask it to one of the four triangle corners, and `Crop Rotation` turns the cropped rectangle or triangle around its center.
 
 Negative scale is supported for Area Light cookies. Width and height are always sent to shaders as positive physical dimensions, while a negative local or parent X/Y axis mirrors the cookie on the corresponding axis. This mirror behavior is available in current v3 shaders; v2-compatible shaders receive the average-color fallback and ignore cookie orientation.
 
@@ -65,7 +65,7 @@ Area Light cookies are packed into the shared Point Light Volume texture array. 
 
 Texture compression artifacts are still visible after packing. For important cookies, disable compression and prefer HDR-capable source formats when you need values above 1. The packed runtime array uses a linear half precision format.
 
-The same Texture, RenderTexture or Material source can be reused by several Area Lights. Matching source, auto-update mode, crop rectangle and crop shape are uploaded once, while each light still keeps its own `Color`, `Intensity`, transform and range data.
+The same Texture, RenderTexture or Material source can be reused by several Area Lights. Matching source, auto-update mode, crop rectangle, crop shape and crop rotation are uploaded once, while each light still keeps its own `Color`, `Intensity`, transform and range data.
 
 ## Runtime Updates
 
@@ -73,7 +73,7 @@ Changing `Color`, `Intensity`, enable state or transform data does not require r
 
 Changing Area Light scale, including crossing an X/Y axis through zero into negative scale, updates both the positive physical size and the cookie mirror metadata. With `Dynamic` and `Auto Update Volumes` enabled this happens automatically; otherwise call the instance's `UpdateScale()` after changing the transform from Udon.
 
-Changing the `Cookie` source, `Crop`, `Crop Shape`, `Cookie Resolution`, or adding/removing a light that uses a new source requires the custom texture array to be rebuilt. The editor does this automatically from the authoring component. In runtime scripts, use `SetAreaCookieCrop()` / `SetAreaCookieCropShape()` for crop changes, or call `ReinitializeCustomTextures()` after changing projection sources manually.
+Changing the `Cookie` source, `Crop`, `Crop Shape`, `Crop Rotation`, `Cookie Resolution`, or adding/removing a light that uses a new source requires the custom texture array to be rebuilt. The editor does this automatically from the authoring component. In runtime scripts, use `SetAreaCookieCrop()`, `SetAreaCookieCropShape()` or `SetAreaCookieCropRotation()` for crop changes, or call `ReinitializeCustomTextures()` after changing projection sources manually.
 
 RenderTexture and Material sources are treated as animated sources. To refresh them at runtime, enable `Auto Update Textures` in **Light Volume Setup**. Keep it disabled when all projection sources are static.
 

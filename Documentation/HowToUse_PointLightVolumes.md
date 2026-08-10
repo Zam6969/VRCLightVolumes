@@ -96,7 +96,7 @@ If you want just to project a light cookie texture, you can use `Custom` project
 
 Point Light in `Custom` projection mode can project a cubemap instead of a regular cookie. So it's a perfect solution to make disco balls, lamps that projects stars or anything else you want.
 
-Area Lights do not expose the `Projection` dropdown. Assigning a `Cookie` source automatically enables textured Area Light Emission. Close to the light it keeps the selected crop detail, and with distance it blends through mip levels toward the average emitted color. Use `Crop` and `Crop Shape` on Area Lights when one cookie atlas contains several panels, or when the emitter should be triangular instead of rectangular.
+Area Lights do not expose the `Projection` dropdown. Assigning a `Cookie` source automatically enables textured Area Light Emission. Close to the light it keeps the selected crop detail, and with distance it blends through mip levels toward the average emitted color. Use `Crop`, `Crop Shape` and `Crop Rotation` on Area Lights when one cookie atlas contains several panels, when the emitter should be triangular instead of rectangular, or when the selected cookie needs to be turned in place.
 
 If the projection source is a Material, see [Point Light Material Sources](../Documentation/HowToUse_PointLightMaterialSources.md) for the required shader contract, cubemap face layout and single-slice cookie behavior.
 

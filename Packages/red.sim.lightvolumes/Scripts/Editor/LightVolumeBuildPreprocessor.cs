@@ -396,6 +396,7 @@ namespace VRCLightVolumes {
             SetUdonProgramVariable(udonBehaviour, "CustomTextureHasDepthSlices", pointLight.CustomTextureHasDepthSlices);
             SetUdonProgramVariable(udonBehaviour, "AreaCookieCrop", pointLight.AreaCookieCrop);
             SetUdonProgramVariable(udonBehaviour, "AreaCookieCropShape", pointLight.AreaCookieCropShape);
+            SetUdonProgramVariable(udonBehaviour, "AreaCookieCropRotation", pointLight.AreaCookieCropRotation);
 #endif
         }
 

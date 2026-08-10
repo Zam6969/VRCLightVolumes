@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
@@ -336,6 +337,15 @@ namespace VRCLightVolumes {
             SerializedProperty shapeProperty = serializedObject.FindProperty("AreaCookieCropShape");
             if (shapeProperty != null) DrawPopup(shapeProperty, new GUIContent("Crop Shape", shapeProperty.tooltip), _areaCookieCropShapeNames);
 
+            SerializedProperty rotationProperty = serializedObject.FindProperty("AreaCookieCropRotation");
+            if (rotationProperty != null) {
+                using (new EditorGUILayout.HorizontalScope()) {
+                    EditorGUILayout.Slider(rotationProperty, -180f, 180f, new GUIContent("Crop Rotation", rotationProperty.tooltip));
+                    if (GUILayout.Button("Reset", GUILayout.Width(48f))) rotationProperty.floatValue = 0f;
+                }
+                if (!rotationProperty.hasMultipleDifferentValues) rotationProperty.floatValue = GetSafeAreaCookieCropRotation(rotationProperty.floatValue);
+            }
+
             SerializedProperty cropProperty = serializedObject.FindProperty("AreaCookieCrop");
             using (new EditorGUILayout.HorizontalScope()) {
                 EditorGUILayout.PropertyField(cropProperty, new GUIContent("Crop", cropProperty.tooltip));
@@ -344,11 +354,11 @@ namespace VRCLightVolumes {
 
             UnityEngine.Object previewSource = previewProperty != null ? previewProperty.objectReferenceValue : null;
             UnityEngine.Object cookieSource = serializedObject.FindProperty("Cookie").objectReferenceValue;
-            DrawAreaCookieCropPreview(cropProperty, shapeProperty, previewSource, cookieSource);
+            DrawAreaCookieCropPreview(cropProperty, shapeProperty, rotationProperty, previewSource, cookieSource);
         }
 
         // Draws the assigned guide image, cookie image, or a blank 1920x1080 canvas, then applies drag selections to AreaCookieCrop.
-        private void DrawAreaCookieCropPreview(SerializedProperty cropProperty, SerializedProperty shapeProperty, UnityEngine.Object previewSource, UnityEngine.Object cookieSource) {
+        private void DrawAreaCookieCropPreview(SerializedProperty cropProperty, SerializedProperty shapeProperty, SerializedProperty rotationProperty, UnityEngine.Object previewSource, UnityEngine.Object cookieSource) {
             float previewAspect = GetAreaCookiePreviewAspect(previewSource, cookieSource);
             float previewHeight = Mathf.Clamp((EditorGUIUtility.currentViewWidth - 40f) / previewAspect, AreaCookiePreviewMinHeight, AreaCookiePreviewMaxHeight);
             Rect previewRect = EditorGUI.IndentedRect(EditorGUILayout.GetControlRect(false, previewHeight));
@@ -364,7 +374,8 @@ namespace VRCLightVolumes {
             DrawRectOutline(canvasRect, _areaCookiePreviewBorderColor, 1f);
             Rect cropRect = CropToPreviewRect(canvasRect, GetSafeAreaCookieCrop(cropProperty.vector4Value));
             int shape = shapeProperty != null ? Mathf.Clamp(shapeProperty.intValue, 0, _areaCookieCropShapeNames.Length - 1) : 0;
-            DrawAreaCookieCropShapeOverlay(cropRect, shape);
+            float rotation = rotationProperty != null ? GetSafeAreaCookieCropRotation(rotationProperty.floatValue) : 0f;
+            DrawAreaCookieCropShapeOverlay(cropRect, shape, rotation);
         }
 
         // Handles click-drag crop selection. Hold Shift to force a square selection in image pixels.
@@ -481,39 +492,117 @@ namespace VRCLightVolumes {
             return new Vector4(offsetX, offsetY, width, height);
         }
 
+        // Keeps rotations bounded for serialized data and preview math.
+        private float GetSafeAreaCookieCropRotation(float rotation) {
+            if (rotation != rotation) return 0f;
+            float safeRotation = Mathf.Clamp(rotation, -360f, 360f);
+            if (safeRotation <= -180f) safeRotation += 360f;
+            else if (safeRotation > 180f) safeRotation -= 360f;
+            return safeRotation;
+        }
+
         // Clamps a point to a preview rectangle.
         private Vector2 ClampPointToRect(Vector2 point, Rect rect) {
             return new Vector2(Mathf.Clamp(point.x, rect.xMin, rect.xMax), Mathf.Clamp(point.y, rect.yMin, rect.yMax));
         }
 
-        // Draws either a rectangle overlay or the selected triangular crop mask.
-        private void DrawAreaCookieCropShapeOverlay(Rect cropRect, int shape) {
-            if (shape <= 0) {
-                EditorGUI.DrawRect(cropRect, _areaCookieCropFillColor);
-                DrawRectOutline(cropRect, _areaCookieCropBorderColor, 2f);
-                return;
-            }
-
-            DrawRectOutline(cropRect, new Color(_areaCookieCropBorderColor.r, _areaCookieCropBorderColor.g, _areaCookieCropBorderColor.b, 0.35f), 1f);
-            Vector3[] points = GetAreaCookieTrianglePoints(cropRect, shape);
+        // Draws either a rectangle overlay or the selected triangular crop mask with rotation applied.
+        private void DrawAreaCookieCropShapeOverlay(Rect cropRect, int shape, float rotation) {
+            Vector3[] points = GetAreaCookieShapeOverlayPoints(cropRect, shape, rotation);
+            if (points.Length < 3) return;
+            if (shape > 0 || !Mathf.Approximately(rotation, 0f)) DrawRectOutline(cropRect, new Color(_areaCookieCropBorderColor.r, _areaCookieCropBorderColor.g, _areaCookieCropBorderColor.b, 0.35f), 1f);
             Handles.BeginGUI();
             Handles.color = _areaCookieCropFillColor;
             Handles.DrawAAConvexPolygon(points);
             Handles.color = _areaCookieCropBorderColor;
-            Handles.DrawAAPolyLine(2f, points[0], points[1], points[2], points[0]);
+            Handles.DrawAAPolyLine(2f, CloseAreaCookiePolygon(points));
             Handles.EndGUI();
         }
 
-        // Returns preview-space triangle vertices matching the shader's UV-space crop shape.
-        private Vector3[] GetAreaCookieTrianglePoints(Rect rect, int shape) {
-            Vector3 topLeft = new Vector3(rect.xMin, rect.yMin, 0f);
-            Vector3 topRight = new Vector3(rect.xMax, rect.yMin, 0f);
-            Vector3 bottomLeft = new Vector3(rect.xMin, rect.yMax, 0f);
-            Vector3 bottomRight = new Vector3(rect.xMax, rect.yMax, 0f);
-            if (shape == 1) return new Vector3[] { bottomLeft, bottomRight, topLeft };
-            if (shape == 2) return new Vector3[] { bottomLeft, bottomRight, topRight };
-            if (shape == 3) return new Vector3[] { bottomLeft, topLeft, topRight };
-            return new Vector3[] { bottomRight, topLeft, topRight };
+        // Returns preview-space vertices matching the shader's crop shape after rotation and clipping.
+        private Vector3[] GetAreaCookieShapeOverlayPoints(Rect rect, int shape, float rotation) {
+            List<Vector2> points = GetAreaCookieShapeUnitPoints(shape);
+            for (int i = 0; i < points.Count; i++) points[i] = RotateAreaCookieUnitPoint(points[i], rotation);
+            points = ClipAreaCookiePolygonToUnitRect(points);
+            Vector3[] previewPoints = new Vector3[points.Count];
+            for (int i = 0; i < points.Count; i++) previewPoints[i] = new Vector3(rect.x + points[i].x * rect.width, rect.y + points[i].y * rect.height, 0f);
+            return previewPoints;
+        }
+
+        // Returns unit-space vertices in preview coordinates; Y grows downward to match IMGUI.
+        private List<Vector2> GetAreaCookieShapeUnitPoints(int shape) {
+            if (shape == 1) return new List<Vector2> { new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 0f) };
+            if (shape == 2) return new List<Vector2> { new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(1f, 0f) };
+            if (shape == 3) return new List<Vector2> { new Vector2(0f, 1f), new Vector2(0f, 0f), new Vector2(1f, 0f) };
+            if (shape == 4) return new List<Vector2> { new Vector2(1f, 1f), new Vector2(0f, 0f), new Vector2(1f, 0f) };
+            return new List<Vector2> { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f) };
+        }
+
+        // Applies the same center rotation used by the cookie crop shader, expressed in preview unit coordinates.
+        private Vector2 RotateAreaCookieUnitPoint(Vector2 point, float rotation) {
+            if (Mathf.Approximately(rotation, 0f)) return point;
+            float radians = rotation * Mathf.Deg2Rad;
+            float sin = Mathf.Sin(radians);
+            float cos = Mathf.Cos(radians);
+            Vector2 delta = point - new Vector2(0.5f, 0.5f);
+            return new Vector2(0.5f + delta.x * cos - delta.y * sin, 0.5f + delta.x * sin + delta.y * cos);
+        }
+
+        // Clips a rotated overlay back into the crop box so the preview matches the baked mask.
+        private List<Vector2> ClipAreaCookiePolygonToUnitRect(List<Vector2> points) {
+            points = ClipAreaCookiePolygon(points, 0);
+            points = ClipAreaCookiePolygon(points, 1);
+            points = ClipAreaCookiePolygon(points, 2);
+            return ClipAreaCookiePolygon(points, 3);
+        }
+
+        // Clips a convex polygon against one edge of the unit crop box.
+        private List<Vector2> ClipAreaCookiePolygon(List<Vector2> points, int edge) {
+            List<Vector2> output = new List<Vector2>();
+            int count = points.Count;
+            if (count == 0) return output;
+            Vector2 previous = points[count - 1];
+            bool previousInside = IsInsideAreaCookieClipEdge(previous, edge);
+            for (int i = 0; i < count; i++) {
+                Vector2 current = points[i];
+                bool currentInside = IsInsideAreaCookieClipEdge(current, edge);
+                if (currentInside) {
+                    if (!previousInside) output.Add(IntersectAreaCookieClipEdge(previous, current, edge));
+                    output.Add(current);
+                } else if (previousInside) {
+                    output.Add(IntersectAreaCookieClipEdge(previous, current, edge));
+                }
+                previous = current;
+                previousInside = currentInside;
+            }
+            return output;
+        }
+
+        // Returns whether a unit point is inside the requested crop-box edge.
+        private bool IsInsideAreaCookieClipEdge(Vector2 point, int edge) {
+            if (edge == 0) return point.x >= 0f;
+            if (edge == 1) return point.x <= 1f;
+            if (edge == 2) return point.y >= 0f;
+            return point.y <= 1f;
+        }
+
+        // Intersects a polygon edge with one crop-box edge.
+        private Vector2 IntersectAreaCookieClipEdge(Vector2 from, Vector2 to, int edge) {
+            Vector2 delta = to - from;
+            float t = 0f;
+            if (edge == 0) t = Mathf.Abs(delta.x) > 0.00001f ? (0f - from.x) / delta.x : 0f;
+            else if (edge == 1) t = Mathf.Abs(delta.x) > 0.00001f ? (1f - from.x) / delta.x : 0f;
+            else if (edge == 2) t = Mathf.Abs(delta.y) > 0.00001f ? (0f - from.y) / delta.y : 0f;
+            else t = Mathf.Abs(delta.y) > 0.00001f ? (1f - from.y) / delta.y : 0f;
+            return from + delta * Mathf.Clamp01(t);
+        }
+
+        // Returns a copy with the first point appended for outline drawing.
+        private Vector3[] CloseAreaCookiePolygon(Vector3[] points) {
+            Vector3[] closed = new Vector3[points.Length + 1];
+            for (int i = 0; i < points.Length; i++) closed[i] = points[i];
+            closed[points.Length] = points[0];
+            return closed;
         }
 
         // Draws a crisp IMGUI rectangle outline.

@@ -214,6 +214,8 @@ namespace VRCLightVolumes {
         private Vector4[] _customSingleMaterialCrops = new Vector4[0];
         private int[] _customSingleTextureCropShapes = new int[0];
         private int[] _customSingleMaterialCropShapes = new int[0];
+        private float[] _customSingleTextureCropRotations = new float[0];
+        private float[] _customSingleMaterialCropRotations = new float[0];
         private PointLightVolumeInstance[] _customSingleAreaCookieReceivers = new PointLightVolumeInstance[0];
         private int[] _customSingleAreaCookieReceiverIndices = new int[0];
 
@@ -441,6 +443,7 @@ namespace VRCLightVolumes {
         private int _cubemapFaceIndexID;
         private int _cookieCropRectID;
         private int _cookieCropShapeID;
+        private int _cookieCropRotationID;
 
 #endregion
     }

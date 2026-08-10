@@ -209,6 +209,7 @@ namespace VRCLightVolumes.Tests {
             source.Falloff = 0.6f;
             source.AreaCookieCrop = new Vector4(0.125f, 0.25f, 0.5f, 0.75f);
             source.AreaCookieCropShape = 3;
+            source.AreaCookieCropRotation = 37.5f;
             source.AreaCookieCropPreview = cookie;
             source.Shadows = true;
             source.BakeInGame = true;
@@ -232,6 +233,7 @@ namespace VRCLightVolumes.Tests {
             Assert.That(destination.Intensity, Is.EqualTo(3.5f).Within(Epsilon));
             Assert.That(destination.AreaCookieCrop, Is.EqualTo(source.AreaCookieCrop));
             Assert.That(destination.AreaCookieCropShape, Is.EqualTo(3));
+            Assert.That(destination.AreaCookieCropRotation, Is.EqualTo(37.5f).Within(Epsilon));
             Assert.That(destination.AreaCookieCropPreview, Is.SameAs(cookie));
             UnityEngine.Object.DestroyImmediate(cookie);
         }

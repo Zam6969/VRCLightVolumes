@@ -19,6 +19,7 @@ namespace VRCLightVolumes {
         internal RenderTexture RuntimeShadowRegistrationTexturePreview => _runtimeShadowRegistrationTexture;
         private Vector4 _editorAreaCookieCrop = new Vector4(0f, 0f, 1f, 1f);
         private int _editorAreaCookieCropShape = 0;
+        private float _editorAreaCookieCropRotation = 0f;
 
         // Caches editor-observed scalar values after the editor coordinator mirrors them without proxy polling.
         internal void CacheEditorObservedValues() {
@@ -27,6 +28,7 @@ namespace VRCLightVolumes {
             _old_ShadingStrength = ShadingStrength;
             _editorAreaCookieCrop = GetAreaCookieCrop();
             _editorAreaCookieCropShape = GetAreaCookieCropShape();
+            _editorAreaCookieCropRotation = GetAreaCookieCropRotation();
         }
 
 #endregion
@@ -91,6 +93,11 @@ namespace VRCLightVolumes {
         // Returns the valid Area Light cookie crop shape.
         internal int GetAreaCookieCropShape() {
             return GetSafeAreaCookieCropShape(AreaCookieCropShape);
+        }
+
+        // Returns the valid Area Light cookie crop rotation.
+        internal float GetAreaCookieCropRotation() {
+            return GetSafeAreaCookieCropRotation(AreaCookieCropRotation);
         }
 
         // Checks whether an editor source may change without replacing its object reference.
@@ -198,7 +205,7 @@ namespace VRCLightVolumes {
             int mode = GetAuthoringProjectionMode();
             int type = GetProjectionType();
             bool areaCropChanged = (LightType == 2 || ProjectionMode == 2)
-                && (!CookieCropsMatch(_editorAreaCookieCrop, GetAreaCookieCrop()) || _editorAreaCookieCropShape != GetAreaCookieCropShape());
+                && (!CookieCropsMatch(_editorAreaCookieCrop, GetAreaCookieCrop()) || _editorAreaCookieCropShape != GetAreaCookieCropShape() || _editorAreaCookieCropRotation != GetAreaCookieCropRotation());
             return CustomTexture != texture || CustomTextureMaterial != material || ProjectionMode != mode || ProjectionType != type
                 || CustomTextureIsCubemap != IsEditorCubemapTexture(texture) || CustomTextureHasDepthSlices != EditorTextureHasDepthSlices(texture) || areaCropChanged;
         }
@@ -225,6 +232,7 @@ namespace VRCLightVolumes {
             float safeAspect = Mathf.Max(Mathf.Abs(SpotCookieAspect), 0.001f);
             Vector4 safeAreaCookieCrop = GetAreaCookieCrop();
             int safeAreaCookieCropShape = GetAreaCookieCropShape();
+            float safeAreaCookieCropRotation = GetAreaCookieCropRotation();
             Transform instanceTransform = transform;
             Vector3 transformPosition = instanceTransform.position;
             Quaternion transformRotation = instanceTransform.rotation;
@@ -239,6 +247,7 @@ namespace VRCLightVolumes {
             SpotCookieAspect = safeAspect;
             AreaCookieCrop = safeAreaCookieCrop;
             AreaCookieCropShape = safeAreaCookieCropShape;
+            AreaCookieCropRotation = safeAreaCookieCropRotation;
             ShadingStrength = Mathf.Clamp01(ShadingStrength);
 
             Texture customTexture = GetCustomTexture();
@@ -303,6 +312,7 @@ namespace VRCLightVolumes {
             _old_ShadingStrength = ShadingStrength;
             _editorAreaCookieCrop = safeAreaCookieCrop;
             _editorAreaCookieCropShape = safeAreaCookieCropShape;
+            _editorAreaCookieCropRotation = safeAreaCookieCropRotation;
             IsRangeDirty = true;
             if (notifyManager) NotifyManager(true, customTexturesChanged, shadowTexturesChanged);
         }

@@ -2840,6 +2840,45 @@ namespace VRCLightVolumes.Tests {
             AssertPointCustomData(1, secondPoint, -2, 0);
         }
 
+        // Verifies matching Area Light cookie sources split when their crop rotation differs.
+        [Test]
+        public void AreaCookieCropRotationMismatchUsesSeparateRuntimeSlices() {
+            LightVolumeManager manager = CreateManager("Area Cookie Rotation Split Manager", false);
+            Texture2D source = CreateTexture2D("Area Cookie Rotation Shared Source");
+            manager.CustomTexturesWidth = 4;
+            manager.CustomTexturesHeight = 4;
+
+            PointLightVolumeInstance firstPoint = CreatePointLight(manager, "Area Cookie Rotation A", true);
+            firstPoint.transform.localScale = new Vector3(2, 3, 1);
+            firstPoint.SetCustomTexture();
+            firstPoint.SetAreaLight();
+            firstPoint.CustomTexture = source;
+            firstPoint.ProjectionType = 1; // 1: texture
+            firstPoint.AreaCookieCrop = new Vector4(0f, 0f, 1f, 1f);
+            firstPoint.AreaCookieCropRotation = 0f;
+
+            PointLightVolumeInstance secondPoint = CreatePointLight(manager, "Area Cookie Rotation B", true);
+            secondPoint.transform.localScale = new Vector3(2, 3, 1);
+            secondPoint.SetCustomTexture();
+            secondPoint.SetAreaLight();
+            secondPoint.CustomTexture = source;
+            secondPoint.ProjectionType = 1; // 1: texture
+            secondPoint.AreaCookieCrop = new Vector4(0f, 0f, 1f, 1f);
+            secondPoint.AreaCookieCropRotation = 45f;
+
+            manager.PointLightVolumeInstances = new[] { firstPoint, secondPoint };
+
+            manager.ReinitializeCustomTextures();
+            manager.UpdateVolumes();
+
+            Assert.That(GetManagerField<int>(manager, _customSingleTextureCountField), Is.EqualTo(2));
+            Assert.That(manager.CustomTextures, Is.Not.Null);
+            Assert.That(manager.CustomTextures.volumeDepth, Is.EqualTo(2));
+            Assert.That(GetManagerField<int[]>(manager, _pointLightCustomIDsField), Is.EqualTo(new[] { 0, 1 }));
+            AssertPointCustomData(0, firstPoint, -1, 0);
+            AssertPointCustomData(1, secondPoint, -2, 0);
+        }
+
         // Verifies runtime crop changes invalidate the custom texture cache and re-split shared sources.
         [Test]
         public void AreaCookieCropSetterRefreshesRuntimeSlices() {
@@ -2872,6 +2911,16 @@ namespace VRCLightVolumes.Tests {
             manager.UpdateVolumes();
 
             AssertVectorClose(new Vector4(0.25f, 0.25f, 0.5f, 0.5f), secondPoint.AreaCookieCrop);
+            Assert.That(secondPoint.AreaCookieCropRotation, Is.EqualTo(0f));
+            Assert.That(GetManagerField<int>(manager, _customSingleTextureCountField), Is.EqualTo(2));
+            Assert.That(manager.CustomTextures, Is.Not.Null);
+            Assert.That(manager.CustomTextures.volumeDepth, Is.EqualTo(2));
+            Assert.That(GetManagerField<int[]>(manager, _pointLightCustomIDsField), Is.EqualTo(new[] { 0, 1 }));
+
+            secondPoint.SetAreaCookieCropRotation(90f);
+            manager.UpdateVolumes();
+
+            Assert.That(secondPoint.AreaCookieCropRotation, Is.EqualTo(90f));
             Assert.That(GetManagerField<int>(manager, _customSingleTextureCountField), Is.EqualTo(2));
             Assert.That(manager.CustomTextures, Is.Not.Null);
             Assert.That(manager.CustomTextures.volumeDepth, Is.EqualTo(2));

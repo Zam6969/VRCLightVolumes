@@ -132,6 +132,7 @@ When changing a Point Light Volume from another Udon script, prefer the setter m
 |`float SpotCookieAspect` | Width / height aspect used by custom Spot Light cookie projection. |
 |`Vector4 AreaCookieCrop` | Normalized Area Light cookie crop rectangle. `x/y` are the lower-left offset, `z/w` are width and height. |
 |`int AreaCookieCropShape` | Area Light cookie crop shape. `0` = rectangle, `1` = lower-left triangle, `2` = lower-right triangle, `3` = upper-left triangle, `4` = upper-right triangle. |
+|`float AreaCookieCropRotation` | Area Light cookie crop rotation in degrees. Rotates the cropped rectangle or triangle around its center. |
 |`float Height` | Area light height in meters. Affects textured Area Light emission and size-aware Area Light speculars in modern compatible shaders. |
 |`float AreaCookieMirror` | Internal Area Cookie X/Y reflection metadata derived from the transform, including reflected parent transforms. Do not set it manually; `UpdateRotation()`, `UpdateScale()` and the manager keep it synchronized. |
 |`float SquaredRange` | Squared range after which the light is culled. Recalculated by the manager when `IsRangeDirty` is true. |
@@ -187,10 +188,12 @@ When changing a Point Light Volume from another Udon script, prefer the setter m
 |`void SetSpotLight(float angleDeg)` | Sets this light into Spot Light type with angle only, updating only changed shader data. |
 |`void SetAreaLight()` | Sets this light into Area Light type, canonicalizes its shadow layout to cubemap, and updates positive width/height, rotation and Area Cookie mirror data from the transform. |
 |`void SetSpotCookieAspect(float aspect)` | Sets custom Spot Light cookie projection aspect and updates shader data. |
-|`void SetAreaCookieCrop()` | Applies the currently assigned Area Light cookie crop rectangle and shape, rebuilding affected custom texture slices when needed. |
+|`void SetAreaCookieCrop()` | Applies the currently assigned Area Light cookie crop rectangle, shape and rotation, rebuilding affected custom texture slices when needed. |
 |`void SetAreaCookieCrop(float offsetX, float offsetY, float width, float height)` | Sets a rectangular normalized Area Light cookie crop and rebuilds affected custom texture slices. |
 |`void SetAreaCookieCrop(float offsetX, float offsetY, float width, float height, int shape)` | Sets normalized Area Light cookie crop rectangle and shape. `shape` uses the `AreaCookieCropShape` values. |
+|`void SetAreaCookieCrop(float offsetX, float offsetY, float width, float height, int shape, float rotation)` | Sets normalized Area Light cookie crop rectangle, shape and rotation. Rotation is in degrees. |
 |`void SetAreaCookieCropShape(int shape)` | Sets only the Area Light cookie crop shape while keeping the current crop rectangle. |
+|`void SetAreaCookieCropRotation(float rotation)` | Sets only the Area Light cookie crop rotation while keeping the current crop rectangle and shape. |
 |`void SetColor(Color color)` | Sets light source color, updates the internal change cache and marks range dirty only when the value changes. |
 |`void SetIntensity(float intensity)` | Sets light source intensity, updates the internal change cache and marks range dirty only when the value changes. |
 |`void SetShadingStrength(float shadingStrength)` | Sets per-surface Point Light Volume shading and shadow strength in the `0..1` range, updating the internal change cache only when the value changes. |

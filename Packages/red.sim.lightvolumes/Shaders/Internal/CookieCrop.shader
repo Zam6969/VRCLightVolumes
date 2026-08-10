@@ -4,6 +4,7 @@ Shader "Hidden/VRCLV/CookieCrop"
         _MainTex("Texture", 2D) = "white" {}
         _CookieCrop("Cookie Crop", Vector) = (0, 0, 1, 1)
         _CookieCropShape("Cookie Crop Shape", Float) = 0
+        _CookieCropRotation("Cookie Crop Rotation", Float) = 0
     }
     SubShader {
         Tags { "RenderType" = "Opaque" }
@@ -19,6 +20,7 @@ Shader "Hidden/VRCLV/CookieCrop"
             sampler2D _MainTex;
             float4 _CookieCrop;
             float _CookieCropShape;
+            float _CookieCropRotation;
 
             struct appdata {
                 float4 vertex : POSITION;
@@ -38,14 +40,20 @@ Shader "Hidden/VRCLV/CookieCrop"
             }
 
             float4 frag(v2f i) : SV_Target {
-                float keep = 1.0;
+                float radians = _CookieCropRotation * 0.01745329252;
+                float s;
+                float c;
+                sincos(radians, s, c);
+                float2 centeredUv = i.uv - 0.5;
+                float2 localUv = float2(centeredUv.x * c + centeredUv.y * s, -centeredUv.x * s + centeredUv.y * c) + 0.5;
+                float keep = localUv.x >= 0.0 && localUv.x <= 1.0 && localUv.y >= 0.0 && localUv.y <= 1.0 ? 1.0 : 0.0;
                 if (_CookieCropShape > 0.5) {
-                    if (_CookieCropShape < 1.5) keep = i.uv.x + i.uv.y <= 1.0 ? 1.0 : 0.0;
-                    else if (_CookieCropShape < 2.5) keep = i.uv.y <= i.uv.x ? 1.0 : 0.0;
-                    else if (_CookieCropShape < 3.5) keep = i.uv.y >= i.uv.x ? 1.0 : 0.0;
-                    else keep = i.uv.x + i.uv.y >= 1.0 ? 1.0 : 0.0;
+                    if (_CookieCropShape < 1.5) keep *= localUv.x + localUv.y <= 1.0 ? 1.0 : 0.0;
+                    else if (_CookieCropShape < 2.5) keep *= localUv.y <= localUv.x ? 1.0 : 0.0;
+                    else if (_CookieCropShape < 3.5) keep *= localUv.y >= localUv.x ? 1.0 : 0.0;
+                    else keep *= localUv.x + localUv.y >= 1.0 ? 1.0 : 0.0;
                 }
-                float2 uv = i.uv * _CookieCrop.zw + _CookieCrop.xy;
+                float2 uv = localUv * _CookieCrop.zw + _CookieCrop.xy;
                 return tex2D(_MainTex, uv) * keep;
             }
             ENDCG
