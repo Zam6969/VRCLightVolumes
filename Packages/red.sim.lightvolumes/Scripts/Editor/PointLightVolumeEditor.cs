@@ -329,6 +329,9 @@ namespace VRCLightVolumes {
 
         // Draws the Area Light cookie source, shape selector, normalized crop field and 16:9 visual picker.
         private void DrawAreaCookieCropControls() {
+            SerializedProperty areaShapeProperty = serializedObject.FindProperty("AreaLightShape");
+            if (areaShapeProperty != null) DrawPopup(areaShapeProperty, new GUIContent("Area Shape", areaShapeProperty.tooltip), _areaCookieCropShapeNames);
+
             DrawTextureMaterialField("Cookie", _textureMaterialHint, false);
 
             SerializedProperty previewProperty = serializedObject.FindProperty("AreaCookieCropPreview");
@@ -760,19 +763,20 @@ namespace VRCLightVolumes {
 
                 float x = Mathf.Max(Mathf.Abs(pointLightVolume.transform.lossyScale.x), 0.001f);
                 float y = Mathf.Max(Mathf.Abs(pointLightVolume.transform.lossyScale.y), 0.001f);
+                int shape = Mathf.Clamp(pointLightVolume.AreaLightShape, 0, 4);
 
                 Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual;
                 Handles.color = new Color(1f, 1f, 0f, 0.6f);
-                DrawAreaLight(origin, t.rotation, x, y);
+                DrawAreaLight(origin, t.rotation, x, y, shape);
 
-                if(pointLightVolume.DebugRange) DrawAreaLightDebug(origin, t.rotation, x, y, pointLightVolume.Color, pointLightVolume.Intensity, GetBrightnessCutoff(pointLightVolume));
+                if (pointLightVolume.DebugRange) DrawAreaLightDebug(origin, t.rotation, x, y, shape, pointLightVolume.Color, pointLightVolume.Intensity, GetBrightnessCutoff(pointLightVolume));
                 DrawShadowClipGUI(pointLightVolume, origin, t);
 
                 Handles.zTest = UnityEngine.Rendering.CompareFunction.Greater;
                 Handles.color = new Color(1f, 1f, 0f, 0.15f);
-                DrawAreaLight(origin, t.rotation, x, y);
+                DrawAreaLight(origin, t.rotation, x, y, shape);
 
-                if (pointLightVolume.DebugRange) DrawAreaLightDebug(origin, t.rotation, x, y, pointLightVolume.Color, pointLightVolume.Intensity, GetBrightnessCutoff(pointLightVolume));
+                if (pointLightVolume.DebugRange) DrawAreaLightDebug(origin, t.rotation, x, y, shape, pointLightVolume.Color, pointLightVolume.Intensity, GetBrightnessCutoff(pointLightVolume));
                 DrawShadowClipGUI(pointLightVolume, origin, t);
 
             }
@@ -845,29 +849,34 @@ namespace VRCLightVolumes {
             Handles.DrawLine(nearCenter - up * nearRadius, farCenter - up * farRadius);
         }
 
-        // Draws an Area Light emitter rectangle and its forward direction.
-        private void DrawAreaLight(Vector3 center, Quaternion rotation, float width, float height) {
-            Vector3 right = rotation * Vector3.right * (width * 0.5f);
-            Vector3 up = rotation * Vector3.up * (height * 0.5f);
+        // Draws an Area Light emitter shape and its forward direction.
+        private void DrawAreaLight(Vector3 center, Quaternion rotation, float width, float height, int shape) {
+            Vector3[] corners = GetAreaLightShapeCorners(center, rotation, width, height, shape);
+            for (int i = 0; i < corners.Length; i++) Handles.DrawLine(corners[i], corners[(i + 1) % corners.Length]);
 
-            Vector3[] corners = new Vector3[4];
-            corners[0] = center + right + up; // Top Right
-            corners[1] = center - right + up; // Top Left
-            corners[2] = center - right - up; // Bottom Left
-            corners[3] = center + right - up; // Bottom Right
-
-            // Draw the rectangle
-            Handles.DrawLine(corners[0], corners[1]);
-            Handles.DrawLine(corners[1], corners[2]);
-            Handles.DrawLine(corners[2], corners[3]);
-            Handles.DrawLine(corners[3], corners[0]);
-            
             // Draw forward vector
             Handles.DrawLine(center, center + rotation * Vector3.forward * 0.5f);
         }
 
+        // Returns Scene View vertices matching the Area Light emitter shape.
+        private Vector3[] GetAreaLightShapeCorners(Vector3 center, Quaternion rotation, float width, float height, int shape) {
+            Vector3 right = rotation * Vector3.right * (width * 0.5f);
+            Vector3 up = rotation * Vector3.up * (height * 0.5f);
+
+            Vector3 lowerLeft = center - right - up;
+            Vector3 lowerRight = center + right - up;
+            Vector3 upperLeft = center - right + up;
+            Vector3 upperRight = center + right + up;
+
+            if (shape == 1) return new[] { lowerLeft, lowerRight, upperLeft };
+            if (shape == 2) return new[] { lowerLeft, lowerRight, upperRight };
+            if (shape == 3) return new[] { lowerLeft, upperLeft, upperRight };
+            if (shape == 4) return new[] { lowerRight, upperLeft, upperRight };
+            return new[] { upperRight, upperLeft, lowerLeft, lowerRight };
+        }
+
         // Draws the estimated culling sphere of an Area Light.
-        private void DrawAreaLightDebug(Vector3 center, Quaternion rotation, float width, float height, Color color, float intensity, float cutoff) {
+        private void DrawAreaLightDebug(Vector3 center, Quaternion rotation, float width, float height, int shape, Color color, float intensity, float cutoff) {
 
             // Light normal
             Vector3 up = rotation * Vector3.up;
@@ -876,7 +885,7 @@ namespace VRCLightVolumes {
 
             // Calculate the bounding sphere of the area light given the cutoff irradiance
             float minSolidAngle = Mathf.Clamp(cutoff / (Mathf.Max(color.r, Mathf.Max(color.g, color.b)) * intensity * Mathf.PI), -Mathf.PI * 2f, Mathf.PI * 2);
-            float sqMaxDist = ComputeAreaLightSquaredBoundingSphere(width, height, minSolidAngle);
+            float sqMaxDist = ComputeAreaLightSquaredBoundingSphere(width, height, shape, minSolidAngle);
             float radius = Mathf.Sqrt(sqMaxDist);
 
             Handles.DrawWireDisc(center, forward, radius);
@@ -886,8 +895,8 @@ namespace VRCLightVolumes {
         }
 
         // Calculates squared Area Light range from emitter dimensions and minimum solid angle.
-        float ComputeAreaLightSquaredBoundingSphere(float width, float height, float minSolidAngle) {
-            float A = width * height;
+        float ComputeAreaLightSquaredBoundingSphere(float width, float height, int shape, float minSolidAngle) {
+            float A = width * height * (shape == 0 ? 1f : 0.5f);
             float w2 = width * width;
             float h2 = height * height;
             float B = 0.25f * (w2 + h2);

@@ -87,10 +87,28 @@ namespace VRCLightVolumes {
             return (flipCookieY ? 2f : 1f) * (flipCookieX ? -1f : 1f);
         }
 
+        // Clamps shape to the supported Area Light emitter shapes.
+        private int GetSafeAreaLightShape(int shape) {
+            return Mathf.Clamp(shape, 0, 4);
+        }
+
+        // Triangular Area Lights use half of the rectangle's emitting surface.
+        private float GetAreaLightShapeAreaScale(int shape) {
+            return GetSafeAreaLightShape(shape) == 0 ? 1f : 0.5f;
+        }
+
+        // Packs Area Light shape into CustomID.W without losing the legacy cookie mirror tag.
+        private float PackAreaLightCustomDataW(float areaCookieMirror, int areaLightShape, bool hasAreaCookie) {
+            float shapeData = GetSafeAreaLightShape(areaLightShape) * AreaLightShapePackScale;
+            if (!hasAreaCookie) return shapeData;
+            float safeMirror = Mathf.Abs(areaCookieMirror) >= 0.5f ? areaCookieMirror : 1f;
+            return safeMirror + (safeMirror < 0f ? -shapeData : shapeData);
+        }
+
         // Computes a bounding sphere radius squared for area lights
-        private float ComputeAreaLightSquaredBoundingSphere(float width, float height, Color color, float intensity, float cutoff) {
+        private float ComputeAreaLightSquaredBoundingSphere(float width, float height, int areaLightShape, Color color, float intensity, float cutoff) {
             float minSolidAngle = Mathf.Clamp(cutoff / (Mathf.Max(color.r, Mathf.Max(color.g, color.b)) * intensity), -Mathf.PI * 2f, Mathf.PI * 2);
-            float A = width * height;
+            float A = width * height * GetAreaLightShapeAreaScale(areaLightShape);
             float w2 = width * width;
             float h2 = height * height;
             float B = 0.25f * (w2 + h2);
@@ -112,7 +130,7 @@ namespace VRCLightVolumes {
             if (instance == null) return;
             float cutoff = LightsBrightnessCutoff;
             if (instance.LightType == 2) { // 2: area
-                instance.SquaredRange = ComputeAreaLightSquaredBoundingSphere(Mathf.Abs(instance.SquaredScale / instance.Width), instance.Height, instance.Color, instance.Intensity * Mathf.PI, cutoff);
+                instance.SquaredRange = ComputeAreaLightSquaredBoundingSphere(Mathf.Abs(instance.SquaredScale / instance.Width), instance.Height, instance.AreaLightShape, instance.Color, instance.Intensity * Mathf.PI, cutoff);
             } else if (instance.ProjectionMode == 1) { // 1: LUT
                 instance.SquaredRange = Mathf.Abs(instance.SquaredScale / instance.InverseSquaredRange);
             } else {

@@ -42,6 +42,7 @@ namespace VRCLightVolumes {
         private const RenderTextureFormat FixedCustomTexturesFormat = RenderTextureFormat.ARGBHalf;
         private const RenderTextureFormat ClusterMaskFormat = RenderTextureFormat.ARGBInt;
         private const float DisabledShadingShadowId = 10000f;
+        private const float AreaLightShapePackScale = 0.01f;
         private const int PointLightUpdateColorRange = 1;
         private const int PointLightUpdateFull = 2;
         private const int PointLightUploadPosition = 1;

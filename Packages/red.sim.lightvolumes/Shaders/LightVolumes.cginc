@@ -159,7 +159,7 @@ uniform float4 _UdonPointLightVolumeDirection[VRCLV_MAX_LIGHTS_COUNT];
 // Y = shadow map ID. Fraction stores inverted shading strength. Abs >= 10000 disables shading.
 // Z = Squared Culling Range. Just a precalculated culling range to not recalculate it in shader.
 // W = signed inverse depth range for v3 Point and Spot shadows. A negative value marks a world-space shadow whose bake origin exactly matches the light position.
-// Area Cookie keeps its tag/mirror enum here: 0 none/legacy, +1 none, -1 X, +2 Y, -2 XY. Near clip is stored in ExtraData.W.
+// Area stores shape in the hundredths fraction. Textured Area also keeps its tag/mirror enum here: +1 none, -1 X, +2 Y, -2 XY. Near clip is stored in ExtraData.W.
 uniform float4 _UdonPointLightVolumeCustomID[VRCLV_MAX_LIGHTS_COUNT];
 
 #ifndef SHADER_TARGET_SURFACE_ANALYSIS
@@ -482,14 +482,88 @@ inline float LV_PointLightShadowPackedCube(uint id, float3 worldPos, float3 ligh
     return LV_ShadowEVSMInvRange(LV_SAMPLE_SHADOW(shadowUVW), distanceToShadowCenter, shadowNearClip, receiverInvDepthRange);
 }
 
-// Projects a front-facing quad light into L1 SH using a cheap solid-angle approximation.
+inline float LV_AreaLightPackedShape(float packedAreaData) {
+    return floor(frac(abs(packedAreaData)) * 100.0 + 0.5);
+}
+
+inline float LV_AreaLightPackedMirror(float packedAreaData) {
+    float mirror = max(floor(abs(packedAreaData) + 0.0001), 1.0);
+    return packedAreaData < 0 ? -mirror : mirror;
+}
+
+inline float LV_AreaLightShapeAreaScale(float shape) {
+    return shape > 0.5 ? 0.5 : 1.0;
+}
+
+inline void LV_AreaLightTriangleVertices(float2 halfSize, float shape, out float2 a, out float2 b, out float2 c) {
+    float2 lowerLeft = -halfSize;
+    float2 lowerRight = float2(halfSize.x, -halfSize.y);
+    float2 upperLeft = float2(-halfSize.x, halfSize.y);
+    float2 upperRight = halfSize;
+
+    [flatten] if (shape < 1.5) {
+        a = lowerLeft;
+        b = lowerRight;
+        c = upperLeft;
+    } else [flatten] if (shape < 2.5) {
+        a = lowerLeft;
+        b = lowerRight;
+        c = upperRight;
+    } else [flatten] if (shape < 3.5) {
+        a = lowerLeft;
+        b = upperLeft;
+        c = upperRight;
+    } else {
+        a = lowerRight;
+        b = upperLeft;
+        c = upperRight;
+    }
+}
+
+inline float2 LV_ClosestPointOnSegment(float2 p, float2 a, float2 b) {
+    float2 ab = b - a;
+    return a + ab * saturate(dot(p - a, ab) * rcp(max(dot(ab, ab), 1e-6)));
+}
+
+inline float LV_TriangleSign(float2 p1, float2 p2, float2 p3) {
+    return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+}
+
+inline float2 LV_ClosestPointOnTriangle(float2 p, float2 a, float2 b, float2 c) {
+    float d1 = LV_TriangleSign(p, a, b);
+    float d2 = LV_TriangleSign(p, b, c);
+    float d3 = LV_TriangleSign(p, c, a);
+    bool hasNegative = d1 < 0 || d2 < 0 || d3 < 0;
+    bool hasPositive = d1 > 0 || d2 > 0 || d3 > 0;
+    [branch] if (!(hasNegative && hasPositive)) return p;
+
+    float2 closestAB = LV_ClosestPointOnSegment(p, a, b);
+    float2 closestBC = LV_ClosestPointOnSegment(p, b, c);
+    float2 closestCA = LV_ClosestPointOnSegment(p, c, a);
+    float2 deltaAB = p - closestAB;
+    float2 deltaBC = p - closestBC;
+    float2 deltaCA = p - closestCA;
+    float distAB = dot(deltaAB, deltaAB);
+    float distBC = dot(deltaBC, deltaBC);
+    float distCA = dot(deltaCA, deltaCA);
+    return distAB < distBC ? (distAB < distCA ? closestAB : closestCA) : (distBC < distCA ? closestBC : closestCA);
+}
+
+inline float2 LV_AreaLightClosestXY(float2 localXY, float2 halfSize, float shape) {
+    [branch] if (shape < 0.5) return clamp(localXY, -halfSize, halfSize);
+    float2 a, b, c;
+    LV_AreaLightTriangleVertices(halfSize, shape, a, b, c);
+    return LV_ClosestPointOnTriangle(localXY, a, b, c);
+}
+
+// Projects a front-facing rectangle or triangle light into L1 SH using a cheap solid-angle approximation.
 // Caller must cull localPos.z <= 0 before calling.
-inline float4 LV_ProjectFastQuadLightIrradianceSH(float3 lightToWorldPos, float3 localPos, float centerSqDist, float3 xAxis, float3 yAxis, float2 size, out float3 pointLightShadingDir) {
+inline float4 LV_ProjectFastQuadLightIrradianceSH(float3 lightToWorldPos, float3 localPos, float centerSqDist, float3 xAxis, float3 yAxis, float2 size, float shape, out float3 pointLightShadingDir) {
     float2 halfSize = size * 0.5;
-    float area = max(size.x * size.y, 1e-6);
+    float area = max(size.x * size.y * LV_AreaLightShapeAreaScale(shape), 1e-6);
     float extentSq = max(dot(halfSize, halfSize), 1e-6);
 
-    float2 closestXY = clamp(localPos.xy, -halfSize, halfSize);
+    float2 closestXY = LV_AreaLightClosestXY(localPos.xy, halfSize, shape);
     float2 rectDelta = localPos.xy - closestXY;
     float rectDeltaSq = dot(rectDelta, rectDelta);
     float planeRectSq = rectDeltaSq + localPos.z * localPos.z;
@@ -532,13 +606,13 @@ inline float2 LV_SphereSpotLightCookieUv(float3 lightDir, float4 lightRot, float
 // Based on textured LTC prefiltering and filtered importance sampling:
 // https://eheitzresearch.wordpress.com/415-2/
 // https://developer.nvidia.com/gpugems/gpugems3/part-iii-rendering/chapter-20-gpu-based-importance-sampling
-inline float4 LV_AreaLightCookie(float3 localPos, float invDist, float2 size, uint textureId) {
+inline float4 LV_AreaLightCookie(float3 localPos, float invDist, float2 size, uint textureId, float shape) {
     float2 safeSize = max(size, float2(0.0001, 0.0001));
     float2 halfSize = safeSize * 0.5;
-    float2 closestXY = clamp(localPos.xy, -halfSize, halfSize);
+    float2 closestXY = LV_AreaLightClosestXY(localPos.xy, halfSize, shape);
     float2 rectDelta = localPos.xy - closestXY;
     float planeRectSq = dot(rectDelta, rectDelta) + localPos.z * localPos.z;
-    float lightArea = max(safeSize.x * safeSize.y, 0.000001);
+    float lightArea = max(safeSize.x * safeSize.y * LV_AreaLightShapeAreaScale(shape), 0.000001);
     float invLightArea = rcp(lightArea);
     float textureTexelCount = max(_UdonPointLightVolumeTextureTexelCount, 1.0);
     float filterAreaRatio = max(planeRectSq * (LV_PI * invLightArea), rcp(textureTexelCount));
@@ -734,6 +808,8 @@ bool LV_PointLightVolumeContribution(uint id, float3 worldPos, float3 pointLight
                 float4 areaRotation = _UdonPointLightVolumeDirection[id]; // Rotation
                 float3 lightToWorldPos = worldPos - pos.xyz;
                 float2 areaSize = float2(pos.w, color.w - 2);
+                float packedAreaData = _UdonLightVolumeVersion >= 3 ? customID_data.w : 0.0;
+                float areaShape = min(LV_AreaLightPackedShape(packedAreaData), 4.0);
                 float3 areaNormal, areaXAxis, areaYAxis;
                 LV_QuaternionAxes(areaRotation, areaXAxis, areaYAxis, areaNormal);
                 float3 areaLocalPos = float3(dot(lightToWorldPos, areaXAxis), dot(lightToWorldPos, areaYAxis), dot(lightToWorldPos, areaNormal));
@@ -741,7 +817,7 @@ bool LV_PointLightVolumeContribution(uint id, float3 worldPos, float3 pointLight
                 [branch] if (areaLocalPos.z > 0) { // Receiver is in front of the area emitter plane
                     float3 areaPointLightShadingDir;
                     float sourceSpreadSq = dot(areaSize, areaSize) * (0.25 * rcp(distSq));
-                    float4 areaLightSH = LV_ProjectFastQuadLightIrradianceSH(lightToWorldPos, areaLocalPos, distSq, areaXAxis, areaYAxis, areaSize, areaPointLightShadingDir);
+                    float4 areaLightSH = LV_ProjectFastQuadLightIrradianceSH(lightToWorldPos, areaLocalPos, distSq, areaXAxis, areaYAxis, areaSize, areaShape, areaPointLightShadingDir);
                     // Area projection is the expensive evaluation boundary, so later attenuation,
                     // cookie, normal-mask, or shadow rejection still consumes the overdraw slot.
                     counted = true;
@@ -752,12 +828,12 @@ bool LV_PointLightVolumeContribution(uint id, float3 worldPos, float3 pointLight
                         float3 cookie = 1;
                         bool areaVisible = true;
 
-                        [branch] if (customID_data.w != 0) { // V3 textured Area light. V2 leaves W at zero.
+                        [branch] if (customId < 0 && abs(packedAreaData) >= 0.5) { // V3 textured Area light. V2 leaves W at zero.
                             uint textureId = (uint)_UdonPointLightVolumeCubeCount * 5 - customId - 1;
                             // Valid tags are +/-1 or +/-2: sign selects X mirror, magnitude 2 selects Y mirror.
-                            float areaCookieMirror = customID_data.w;
+                            float areaCookieMirror = LV_AreaLightPackedMirror(packedAreaData);
                             areaLocalPos.xy *= float2(2.0 * saturate(areaCookieMirror) - 1.0, 3.0 - 2.0 * abs(areaCookieMirror));
-                            cookie = LV_AreaLightCookie(areaLocalPos, invDist, areaSize, textureId).rgb;
+                            cookie = LV_AreaLightCookie(areaLocalPos, invDist, areaSize, textureId, areaShape).rgb;
                             color.rgb = _UdonPointLightVolumeExtraData[id].rgb;
                             areaVisible = max(max(cookie.r, cookie.g), cookie.b) > 0;
                         }

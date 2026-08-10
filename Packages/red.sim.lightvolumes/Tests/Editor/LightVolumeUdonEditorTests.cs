@@ -2927,6 +2927,41 @@ namespace VRCLightVolumes.Tests {
             Assert.That(GetManagerField<int[]>(manager, _pointLightCustomIDsField), Is.EqualTo(new[] { 0, 1 }));
         }
 
+        // Verifies Area Light emitter shape is packed independently of optional cookie mirrors.
+        [Test]
+        public void AreaLightShapePacksAreaMetadataWithAndWithoutCookie() {
+            LightVolumeManager manager = CreateManager("Area Light Shape Pack Manager", false);
+            PointLightVolumeInstance point = CreatePointLight(manager, "Area Light Shape Pack Light", true);
+            point.transform.localScale = new Vector3(2, 3, 1);
+            point.SetAreaLight();
+            point.SetAreaLightShape(3);
+            manager.PointLightVolumeInstances = new[] { point };
+            manager.UpdateVolumes();
+
+            Assert.That(point.AreaLightShape, Is.EqualTo(3));
+            AssertPointCustomData(point, 0, 0);
+            float triangleRange = point.SquaredRange;
+
+            point.SetAreaLightShape(0);
+            manager.UpdateVolumes();
+
+            Assert.That(point.AreaLightShape, Is.EqualTo(0));
+            AssertPointCustomData(point, 0, 0);
+            Assert.That(point.SquaredRange, Is.GreaterThan(triangleRange));
+
+            Texture2D source = CreateTexture2D("Area Light Shape Pack Cookie");
+            point.SetCustomTexture();
+            point.CustomTexture = source;
+            point.ProjectionType = 1; // 1: texture
+            point.AreaCookieMirror = -2f;
+            point.SetAreaLightShape(4);
+            manager.ReinitializeCustomTextures();
+            manager.UpdateVolumes();
+
+            Assert.That(point.AreaLightShape, Is.EqualTo(4));
+            AssertPointCustomData(point, -1, 0);
+        }
+
         // Verifies the runtime manager respects a manual auto-update override on an area RenderTexture cookie.
         [Test]
         public void AreaRenderTextureCookieRespectsManualAutoUpdateOverride() {
@@ -6002,8 +6037,15 @@ namespace VRCLightVolumes.Tests {
             Assert.That(data.y, Is.EqualTo(shadowId).Within(Epsilon));
             Assert.That(data.z, Is.EqualTo(point.SquaredRange).Within(Epsilon));
             float expectedCustomDataW = 0f;
-            if (point.LightType == 2) { // Area uses the v2-invisible W padding only as an optional Cookie mirror tag.
-                if (customId < 0) expectedCustomDataW = point.AreaCookieMirror;
+            if (point.LightType == 2) { // Area packs emitter shape here and, when textured, preserves the Cookie mirror tag.
+                int areaLightShape = Mathf.Clamp(point.AreaLightShape, 0, 4);
+                float shapeData = areaLightShape * 0.01f;
+                if (customId < 0) {
+                    float areaCookieMirror = Mathf.Abs(point.AreaCookieMirror) >= 0.5f ? point.AreaCookieMirror : 1f;
+                    expectedCustomDataW = areaCookieMirror + (areaCookieMirror < 0f ? -shapeData : shapeData);
+                } else {
+                    expectedCustomDataW = shapeData;
+                }
             } else {
                 float shadowIdAbs = Mathf.Abs(shadowId);
                 bool hasShadow = shadowIdAbs >= 1f && shadowIdAbs < 10000f;

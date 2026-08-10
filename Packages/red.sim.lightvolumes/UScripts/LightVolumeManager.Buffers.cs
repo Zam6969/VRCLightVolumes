@@ -547,11 +547,7 @@ namespace VRCLightVolumes {
                 if (shadingFade > 0f) shadowMapID += shadowMapID < 0f ? -shadingFade : shadingFade;
             }
 
-            float customDataW = 0f;
-            if (hasAreaCookie) {
-                float areaCookieMirror = instance.AreaCookieMirror;
-                customDataW = Mathf.Abs(areaCookieMirror) >= 0.5f ? areaCookieMirror : 1f;
-            }
+            float customDataW = isArea ? PackAreaLightCustomDataW(instance.AreaCookieMirror, instance.AreaLightShape, hasAreaCookie) : 0f;
             if (hasShadow) {
                 bool usesCubemapShadow = resolvedShadowId < ShadowCubemapsCount;
                 Vector3 shadowBakePosition = instance.ShadowBakePosition;

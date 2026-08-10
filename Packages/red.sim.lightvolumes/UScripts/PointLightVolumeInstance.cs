@@ -71,6 +71,8 @@ namespace VRCLightVolumes {
         [Range(0, 4)] public int AreaCookieCropShape = 0;
         [Tooltip("Area Light cookie crop rotation in degrees. Rotates the cropped rectangle or triangle around its center.")]
         [Range(-180f, 180f)] public float AreaCookieCropRotation = 0f;
+        [Tooltip("Area Light emitter shape. 0 = rectangle, 1 = lower-left triangle, 2 = lower-right triangle, 3 = upper-left triangle, 4 = upper-right triangle.")]
+        [Range(0, 4)] public int AreaLightShape = 0;
         [Tooltip("Area Light height in meters. Affects textured Area Light emission and size-aware Area Light speculars in modern compatible shaders.")]
         [Min(0.001f)] public float Height = 1f;
 
@@ -604,6 +606,7 @@ namespace VRCLightVolumes {
             Position = instanceTransform.position;
             Width = Mathf.Max(Mathf.Abs(lossyScale.x), 0.001f);
             Height = Mathf.Max(Mathf.Abs(lossyScale.y), 0.001f);
+            AreaLightShape = GetSafeAreaLightShape(AreaLightShape);
             UpdateRotationCore(transformRotation, instanceTransform.localToWorldMatrix);
             MarkRangeDirtyAndNotify(true, CustomTexture != null || CustomTextureMaterial != null, shadowTexturesChanged);
         }
@@ -650,6 +653,14 @@ namespace VRCLightVolumes {
             if (SpotCookieAspect == safeAspect) return;
             SpotCookieAspect = safeAspect;
             NotifyManager(false, false, false);
+        }
+
+        // Sets the Area Light emitter shape used by lighting, textured cookies and range estimation.
+        public void SetAreaLightShape(int shape) {
+            int safeShape = GetSafeAreaLightShape(shape);
+            if (AreaLightShape == safeShape) return;
+            AreaLightShape = safeShape;
+            MarkRangeDirtyAndNotify(false, false, false);
         }
 
         // Applies the currently assigned Area Light cookie crop rectangle, shape and rotation.
@@ -700,6 +711,11 @@ namespace VRCLightVolumes {
 
         // Clamps shape to the supported Area Light cookie crop shapes.
         private int GetSafeAreaCookieCropShape(int shape) {
+            return Mathf.Clamp(shape, 0, 4);
+        }
+
+        // Clamps shape to the supported Area Light emitter shapes.
+        private int GetSafeAreaLightShape(int shape) {
             return Mathf.Clamp(shape, 0, 4);
         }
 

@@ -100,6 +100,11 @@ namespace VRCLightVolumes {
             return GetSafeAreaCookieCropRotation(AreaCookieCropRotation);
         }
 
+        // Returns the valid Area Light emitter shape.
+        internal int GetAreaLightShape() {
+            return GetSafeAreaLightShape(AreaLightShape);
+        }
+
         // Checks whether an editor source may change without replacing its object reference.
         private static bool IsAnimatedEditorSource(UnityEngine.Object source) {
             return source is RenderTexture || source is Material;
@@ -162,7 +167,7 @@ namespace VRCLightVolumes {
             if (LightType == 2) {
                 float width = Mathf.Max(Mathf.Abs(lossyScale.x), 0.001f);
                 float height = Mathf.Max(Mathf.Abs(lossyScale.y), 0.001f);
-                return Mathf.Max(Mathf.Sqrt(ComputeEditorAreaLightSquaredRange(width, height, Color, Intensity * Mathf.PI, cutoff)), 0.0001f);
+                return Mathf.Max(Mathf.Sqrt(ComputeEditorAreaLightSquaredRange(width, height, GetAreaLightShape(), Color, Intensity * Mathf.PI, cutoff)), 0.0001f);
             }
             if (Projection == 1 && HasProjectionSource()) return Mathf.Max(Range * averageScale, 0.0001f);
 
@@ -173,7 +178,7 @@ namespace VRCLightVolumes {
         }
 
         // Estimates the squared culling range of an Area Light for editor shadow baking.
-        private static float ComputeEditorAreaLightSquaredRange(float width, float height, Color color, float intensity, float cutoff) {
+        private static float ComputeEditorAreaLightSquaredRange(float width, float height, int areaLightShape, Color color, float intensity, float cutoff) {
             float luminance = Mathf.Max(color.r, Mathf.Max(color.g, color.b)) * Mathf.Abs(intensity);
             if (luminance <= 0.000001f) return 0f;
 
@@ -181,7 +186,7 @@ namespace VRCLightVolumes {
             if (minSolidAngle >= Mathf.PI * 2f - 0.0001f) return 0f;
             minSolidAngle = Mathf.Max(minSolidAngle, 0.000001f);
 
-            float area = width * height;
+            float area = width * height * (areaLightShape == 0 ? 1f : 0.5f);
             float shape = 0.25f * (width * width + height * height);
             float tangent = Mathf.Tan(0.25f * minSolidAngle);
             float tangentSquared = Mathf.Max(tangent * tangent, 0.000001f);
@@ -233,6 +238,7 @@ namespace VRCLightVolumes {
             Vector4 safeAreaCookieCrop = GetAreaCookieCrop();
             int safeAreaCookieCropShape = GetAreaCookieCropShape();
             float safeAreaCookieCropRotation = GetAreaCookieCropRotation();
+            int safeAreaLightShape = GetAreaLightShape();
             Transform instanceTransform = transform;
             Vector3 transformPosition = instanceTransform.position;
             Quaternion transformRotation = instanceTransform.rotation;
@@ -248,6 +254,7 @@ namespace VRCLightVolumes {
             AreaCookieCrop = safeAreaCookieCrop;
             AreaCookieCropShape = safeAreaCookieCropShape;
             AreaCookieCropRotation = safeAreaCookieCropRotation;
+            AreaLightShape = safeAreaLightShape;
             ShadingStrength = Mathf.Clamp01(ShadingStrength);
 
             Texture customTexture = GetCustomTexture();

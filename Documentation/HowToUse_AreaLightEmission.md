@@ -16,13 +16,13 @@
 
 ## Area Light Emission
 
-Area Light Emission lets an **Area Light** use a texture, RenderTexture or Material as a textured emitter. It is intended for TV screens, emissive signs, windows, soft boxes, LED panels and any rectangular surface where the emitted color is not uniform.
+Area Light Emission lets an **Area Light** use a texture, RenderTexture or Material as a textured emitter. It is intended for TV screens, emissive signs, windows, soft boxes, LED panels and any rectangular or triangular surface where the emitted color is not uniform.
 
 Unlike the old TVGI workflow, this does not need a separately baked additive Light Volume just to follow a screen color. The Area Light projects the source texture directly through the Point Light Volumes system, so it can stay movable, scalable and runtime-updated.
 
 ## What It Does
 
-With a cookie assigned, an Area Light behaves like a textured rectangular emitter:
+With a cookie assigned, an Area Light behaves like a textured area emitter:
 
 - Close to the light, the projection follows the Area Light size, proportions and local texture detail.
 - Farther away, the shader samples coarser mip levels so the result gradually converges to the average emitted color.
@@ -38,13 +38,13 @@ If an Area Light has no Cookie assigned, it keeps the original fast parametric A
 1. Create a **Point Light Volume**.
 2. Set `Type` to `Area Light`.
 3. Scale the transform to match the physical size of the emitting surface.
-4. Rotate the Area Light so the rectangle faces the area you want to illuminate.
+4. Rotate the Area Light so the emitter faces the area you want to illuminate.
 5. Assign a source to the `Cookie` field. It can be a Texture, RenderTexture or Material.
 6. Set `Color` and `Intensity`. These multiply the emitted texture color and can be changed at runtime without rebuilding the texture array.
 7. Set `Cookie Resolution` in **Light Volume Setup** as low as acceptable for the visible result.
 8. Enable `Debug Range` to check how much scene area the light affects.
 
-Use `Crop` when the cookie source is an atlas or a larger 16:9 guide image and only part of it should emit light. Drag in the crop preview to select the area, or type normalized values directly. `Crop Preview` can hold a separate alignment image; when it is empty, the picker shows the cookie texture, and when no texture preview is available it shows a blank 1920x1080 canvas. `Crop Shape` can keep the crop as a rectangle or mask it to one of the four triangle corners, and `Crop Rotation` turns the cropped rectangle or triangle around its center.
+Use `Area Shape` when the emitter itself should be a rectangle or one of the four triangle corners. Use `Crop` when the cookie source is an atlas or a larger 16:9 guide image and only part of it should emit light. Drag in the crop preview to select the area, or type normalized values directly. `Crop Preview` can hold a separate alignment image; when it is empty, the picker shows the cookie texture, and when no texture preview is available it shows a blank 1920x1080 canvas. `Crop Shape` can keep the crop as a rectangle or mask it to one of the four triangle corners, and `Crop Rotation` turns the cropped rectangle or triangle around its center.
 
 Negative scale is supported for Area Light cookies. Width and height are always sent to shaders as positive physical dimensions, while a negative local or parent X/Y axis mirrors the cookie on the corresponding axis. This mirror behavior is available in current v3 shaders; v2-compatible shaders receive the average-color fallback and ignore cookie orientation.
 
@@ -69,11 +69,11 @@ The same Texture, RenderTexture or Material source can be reused by several Area
 
 ## Runtime Updates
 
-Changing `Color`, `Intensity`, enable state or transform data does not require rebuilding the texture array. The manager updates the light data separately.
+Changing `Color`, `Intensity`, enable state, `Area Shape` or transform data does not require rebuilding the texture array. The manager updates the light data separately.
 
 Changing Area Light scale, including crossing an X/Y axis through zero into negative scale, updates both the positive physical size and the cookie mirror metadata. With `Dynamic` and `Auto Update Volumes` enabled this happens automatically; otherwise call the instance's `UpdateScale()` after changing the transform from Udon.
 
-Changing the `Cookie` source, `Crop`, `Crop Shape`, `Crop Rotation`, `Cookie Resolution`, or adding/removing a light that uses a new source requires the custom texture array to be rebuilt. The editor does this automatically from the authoring component. In runtime scripts, use `SetAreaCookieCrop()`, `SetAreaCookieCropShape()` or `SetAreaCookieCropRotation()` for crop changes, or call `ReinitializeCustomTextures()` after changing projection sources manually.
+Changing the `Cookie` source, `Crop`, `Crop Shape`, `Crop Rotation`, `Cookie Resolution`, or adding/removing a light that uses a new source requires the custom texture array to be rebuilt. The editor does this automatically from the authoring component. In runtime scripts, use `SetAreaLightShape()` for emitter shape changes, use `SetAreaCookieCrop()`, `SetAreaCookieCropShape()` or `SetAreaCookieCropRotation()` for crop changes, or call `ReinitializeCustomTextures()` after changing projection sources manually.
 
 RenderTexture and Material sources are treated as animated sources. To refresh them at runtime, enable `Auto Update Textures` in **Light Volume Setup**. Keep it disabled when all projection sources are static.
 
