@@ -529,6 +529,15 @@ inline float LV_TriangleSign(float2 p1, float2 p2, float2 p3) {
     return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
 }
 
+inline float LV_PointInTriangleMask(float2 p, float2 a, float2 b, float2 c) {
+    float d1 = LV_TriangleSign(p, a, b);
+    float d2 = LV_TriangleSign(p, b, c);
+    float d3 = LV_TriangleSign(p, c, a);
+    bool hasNegative = d1 < 0 || d2 < 0 || d3 < 0;
+    bool hasPositive = d1 > 0 || d2 > 0 || d3 > 0;
+    return !(hasNegative && hasPositive) ? 1.0 : 0.0;
+}
+
 inline float2 LV_ClosestPointOnTriangle(float2 p, float2 a, float2 b, float2 c) {
     float d1 = LV_TriangleSign(p, a, b);
     float d2 = LV_TriangleSign(p, b, c);
@@ -558,10 +567,12 @@ inline float2 LV_AreaLightClosestXY(float2 localXY, float2 halfSize, float shape
 
 inline float LV_AreaLightShapeFootprint(float2 localXY, float2 closestXY, float2 halfSize, float shape) {
     [branch] if (shape < 0.5) return 1.0;
+    float2 a, b, c;
+    LV_AreaLightTriangleVertices(halfSize, shape, a, b, c);
+    [branch] if (LV_PointInTriangleMask(localXY, a, b, c) > 0.5) return 1.0;
+
     float2 outsideDelta = localXY - closestXY;
     float outsideDistSq = dot(outsideDelta, outsideDelta);
-    [branch] if (outsideDistSq <= 1e-8) return 1.0;
-
     float maxExtent = max(max(halfSize.x, halfSize.y), 0.0001);
     float edgeSoftness = max(maxExtent * 0.002, 0.0001);
     return 1.0 - LV_Smoothstep01(saturate(sqrt(outsideDistSq) * rcp(edgeSoftness)));
@@ -820,7 +831,7 @@ bool LV_PointLightVolumeContribution(uint id, float3 worldPos, float3 pointLight
                 float4 areaRotation = _UdonPointLightVolumeDirection[id]; // Rotation
                 float3 lightToWorldPos = worldPos - pos.xyz;
                 float2 areaSize = float2(pos.w, color.w - 2);
-                float packedAreaData = _UdonLightVolumeVersion >= 3 ? customID_data.w : 0.0;
+                float packedAreaData = customID_data.w;
                 float areaShape = min(LV_AreaLightPackedShape(packedAreaData), 4.0);
                 float3 areaNormal, areaXAxis, areaYAxis;
                 LV_QuaternionAxes(areaRotation, areaXAxis, areaYAxis, areaNormal);
