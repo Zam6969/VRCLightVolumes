@@ -25,6 +25,7 @@ namespace VRCLightVolumes.Tests {
         private const string RuntimeShadowBlurShaderPath = "Shaders/Internal/PointLightShadowRuntimeBlur.shader";
         private const string LightVolumeManagerEditorSourcePath = "UScripts/LightVolumeManager.Editor.cs";
         private const string LightVolumeManagerEditorBackendSourcePath = "Scripts/Editor/LightVolumeManagerEditorBackend.cs";
+        private const string PointLightVolumeEditorSourcePath = "Scripts/Editor/PointLightVolumeEditor.cs";
         private const BindingFlags PublicInstanceDeclared = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
 
         private static readonly int _lightVolumeInvLocalEdgeSmoothID = Shader.PropertyToID("_UdonLightVolumeInvLocalEdgeSmooth");
@@ -4367,6 +4368,23 @@ namespace VRCLightVolumes.Tests {
             Assert.That(shaderSource, Does.Not.Contain("_UdonLightVolumeVersion >= 3 ? customID_data.w : 0.0"));
             Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeFootprint(localPos.xy, halfSize, shape, customTriangle0, customTriangle1)"));
             Assert.That(projectionSource, Does.Contain("* footprint"));
+        }
+
+        [Test]
+        public void AreaCookiePreviewZoomKeepsPickingInImageCoordinates() {
+            string editorSource = ReadPackageSource(PointLightVolumeEditorSourcePath);
+            int previewStart = editorSource.IndexOf("private void DrawAreaCookieCropPreview", StringComparison.Ordinal);
+            int inputStart = editorSource.IndexOf("private void HandleAreaCookieCropPreviewInput", previewStart, StringComparison.Ordinal);
+            string previewSource = editorSource.Substring(previewStart, inputStart - previewStart);
+
+            Assert.That(editorSource, Does.Contain("EventType.ScrollWheel"));
+            Assert.That(editorSource, Does.Contain("currentEvent.button == 2"));
+            Assert.That(editorSource, Does.Contain("currentEvent.alt"));
+            Assert.That(previewSource, Does.Contain("GetAreaCookiePreviewImageRect(canvasRect)"));
+            Assert.That(previewSource, Does.Contain("GUI.BeginClip(canvasRect)"));
+            Assert.That(previewSource, Does.Contain("CropToPreviewRect(localImageRect"));
+            Assert.That(editorSource, Does.Contain("PreviewPointToAreaCookieUv(currentEvent.mousePosition, imageRect)"));
+            Assert.That(editorSource, Does.Contain("AreaCookieUvToPreviewPoint(_areaCookieTrianglePickPoints[i], imageRect)"));
         }
 
         // MaxOverdraw is a performance budget: completed shadow/cookie/LUT work consumes a slot even when RGB is zero.
