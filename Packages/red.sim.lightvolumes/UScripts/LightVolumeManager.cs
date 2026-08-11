@@ -79,6 +79,22 @@ namespace VRCLightVolumes {
         [Tooltip("Combined texture containing all Light Volumes' textures.")]
         public Texture LightVolumeAtlas;
 
+        [Header("Realtime Mesh Light Volume")]
+        [Tooltip("Adds one realtime 3D light field generated from an emissive mesh and a changing atlas such as a VideoTXL Custom Render Texture.")]
+        public bool DynamicMeshLightEnabled = false;
+        [Tooltip("Realtime mesh-light SH texture 0 (L0 RGB and L1 red Z).")]
+        public Texture DynamicMeshLightTexture0;
+        [Tooltip("Realtime mesh-light SH texture 1 (L1 RGB X and green Z).")]
+        public Texture DynamicMeshLightTexture1;
+        [Tooltip("Realtime mesh-light SH texture 2 (L1 RGB Y and blue Z).")]
+        public Texture DynamicMeshLightTexture2;
+        [Tooltip("Transforms world positions into the realtime mesh-light volume's centered unit cube.")]
+        public Matrix4x4 DynamicMeshLightInvWorldMatrix = Matrix4x4.identity;
+        [Tooltip("Inverse local edge fade used to blend the realtime mesh-light volume at its bounds.")]
+        public Vector3 DynamicMeshLightInvEdgeSmooth = new Vector3(8f, 8f, 8f);
+        [Tooltip("Color and intensity multiplier applied while sampling the realtime mesh-light volume.")]
+        [ColorUsage(showAlpha: false)] public Color DynamicMeshLightColor = Color.white;
+
         [Header("Point Light Volumes")]
         [Tooltip("Resolution used for Point Light cookie, LUT and cubemap projection textures.")]
         public int CustomTexturesWidth = 512;
@@ -415,6 +431,15 @@ namespace VRCLightVolumes {
         private int _lightVolumeUvwScaleID;
         private int _lightVolumeUvwID;
         private int _lightVolumeOcclusionCountID;
+        // Realtime Mesh Light Volume
+        private int _dynamicMeshLightEnabledID;
+        private int _dynamicMeshLightTexture0ID;
+        private int _dynamicMeshLightTexture1ID;
+        private int _dynamicMeshLightTexture2ID;
+        private int _dynamicMeshLightInvWorldMatrixID;
+        private int _dynamicMeshLightInvEdgeSmoothID;
+        private int _dynamicMeshLightColorID;
+        private Matrix4x4[] _dynamicMeshLightInvWorldMatrixArray = new Matrix4x4[1];
         // Point Lights
         private int _pointLightPositionID;
         private int _pointLightColorID;

@@ -626,6 +626,7 @@ namespace VRCLightVolumes {
             }
 
             bool isAtlas = LightVolumeAtlas != null;
+            bool hasDynamicMeshLight = DynamicMeshLightEnabled && DynamicMeshLightTexture0 != null && DynamicMeshLightTexture1 != null && DynamicMeshLightTexture2 != null;
 
 #if UNITY_EDITOR && !COMPILER_UDONSHARP
             // Editor tests and inspector edits can change fields directly without going through instance notify methods.
@@ -734,10 +735,11 @@ namespace VRCLightVolumes {
             int lightVolumeCount = isAtlas ? _enabledCount : 0;
             int additiveCount = isAtlas ? _additiveCount : 0;
             VRCShader.SetGlobalFloat(_lightVolumeVersionID, Version);
-            if (lightVolumeCount == 0 && _pointLightCount == 0) {
+            if (lightVolumeCount == 0 && _pointLightCount == 0 && !hasDynamicMeshLight) {
                 SetDisabledShaderState();
             } else {
                 if (isAtlas) VRCShader.SetGlobalTexture(_lightVolumeID, LightVolumeAtlas);
+                UploadDynamicMeshLightGlobals();
 
                 VRCShader.SetGlobalFloat(_lightVolumeCountID, lightVolumeCount);
                 VRCShader.SetGlobalFloat(_lightVolumeAdditiveCountID, additiveCount);

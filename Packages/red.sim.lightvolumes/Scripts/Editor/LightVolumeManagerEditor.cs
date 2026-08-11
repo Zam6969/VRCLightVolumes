@@ -168,11 +168,21 @@ namespace VRCLightVolumes {
             int previousBakingMode = _manager.BakingMode;
             bool previousAutoUpdateTextures = _manager.AutoUpdateTextures;
             Texture previousAtlas = _manager.LightVolumeAtlas;
+            bool previousDynamicMeshLightEnabled = _manager.DynamicMeshLightEnabled;
+            Texture previousDynamicMeshLightTexture0 = _manager.DynamicMeshLightTexture0;
+            Texture previousDynamicMeshLightTexture1 = _manager.DynamicMeshLightTexture1;
+            Texture previousDynamicMeshLightTexture2 = _manager.DynamicMeshLightTexture2;
             float previousBrightnessCutoff = _manager.LightsBrightnessCutoff;
             bool hasLightVolumes = HasRegistryEntries(_lightVolumes);
             bool hasPointLights = HasRegistryEntries(_pointLights);
+            bool hasDynamicMeshLight = _manager.DynamicMeshLightEnabled || _manager.DynamicMeshLightTexture0 != null || _manager.DynamicMeshLightTexture1 != null || _manager.DynamicMeshLightTexture2 != null;
             bool hasPreviousSection = false;
 
+            if (hasDynamicMeshLight) {
+                DrawSectionHeader("Realtime Mesh Light", hasPreviousSection);
+                DrawRealtimeMeshLightSettings();
+                hasPreviousSection = true;
+            }
             if (hasPointLights) {
                 DrawSectionHeader("Point Lights", hasPreviousSection);
                 DrawPointLightSettings();
@@ -202,7 +212,10 @@ namespace VRCLightVolumes {
             bool cookieLayoutChanged = previousCookieResolution != _manager.CustomTexturesWidth || _pointRegistryChanged;
             bool shadowLayoutChanged = previousShadowResolution != _manager.ShadowTexturesWidth || _pointRegistryChanged;
             bool pointLightRangesChanged = previousBrightnessCutoff != _manager.LightsBrightnessCutoff;
-            bool rebuildRuntimeData = _registryChanged || _pointRegistryChanged || previousAutoUpdateTextures != _manager.AutoUpdateTextures || previousAtlas != _manager.LightVolumeAtlas;
+            bool dynamicMeshLightChanged = previousDynamicMeshLightEnabled != _manager.DynamicMeshLightEnabled
+                || previousDynamicMeshLightTexture0 != _manager.DynamicMeshLightTexture0 || previousDynamicMeshLightTexture1 != _manager.DynamicMeshLightTexture1
+                || previousDynamicMeshLightTexture2 != _manager.DynamicMeshLightTexture2;
+            bool rebuildRuntimeData = _registryChanged || _pointRegistryChanged || previousAutoUpdateTextures != _manager.AutoUpdateTextures || previousAtlas != _manager.LightVolumeAtlas || dynamicMeshLightChanged;
             bool fullRuntimeRefresh = rebuildRuntimeData || cookieLayoutChanged || shadowLayoutChanged;
             LightVolumeManagerEditorBackend.ApplySettings( _manager, false, cookieLayoutChanged, shadowLayoutChanged, fullRuntimeRefresh, !EditorApplication.isPlaying);
             if (!fullRuntimeRefresh) {
@@ -218,6 +231,17 @@ namespace VRCLightVolumes {
             _nextStatsRefresh = 0d;
             EditorApplication.QueuePlayerLoopUpdate();
             SceneView.RepaintAll();
+        }
+
+        // Draws the optional realtime 3D light field generated from an emissive mesh and live atlas.
+        private void DrawRealtimeMeshLightSettings() {
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightEnabled)), new GUIContent("Enabled"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightTexture0)), new GUIContent("Lighting 0"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightTexture1)), new GUIContent("Lighting 1"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightTexture2)), new GUIContent("Lighting 2"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightColor)), new GUIContent("Color Multiplier"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightInvEdgeSmooth)), new GUIContent("Edge Smoothing"));
+            if (GUILayout.Button("Rebuild From Dome Mesh")) DomeMeshLightVolumeWizard.OpenWindow();
         }
 
         // Creates a compact reorderable registry with selection and dirty-state callbacks.

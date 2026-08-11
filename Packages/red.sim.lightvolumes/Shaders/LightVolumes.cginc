@@ -176,6 +176,14 @@ uniform float4 _UdonPointLightVolumeAreaTriangleData[VRCLV_MAX_LIGHTS_COUNT * 2]
 // Main 3D Texture atlas
 uniform Texture3D _UdonLightVolume;
 uniform SamplerState sampler_UdonLightVolume;
+uniform float _UdonDynamicMeshLightEnabled;
+uniform Texture3D _UdonDynamicMeshLightTexture0;
+uniform Texture3D _UdonDynamicMeshLightTexture1;
+uniform Texture3D _UdonDynamicMeshLightTexture2;
+uniform SamplerState sampler_UdonDynamicMeshLightTexture0;
+uniform float4x4 _UdonDynamicMeshLightInvWorldMatrix[1];
+uniform float3 _UdonDynamicMeshLightInvEdgeSmooth;
+uniform float4 _UdonDynamicMeshLightColor;
 // First elements must be cubemap faces (6 face textures per cubemap). Other textures follow.
 uniform Texture2DArray _UdonPointLightVolumeTexture;
 uniform SamplerState sampler_UdonPointLightVolumeTexture;
@@ -936,6 +944,24 @@ float LV_BoundsMask(float3 localUVW, float3 invLocalEdgeSmooth) {
     return fade.x * fade.y * fade.z;
 }
 
+// Samples the single realtime mesh-light field generated from a changing emissive atlas.
+void LV_SampleDynamicMeshLight(float3 worldPos, inout float3 L0, inout float3 L1r, inout float3 L1g, inout float3 L1b) {
+    [branch] if (_UdonDynamicMeshLightEnabled == 0) return;
+    float3 localUVW = mul(_UdonDynamicMeshLightInvWorldMatrix[0], float4(worldPos, 1)).xyz;
+    [branch] if (!LV_PointLocalAABB(localUVW)) return;
+
+    float mask = LV_BoundsMask(localUVW, _UdonDynamicMeshLightInvEdgeSmooth);
+    float3 uvw = saturate(localUVW + 0.5);
+    float4 tex0 = _UdonDynamicMeshLightTexture0.SampleLevel(sampler_UdonDynamicMeshLightTexture0, uvw, 0);
+    float4 tex1 = _UdonDynamicMeshLightTexture1.SampleLevel(sampler_UdonDynamicMeshLightTexture0, uvw, 0);
+    float4 tex2 = _UdonDynamicMeshLightTexture2.SampleLevel(sampler_UdonDynamicMeshLightTexture0, uvw, 0);
+    float3 color = _UdonDynamicMeshLightColor.rgb * mask;
+    L0 += tex0.rgb * color;
+    L1r += float3(tex1.r, tex2.r, tex0.a) * color.r;
+    L1g += float3(tex1.g, tex2.g, tex1.a) * color.g;
+    L1b += float3(tex1.b, tex2.b, tex2.a) * color.b;
+}
+
 // Default light probes SH components
 void LV_SampleLightProbe(inout float3 L0, inout float3 L1r, inout float3 L1g, inout float3 L1b) {
     L0 += float3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
@@ -1290,6 +1316,7 @@ void LV_LightVolumeRegularSH(float3 worldPos, inout float3 L0, inout float3 L1r,
 
 // Calculates L1 SH based on the world position from additive volumes only.
 void LV_LightVolumeAdditiveSH(float3 worldPos, inout float3 L0, inout float3 L1r, inout float3 L1g, inout float3 L1b) {
+    LV_SampleDynamicMeshLight(worldPos, L0, L1r, L1g, L1b);
     uint additiveCount = min((uint) _UdonLightVolumeAdditiveCount, VRCLV_MAX_VOLUMES_COUNT); // Clamping global iteration counts
     uint maxOverdraw = min((uint) _UdonLightVolumeAdditiveMaxOverdraw, additiveCount);
     [branch] if (maxOverdraw == 0) return;

@@ -506,6 +506,7 @@ namespace VRCLightVolumes {
             VRCShader.SetGlobalFloat(_areaLightMaxOverdrawID, AreaLightMaxOverdraw);
             VRCShader.SetGlobalFloat(_lightBrightnessCutoffID, LightsBrightnessCutoff);
             VRCShader.SetGlobalVector(_pointLightShadowReceiverParamsID, GetPointLightShadowReceiverParams());
+            UploadDynamicMeshLightGlobals();
             if (AutoUpdateTextures) ScheduleUpdateProcess();
         }
 #endif
@@ -556,6 +557,14 @@ namespace VRCLightVolumes {
             _lightVolumeUvwScaleID = VRCShader.PropertyToID("_UdonLightVolumeUvwScale");
             _lightVolumeUvwID = VRCShader.PropertyToID("_UdonLightVolumeUvw");
             _lightVolumeOcclusionCountID = VRCShader.PropertyToID("_UdonLightVolumeOcclusionCount");
+            // Realtime Mesh Light Volume
+            _dynamicMeshLightEnabledID = VRCShader.PropertyToID("_UdonDynamicMeshLightEnabled");
+            _dynamicMeshLightTexture0ID = VRCShader.PropertyToID("_UdonDynamicMeshLightTexture0");
+            _dynamicMeshLightTexture1ID = VRCShader.PropertyToID("_UdonDynamicMeshLightTexture1");
+            _dynamicMeshLightTexture2ID = VRCShader.PropertyToID("_UdonDynamicMeshLightTexture2");
+            _dynamicMeshLightInvWorldMatrixID = VRCShader.PropertyToID("_UdonDynamicMeshLightInvWorldMatrix");
+            _dynamicMeshLightInvEdgeSmoothID = VRCShader.PropertyToID("_UdonDynamicMeshLightInvEdgeSmooth");
+            _dynamicMeshLightColorID = VRCShader.PropertyToID("_UdonDynamicMeshLightColor");
             // Point Lights
             _pointLightPositionID = VRCShader.PropertyToID("_UdonPointLightVolumePosition");
             _pointLightColorID = VRCShader.PropertyToID("_UdonPointLightVolumeColor");
@@ -611,6 +620,7 @@ namespace VRCLightVolumes {
             VRCShader.SetGlobalVectorArray(_lightVolumeUvwScaleID, _boundsUvwScale);
             VRCShader.SetGlobalVectorArray(_lightVolumeUvwID, _boundsUvw);
             VRCShader.SetGlobalFloat(_lightVolumeOcclusionCountID, 0);
+            UploadDynamicMeshLightGlobals();
             // Point Lights
             VRCShader.SetGlobalVectorArray(_pointLightPositionID, _pointLightPosition);
             VRCShader.SetGlobalVectorArray(_pointLightColorID, _pointLightColor);
@@ -637,7 +647,24 @@ namespace VRCLightVolumes {
             VRCShader.SetGlobalVector(_pointLightShadowReceiverParamsID, GetPointLightShadowReceiverParams());
             VRCShader.SetGlobalFloat(_clusteringEnabledID, 0f);
             _clusteringActive = false;
+            VRCShader.SetGlobalFloat(_dynamicMeshLightEnabledID, 0f);
             VRCShader.SetGlobalFloat(_lightVolumeEnabledID, 0);
+        }
+
+        // Publishes the optional realtime mesh-light field without adding it to the regular atlas registry.
+        private bool UploadDynamicMeshLightGlobals() {
+            bool active = DynamicMeshLightEnabled && DynamicMeshLightTexture0 != null && DynamicMeshLightTexture1 != null && DynamicMeshLightTexture2 != null;
+            VRCShader.SetGlobalFloat(_dynamicMeshLightEnabledID, active ? 1f : 0f);
+            if (!active) return false;
+
+            _dynamicMeshLightInvWorldMatrixArray[0] = DynamicMeshLightInvWorldMatrix;
+            VRCShader.SetGlobalTexture(_dynamicMeshLightTexture0ID, DynamicMeshLightTexture0);
+            VRCShader.SetGlobalTexture(_dynamicMeshLightTexture1ID, DynamicMeshLightTexture1);
+            VRCShader.SetGlobalTexture(_dynamicMeshLightTexture2ID, DynamicMeshLightTexture2);
+            VRCShader.SetGlobalMatrixArray(_dynamicMeshLightInvWorldMatrixID, _dynamicMeshLightInvWorldMatrixArray);
+            VRCShader.SetGlobalVector(_dynamicMeshLightInvEdgeSmoothID, DynamicMeshLightInvEdgeSmooth);
+            VRCShader.SetGlobalVector(_dynamicMeshLightColorID, DynamicMeshLightColor.linear);
+            return true;
         }
 
 #endregion
