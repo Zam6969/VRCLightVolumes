@@ -45,6 +45,7 @@ namespace VRCLightVolumes {
         public bool AutoUpdateVolumes = true;
         public bool AutoUpdateTextures = true;
         public int AdditiveMaxOverdraw = 4;
+        public int AreaLightMaxOverdraw = 64;
         public bool ForceSceneLighting;
         public bool DestroyInPlayMode;
 

@@ -33,6 +33,7 @@ namespace VRCLightVolumes.Tests {
         private static readonly int _lightVolumeCountID = Shader.PropertyToID("_UdonLightVolumeCount");
         private static readonly int _lightVolumeAdditiveCountID = Shader.PropertyToID("_UdonLightVolumeAdditiveCount");
         private static readonly int _lightVolumeAdditiveMaxOverdrawID = Shader.PropertyToID("_UdonLightVolumeAdditiveMaxOverdraw");
+        private static readonly int _areaLightMaxOverdrawID = Shader.PropertyToID("_UdonAreaLightMaxOverdraw");
         private static readonly int _lightVolumeEnabledID = Shader.PropertyToID("_UdonLightVolumeEnabled");
         private static readonly int _lightVolumeProbesBlendID = Shader.PropertyToID("_UdonLightVolumeProbesBlend");
         private static readonly int _lightVolumeSharpBoundsID = Shader.PropertyToID("_UdonLightVolumeSharpBounds");
@@ -136,6 +137,7 @@ namespace VRCLightVolumes.Tests {
                 { "AutoUpdateVolumes", typeof(bool) },
                 { "AutoUpdateTextures", typeof(bool) },
                 { "AdditiveMaxOverdraw", typeof(int) },
+                { "AreaLightMaxOverdraw", typeof(int) },
                 { "ForceSceneLighting", typeof(bool) },
                 { "BakingMode", typeof(int) },
                 { "VolumeBitmask", typeof(int) },
@@ -172,7 +174,7 @@ namespace VRCLightVolumes.Tests {
                 { "HasAutoShadowTextureUpdates", typeof(bool) }
             };
 
-            Assert.That(expectedFields.GetLength(0), Is.EqualTo(54), "Update the contract deliberately when its baseline changes.");
+            Assert.That(expectedFields.GetLength(0), Is.EqualTo(55), "Update the contract deliberately when its baseline changes.");
             for (int i = 0; i < expectedFields.GetLength(0); i++) {
                 string fieldName = (string)expectedFields[i, 0];
                 Type expectedType = (Type)expectedFields[i, 1];
@@ -1740,6 +1742,7 @@ namespace VRCLightVolumes.Tests {
             manager.LightProbesBlending = false;
             manager.SharpBounds = false;
             manager.AdditiveMaxOverdraw = 2;
+            manager.AreaLightMaxOverdraw = 37;
 
             LightVolumeInstance first = CreateLightVolume(manager, "First Volume", true);
             LightVolumeInstance second = CreateLightVolume(manager, "Second Volume", true);
@@ -1762,6 +1765,7 @@ namespace VRCLightVolumes.Tests {
             AssertGlobalFloat(_lightVolumeProbesBlendID, 0);
             AssertGlobalFloat(_lightVolumeSharpBoundsID, 0);
             AssertGlobalFloat(_lightVolumeAdditiveMaxOverdrawID, 2);
+            AssertGlobalFloat(_areaLightMaxOverdrawID, 37);
             AssertVectorClose(ExpectedLightVolumeColor(second), Shader.GetGlobalVectorArray(_lightVolumeColorID)[0]);
             AssertVectorClose(ExpectedLightVolumeColor(first), Shader.GetGlobalVectorArray(_lightVolumeColorID)[1]);
             AssertVectorClose(second.BoundsUvwMin0, Shader.GetGlobalVectorArray(_lightVolumeUvwScaleID)[0]);
@@ -4452,6 +4456,9 @@ namespace VRCLightVolumes.Tests {
             Assert.That(diffuseAccumulatorSource, Does.Not.Contain("if (!any(l0)) return false;"));
             Assert.That(specularAccumulatorSource, Does.Contain("return true;"));
             Assert.That(diffuseAccumulatorSource, Does.Contain("return true;"));
+            Assert.That(shaderSource, Does.Contain("inline bool LV_IsAreaLightVolume(uint pid)"));
+            Assert.That(shaderSource, Does.Contain("uint maxAreaOverdraw = min((uint) _UdonAreaLightMaxOverdraw, pointCount);"));
+            Assert.That(shaderSource, Does.Contain("isAreaLight ? areaOverdraw >= maxAreaOverdraw : pointOverdraw >= maxPointOverdraw"));
         }
 
         // The SM4/GLES3.0 fallback is selected at compile time; higher targets use native bit scan without a keyword variant.
@@ -5916,6 +5923,7 @@ namespace VRCLightVolumes.Tests {
             manager.SharpBounds = true;
             manager.AutoUpdateVolumes = false;
             manager.AdditiveMaxOverdraw = 4;
+            manager.AreaLightMaxOverdraw = 64;
             manager.LightsBrightnessCutoff = 0.35f;
             gameObject.SetActive(active);
             return manager;

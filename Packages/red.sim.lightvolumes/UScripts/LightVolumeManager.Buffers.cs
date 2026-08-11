@@ -745,6 +745,7 @@ namespace VRCLightVolumes {
                 VRCShader.SetGlobalFloat(_lightVolumeProbesBlendID, LightProbesBlending ? 1 : 0);
                 VRCShader.SetGlobalFloat(_lightVolumeSharpBoundsID, SharpBounds ? 1 : 0);
                 VRCShader.SetGlobalFloat(_lightVolumeAdditiveMaxOverdrawID, AdditiveMaxOverdraw);
+                VRCShader.SetGlobalFloat(_areaLightMaxOverdrawID, AreaLightMaxOverdraw);
 
                 // Upload regular Light Volume arrays
                 if (lightVolumeCount != 0) {

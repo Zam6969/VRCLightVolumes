@@ -116,8 +116,10 @@ namespace VRCLightVolumes {
         public bool AutoUpdateVolumes = true;
         [Tooltip("Automatically updates dynamic point light cookie and shadow texture sources at runtime. It's more performant to keep it off.")]
         public bool AutoUpdateTextures = true;
-        [Tooltip("Limits the maximum number of additive volumes and Point Light Volumes that can affect a single pixel. This also limits individual Point Light Volume speculars in modern compatible shaders. Lower values improve worst-case performance in overlap-heavy areas.")]
+        [Tooltip("Limits the maximum number of additive volumes and non-area Point Light Volumes that can affect a single pixel. This also limits individual Point Light Volume speculars in modern compatible shaders. Lower values improve worst-case performance in overlap-heavy areas.")]
         public int AdditiveMaxOverdraw = 4;
+        [Tooltip("Limits the maximum number of Area Light Volumes that can affect a single pixel. Area lights use a separate budget so overlapping fixtures do not turn each other off. Lower values improve performance in scenes with many overlapping area lights.")]
+        [Range(1, MaxPointLightCount)] public int AreaLightMaxOverdraw = 64;
         [Tooltip("Enables the Force Scene Lighting shader override on startup, disabling min/max brightness limits in compatible avatar shaders. When disabled, the existing global override is left unchanged. Use SetForceSceneLighting for manual runtime control.")]
         public bool ForceSceneLighting = false;
 
@@ -402,6 +404,7 @@ namespace VRCLightVolumes {
         private int _lightVolumeCountID;
         private int _lightVolumeAdditiveCountID;
         private int _lightVolumeAdditiveMaxOverdrawID;
+        private int _areaLightMaxOverdrawID;
         private int _lightVolumeEnabledID;
         private int _lightVolumeVersionID;
         private int _lightVolumeProbesBlendID;

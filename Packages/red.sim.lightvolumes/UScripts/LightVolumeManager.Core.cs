@@ -503,6 +503,7 @@ namespace VRCLightVolumes {
             VRCShader.SetGlobalFloat(_lightVolumeProbesBlendID, LightProbesBlending ? 1f : 0f);
             VRCShader.SetGlobalFloat(_lightVolumeSharpBoundsID, SharpBounds ? 1f : 0f);
             VRCShader.SetGlobalFloat(_lightVolumeAdditiveMaxOverdrawID, AdditiveMaxOverdraw);
+            VRCShader.SetGlobalFloat(_areaLightMaxOverdrawID, AreaLightMaxOverdraw);
             VRCShader.SetGlobalFloat(_lightBrightnessCutoffID, LightsBrightnessCutoff);
             VRCShader.SetGlobalVector(_pointLightShadowReceiverParamsID, GetPointLightShadowReceiverParams());
             if (AutoUpdateTextures) ScheduleUpdateProcess();
@@ -545,6 +546,7 @@ namespace VRCLightVolumes {
             _lightVolumeCountID = VRCShader.PropertyToID("_UdonLightVolumeCount");
             _lightVolumeAdditiveCountID = VRCShader.PropertyToID("_UdonLightVolumeAdditiveCount");
             _lightVolumeAdditiveMaxOverdrawID = VRCShader.PropertyToID("_UdonLightVolumeAdditiveMaxOverdraw");
+            _areaLightMaxOverdrawID = VRCShader.PropertyToID("_UdonAreaLightMaxOverdraw");
             _lightVolumeEnabledID = VRCShader.PropertyToID("_UdonLightVolumeEnabled");
             _lightVolumeVersionID = VRCShader.PropertyToID("_UdonLightVolumeVersion");
             _lightVolumeProbesBlendID = VRCShader.PropertyToID("_UdonLightVolumeProbesBlend");

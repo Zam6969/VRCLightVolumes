@@ -934,6 +934,7 @@ namespace VRCLightVolumes {
             destination.AutoUpdateVolumes = source.AutoUpdateVolumes;
             destination.AutoUpdateTextures = source.AutoUpdateTextures;
             destination.AdditiveMaxOverdraw = source.AdditiveMaxOverdraw;
+            destination.AreaLightMaxOverdraw = source.AreaLightMaxOverdraw;
             destination.ForceSceneLighting = source.ForceSceneLighting;
 
             destination.LightVolumeInstances = MapLightVolumes(source, destination);

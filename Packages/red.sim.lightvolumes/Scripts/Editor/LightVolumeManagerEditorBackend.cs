@@ -91,6 +91,7 @@ namespace VRCLightVolumes {
             manager.DilationIterations = Mathf.Clamp(manager.DilationIterations, 1, 8);
             manager.DilationBackfaceBias = Mathf.Clamp01(manager.DilationBackfaceBias);
             manager.AdditiveMaxOverdraw = Mathf.Max(manager.AdditiveMaxOverdraw, 1);
+            manager.AreaLightMaxOverdraw = Mathf.Clamp(manager.AreaLightMaxOverdraw, 1, 128);
             manager.SanitizeRegistries();
             SynchronizeRegistryMetadata(manager);
             bool runtimeRefreshQueued = updateVolumes && QueueRuntimeManagerRefresh(manager, reinitializeCustomTextures, reinitializeShadowTextures);

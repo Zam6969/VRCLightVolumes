@@ -26,9 +26,9 @@
 #ifndef SHADER_TARGET_SURFACE_ANALYSIS
 // GLES3 and baseline Vulkan guarantee only 16 KiB per uniform block and 12 blocks per stage.
 // Three frequency groups preserve two blocks of headroom in the heaviest known integrations:
-//   cold regular-volume, scalar, shadow and layout data: 9,856 bytes
+//   cold regular-volume, scalar, shadow and layout data: 9,872 bytes
 //   per-camera clustering transform data:                  48 bytes
-//   runtime Point Light position and attributes:        10,240 bytes
+//   runtime Point Light position and attributes:        14,336 bytes
 // Regular volumes and shadow reprojection are deliberately co-located: both are normally
 // immutable after a world loads. Point arrays stay together because another binding would
 // leave arbitrary third-party GLES3/Vulkan shaders too close to the 12-block floor.
@@ -46,6 +46,9 @@ uniform float _UdonLightVolumeCount;
 
 // Additive volumes max overdraw count
 uniform float _UdonLightVolumeAdditiveMaxOverdraw;
+
+// Area Light Volumes use a separate per-pixel budget so overlapping fixtures cannot starve one another.
+uniform float _UdonAreaLightMaxOverdraw;
 
 // Additive volumes count
 uniform float _UdonLightVolumeAdditiveCount;
@@ -1064,11 +1067,16 @@ inline bool LV_AccumulatePointLightVolumeSH(uint pid, float3 worldPos, float3 po
     return true;
 }
 
+inline bool LV_IsAreaLightVolume(uint pid) {
+    return _UdonPointLightVolumePosition[pid].w >= 0.0 && _UdonPointLightVolumeColor[pid].w > 1.5;
+}
+
 // Calculates L1 SH and individual speculars based on PBR parameters and custom f0. Only samples point lights, not volumes. Accumulates into L0/L1r/L1g/L1b/specular.
 void LV_PointLightVolumeSHSpecular(float3 worldPos, float3 worldNormal, float3 specularViewDir, float smoothness, float3 f0, float pointLightShading, inout float3 L0, inout float3 L1r, inout float3 L1g, inout float3 L1b, inout float3 specular) {
     uint pointCount = min((uint) _UdonPointLightVolumeCount, VRCLV_MAX_LIGHTS_COUNT);
-    uint maxOverdraw = min((uint) _UdonLightVolumeAdditiveMaxOverdraw, pointCount);
-    [branch] if (maxOverdraw == 0) return;
+    uint maxPointOverdraw = min((uint) _UdonLightVolumeAdditiveMaxOverdraw, pointCount);
+    uint maxAreaOverdraw = min((uint) _UdonAreaLightMaxOverdraw, pointCount);
+    [branch] if (maxPointOverdraw == 0 && maxAreaOverdraw == 0) return;
 
     #if VRCLV_CLUSTERING_SUPPORTED
     uint4 clusterMask = 0u;
@@ -1084,7 +1092,8 @@ void LV_PointLightVolumeSHSpecular(float3 worldPos, float3 worldNormal, float3 s
     float specularRoughness = specularPerceptualRoughness * specularPerceptualRoughness; // GGX roughness
     float specularRoughnessSq = specularRoughness * specularRoughness; // Squared GGX roughness for BRDF widening
     float specularNoV = max(dot(worldNormal, specularViewDir), VRCLV_MIN_N_DOT_V); // Clamped NdotV for specular visibility
-    uint pcount = 0; // Accumulated point-light count
+    uint pointOverdraw = 0;
+    uint areaOverdraw = 0;
 
     #if VRCLV_CLUSTERING_SUPPORTED
     uint traversalIndex = 0u;
@@ -1092,7 +1101,7 @@ void LV_PointLightVolumeSHSpecular(float3 worldPos, float3 worldNormal, float3 s
     uint sequentialEnd = useClustering ? 0u : pointCount;
 
     // Select IDs from the cluster mask or sequential range, then process them through one shared loop body.
-    VRCLV_DYNAMIC_LOOP while (pcount < maxOverdraw) {
+    VRCLV_DYNAMIC_LOOP while (pointOverdraw < maxPointOverdraw || areaOverdraw < maxAreaOverdraw) {
         uint pid;
         [branch] if (traversalIndex < sequentialEnd) {
             pid = traversalIndex++;
@@ -1100,11 +1109,21 @@ void LV_PointLightVolumeSHSpecular(float3 worldPos, float3 worldNormal, float3 s
         {
             if (!LV_NextClusteredLight(clusterMask, traversalIndex, maskBits, pid)) break;
         }
-        if (LV_AccumulatePointLightVolumeSHSpecular(pid, worldPos, worldNormal, specularViewDir, f0, pointLightShadingNormal, pointLightShadingBias, specularRoughness, specularRoughnessSq, specularNoV, L0, L1r, L1g, L1b, specular)) pcount++;
+        bool isAreaLight = LV_IsAreaLightVolume(pid);
+        if (isAreaLight ? areaOverdraw >= maxAreaOverdraw : pointOverdraw >= maxPointOverdraw) continue;
+        if (LV_AccumulatePointLightVolumeSHSpecular(pid, worldPos, worldNormal, specularViewDir, f0, pointLightShadingNormal, pointLightShadingBias, specularRoughness, specularRoughnessSq, specularNoV, L0, L1r, L1g, L1b, specular)) {
+            if (isAreaLight) areaOverdraw++;
+            else pointOverdraw++;
+        }
     }
     #else
-    VRCLV_DYNAMIC_LOOP for (uint pid = 0u; pid < pointCount && pcount < maxOverdraw; pid++) {
-        if (LV_AccumulatePointLightVolumeSHSpecular(pid, worldPos, worldNormal, specularViewDir, f0, pointLightShadingNormal, pointLightShadingBias, specularRoughness, specularRoughnessSq, specularNoV, L0, L1r, L1g, L1b, specular)) pcount++;
+    VRCLV_DYNAMIC_LOOP for (uint pid = 0u; pid < pointCount && (pointOverdraw < maxPointOverdraw || areaOverdraw < maxAreaOverdraw); pid++) {
+        bool isAreaLight = LV_IsAreaLightVolume(pid);
+        if (isAreaLight ? areaOverdraw >= maxAreaOverdraw : pointOverdraw >= maxPointOverdraw) continue;
+        if (LV_AccumulatePointLightVolumeSHSpecular(pid, worldPos, worldNormal, specularViewDir, f0, pointLightShadingNormal, pointLightShadingBias, specularRoughness, specularRoughnessSq, specularNoV, L0, L1r, L1g, L1b, specular)) {
+            if (isAreaLight) areaOverdraw++;
+            else pointOverdraw++;
+        }
     }
     #endif
 }
@@ -1112,8 +1131,9 @@ void LV_PointLightVolumeSHSpecular(float3 worldPos, float3 worldNormal, float3 s
 // Calculates L1 SH based on the world position. Only samples point lights, not volumes. Accumulates into L0/L1r/L1g/L1b.
 void LV_PointLightVolumeSH(float3 worldPos, float3 worldNormal, float pointLightShading, inout float3 L0, inout float3 L1r, inout float3 L1g, inout float3 L1b) {
     uint pointCount = min((uint) _UdonPointLightVolumeCount, VRCLV_MAX_LIGHTS_COUNT);
-    uint maxOverdraw = min((uint) _UdonLightVolumeAdditiveMaxOverdraw, pointCount);
-    [branch] if (maxOverdraw == 0) return;
+    uint maxPointOverdraw = min((uint) _UdonLightVolumeAdditiveMaxOverdraw, pointCount);
+    uint maxAreaOverdraw = min((uint) _UdonAreaLightMaxOverdraw, pointCount);
+    [branch] if (maxPointOverdraw == 0 && maxAreaOverdraw == 0) return;
 
     #if VRCLV_CLUSTERING_SUPPORTED
     uint4 clusterMask = 0u;
@@ -1125,7 +1145,8 @@ void LV_PointLightVolumeSH(float3 worldPos, float3 worldNormal, float pointLight
     float pointLightShadingScale = pointLightShading * 0.5; // Half-strength scale for the normal-shading ramp
     float3 pointLightShadingNormal = worldNormal * pointLightShadingScale; // Pre-scaled normal for point-light shading
     float pointLightShadingBias = pointLightShading > 0 ? 0.5 + 0.5 * saturate(1 - pointLightShading) : -1; // Bias for normal-shading ramp, -1 disables it
-    uint pcount = 0; // Accumulated point-light count
+    uint pointOverdraw = 0;
+    uint areaOverdraw = 0;
 
     #if VRCLV_CLUSTERING_SUPPORTED
     uint traversalIndex = 0u;
@@ -1133,7 +1154,7 @@ void LV_PointLightVolumeSH(float3 worldPos, float3 worldNormal, float pointLight
     uint sequentialEnd = useClustering ? 0u : pointCount;
 
     // Select IDs from the cluster mask or sequential range, then process them through one shared loop body.
-    VRCLV_DYNAMIC_LOOP while (pcount < maxOverdraw) {
+    VRCLV_DYNAMIC_LOOP while (pointOverdraw < maxPointOverdraw || areaOverdraw < maxAreaOverdraw) {
         uint pid;
         [branch] if (traversalIndex < sequentialEnd) {
             pid = traversalIndex++;
@@ -1141,11 +1162,21 @@ void LV_PointLightVolumeSH(float3 worldPos, float3 worldNormal, float pointLight
         {
             if (!LV_NextClusteredLight(clusterMask, traversalIndex, maskBits, pid)) break;
         }
-        if (LV_AccumulatePointLightVolumeSH(pid, worldPos, pointLightShadingNormal, pointLightShadingBias, L0, L1r, L1g, L1b)) pcount++;
+        bool isAreaLight = LV_IsAreaLightVolume(pid);
+        if (isAreaLight ? areaOverdraw >= maxAreaOverdraw : pointOverdraw >= maxPointOverdraw) continue;
+        if (LV_AccumulatePointLightVolumeSH(pid, worldPos, pointLightShadingNormal, pointLightShadingBias, L0, L1r, L1g, L1b)) {
+            if (isAreaLight) areaOverdraw++;
+            else pointOverdraw++;
+        }
     }
     #else
-    VRCLV_DYNAMIC_LOOP for (uint pid = 0u; pid < pointCount && pcount < maxOverdraw; pid++) {
-        if (LV_AccumulatePointLightVolumeSH(pid, worldPos, pointLightShadingNormal, pointLightShadingBias, L0, L1r, L1g, L1b)) pcount++;
+    VRCLV_DYNAMIC_LOOP for (uint pid = 0u; pid < pointCount && (pointOverdraw < maxPointOverdraw || areaOverdraw < maxAreaOverdraw); pid++) {
+        bool isAreaLight = LV_IsAreaLightVolume(pid);
+        if (isAreaLight ? areaOverdraw >= maxAreaOverdraw : pointOverdraw >= maxPointOverdraw) continue;
+        if (LV_AccumulatePointLightVolumeSH(pid, worldPos, pointLightShadingNormal, pointLightShadingBias, L0, L1r, L1g, L1b)) {
+            if (isAreaLight) areaOverdraw++;
+            else pointOverdraw++;
+        }
     }
     #endif
 }
