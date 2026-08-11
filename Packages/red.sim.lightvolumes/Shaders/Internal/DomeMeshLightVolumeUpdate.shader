@@ -7,6 +7,10 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
         _EmitterNormal("Emitter Normal", 2D) = "black" {}
         _EmitterUv01("Emitter UV 0 and 1", 2D) = "black" {}
         _EmitterUv2("Emitter UV 2", 2D) = "black" {}
+        [HideInInspector] _VolumeCenter("Volume Center", Vector) = (0, 0, 0, 0)
+        [HideInInspector] _VolumeSize("Volume Size", Vector) = (1, 1, 1, 0)
+        [HideInInspector] _EmitterCount("Emitter Count", Float) = 0
+        [HideInInspector] _EmitterTexelSize("Emitter Texel Size", Float) = 1
         _Intensity("Intensity", Float) = 1
         _ProjectionRange("Projection Range", Float) = 10
         _OutputChannel("Output Channel", Int) = 0

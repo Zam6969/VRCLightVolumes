@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 namespace VRCLightVolumes {
     public sealed class DomeMeshLightVolumeWizard : EditorWindow {
@@ -130,6 +131,71 @@ namespace VRCLightVolumes {
             window.titleContent = new GUIContent("Dome Mesh Light");
             window.minSize = new Vector2(430f, 540f);
             window.Show();
+        }
+
+        [InitializeOnLoadMethod]
+        private static void ScheduleGeneratedMaterialRepair() {
+            EditorSceneManager.sceneOpened -= OnSceneOpened;
+            EditorSceneManager.sceneOpened += OnSceneOpened;
+            EditorApplication.delayCall += RepairGeneratedMaterialsDelayed;
+        }
+
+        private static void OnSceneOpened(Scene scene, OpenSceneMode mode) {
+            EditorApplication.delayCall += RepairGeneratedMaterialsDelayed;
+        }
+
+        private static void RepairGeneratedMaterialsDelayed() {
+            RepairGeneratedMaterials();
+        }
+
+        [MenuItem("Tools/Light Volumes/Repair Realtime Dome Mesh Light")]
+        private static void RepairGeneratedMaterialsMenu() {
+            if (RepairGeneratedMaterials()) EditorUtility.DisplayDialog("Realtime Dome Mesh Light", "The existing realtime dome lighting textures were repaired and refreshed.", "Done");
+            else EditorUtility.DisplayDialog("Realtime Dome Mesh Light", "No realtime dome materials needed repair in the open scene.", "OK");
+        }
+
+        // Repairs assets made before the internal volume parameters became serialized shader properties.
+        private static bool RepairGeneratedMaterials() {
+            LightVolumeManager[] managers = Resources.FindObjectsOfTypeAll<LightVolumeManager>();
+            bool repairedAny = false;
+            for (int managerIndex = 0; managerIndex < managers.Length; managerIndex++) {
+                LightVolumeManager manager = managers[managerIndex];
+                if (manager == null || !manager.gameObject.scene.IsValid()) continue;
+                CustomRenderTexture[] outputs = {
+                    manager.DynamicMeshLightTexture0 as CustomRenderTexture,
+                    manager.DynamicMeshLightTexture1 as CustomRenderTexture,
+                    manager.DynamicMeshLightTexture2 as CustomRenderTexture
+                };
+                if (outputs[0] == null || outputs[1] == null || outputs[2] == null) continue;
+
+                Matrix4x4 volumeMatrix = manager.DynamicMeshLightInvWorldMatrix.inverse;
+                Vector3 center = volumeMatrix.MultiplyPoint3x4(Vector3.zero);
+                Vector3 size = new Vector3(volumeMatrix.GetColumn(0).magnitude, volumeMatrix.GetColumn(1).magnitude, volumeMatrix.GetColumn(2).magnitude);
+                for (int outputIndex = 0; outputIndex < outputs.Length; outputIndex++) {
+                    CustomRenderTexture output = outputs[outputIndex];
+                    Material material = output.material;
+                    if (material == null || material.shader == null || material.shader.name != UpdateShaderName || material.GetFloat("_EmitterCount") > 0f) continue;
+                    Texture2D positionArea = material.GetTexture("_EmitterPositionArea") as Texture2D;
+                    if (positionArea == null) continue;
+
+                    Color[] emitterData = positionArea.GetPixels();
+                    int emitterCount = 0;
+                    for (int i = 0; i < emitterData.Length; i++) if (emitterData[i].a > 0.000001f) emitterCount++;
+                    if (emitterCount == 0) continue;
+
+                    material.SetVector("_VolumeCenter", center);
+                    material.SetVector("_VolumeSize", size);
+                    material.SetFloat("_EmitterCount", emitterCount);
+                    material.SetFloat("_EmitterTexelSize", 1f / positionArea.width);
+                    EditorUtility.SetDirty(material);
+                    output.Update();
+                    repairedAny = true;
+                }
+            }
+            if (!repairedAny) return false;
+            AssetDatabase.SaveAssets();
+            Debug.Log("[LightVolumes] Repaired realtime dome mesh-light materials and refreshed their 3D lighting textures.");
+            return true;
         }
 
         private void OnEnable() {
