@@ -177,6 +177,7 @@ uniform float4 _UdonPointLightVolumeAreaTriangleData[VRCLV_MAX_LIGHTS_COUNT * 2]
 uniform Texture3D _UdonLightVolume;
 uniform SamplerState sampler_UdonLightVolume;
 uniform float _UdonDynamicMeshLightEnabled;
+uniform float _UdonDynamicMeshLightL0Only;
 uniform Texture3D _UdonDynamicMeshLightTexture0;
 uniform Texture3D _UdonDynamicMeshLightTexture1;
 uniform Texture3D _UdonDynamicMeshLightTexture2;
@@ -953,13 +954,24 @@ void LV_SampleDynamicMeshLight(float3 worldPos, inout float3 L0, inout float3 L1
     float mask = LV_BoundsMask(localUVW, _UdonDynamicMeshLightInvEdgeSmooth);
     float3 uvw = saturate(localUVW + 0.5);
     float4 tex0 = _UdonDynamicMeshLightTexture0.SampleLevel(sampler_UdonDynamicMeshLightTexture0, uvw, 0);
-    float4 tex1 = _UdonDynamicMeshLightTexture1.SampleLevel(sampler_UdonDynamicMeshLightTexture0, uvw, 0);
-    float4 tex2 = _UdonDynamicMeshLightTexture2.SampleLevel(sampler_UdonDynamicMeshLightTexture0, uvw, 0);
     float3 color = _UdonDynamicMeshLightColor.rgb * mask;
     L0 += tex0.rgb * color;
+    [branch] if (_UdonDynamicMeshLightL0Only != 0) return;
+    float4 tex1 = _UdonDynamicMeshLightTexture1.SampleLevel(sampler_UdonDynamicMeshLightTexture0, uvw, 0);
+    float4 tex2 = _UdonDynamicMeshLightTexture2.SampleLevel(sampler_UdonDynamicMeshLightTexture0, uvw, 0);
     L1r += float3(tex1.r, tex2.r, tex0.a) * color.r;
     L1g += float3(tex1.g, tex2.g, tex1.a) * color.g;
     L1b += float3(tex1.b, tex2.b, tex2.a) * color.b;
+}
+
+// L0-only callers such as volumetric fog need one sample, regardless of directional quality mode.
+float3 LV_SampleDynamicMeshLightL0(float3 worldPos) {
+    [branch] if (_UdonDynamicMeshLightEnabled == 0) return 0;
+    float3 localUVW = mul(_UdonDynamicMeshLightInvWorldMatrix[0], float4(worldPos, 1)).xyz;
+    [branch] if (!LV_PointLocalAABB(localUVW)) return 0;
+    float mask = LV_BoundsMask(localUVW, _UdonDynamicMeshLightInvEdgeSmooth);
+    float3 uvw = saturate(localUVW + 0.5);
+    return _UdonDynamicMeshLightTexture0.SampleLevel(sampler_UdonDynamicMeshLightTexture0, uvw, 0).rgb * _UdonDynamicMeshLightColor.rgb * mask;
 }
 
 // Default light probes SH components
@@ -1315,8 +1327,8 @@ void LV_LightVolumeRegularSH(float3 worldPos, inout float3 L0, inout float3 L1r,
 }
 
 // Calculates L1 SH based on the world position from additive volumes only.
-void LV_LightVolumeAdditiveSH(float3 worldPos, inout float3 L0, inout float3 L1r, inout float3 L1g, inout float3 L1b) {
-    LV_SampleDynamicMeshLight(worldPos, L0, L1r, L1g, L1b);
+void LV_LightVolumeAdditiveSHInternal(float3 worldPos, bool sampleDynamicMeshLight, inout float3 L0, inout float3 L1r, inout float3 L1g, inout float3 L1b) {
+    if (sampleDynamicMeshLight) LV_SampleDynamicMeshLight(worldPos, L0, L1r, L1g, L1b);
     uint additiveCount = min((uint) _UdonLightVolumeAdditiveCount, VRCLV_MAX_VOLUMES_COUNT); // Clamping global iteration counts
     uint maxOverdraw = min((uint) _UdonLightVolumeAdditiveMaxOverdraw, additiveCount);
     [branch] if (maxOverdraw == 0) return;
@@ -1329,6 +1341,10 @@ void LV_LightVolumeAdditiveSH(float3 worldPos, inout float3 L0, inout float3 L1r
             addVolumesCount++;
         }
     }
+}
+
+void LV_LightVolumeAdditiveSH(float3 worldPos, inout float3 L0, inout float3 L1r, inout float3 L1g, inout float3 L1b) {
+    LV_LightVolumeAdditiveSHInternal(worldPos, true, L0, L1r, L1g, L1b);
 }
 
 // ----------------------- VRC LIGHT VOLUMES PUBLIC API --------------------------
@@ -1368,7 +1384,8 @@ float3 LightVolumeSH_L0(float3 worldPos, float3 worldPosOffset, float3 worldNorm
     } else {
         float3 L0 = 0, unused_L1 = 0; // Let's just pray that compiler will strip everything x.x
         LV_LightVolumeRegularSH(worldPos + worldPosOffset, L0, unused_L1, unused_L1, unused_L1);
-        LV_LightVolumeAdditiveSH(worldPos + worldPosOffset, L0, unused_L1, unused_L1, unused_L1);
+        L0 += LV_SampleDynamicMeshLightL0(worldPos + worldPosOffset);
+        LV_LightVolumeAdditiveSHInternal(worldPos + worldPosOffset, false, L0, unused_L1, unused_L1, unused_L1);
         LV_PointLightVolumeSH(worldPos, worldNormal, pointLightShading, L0, unused_L1, unused_L1, unused_L1);
         return L0;
     }
@@ -1399,7 +1416,8 @@ float3 LightVolumeAdditiveSH_L0(float3 worldPos, float3 worldPosOffset, float3 w
         return 0;
     } else {
         float3 L0 = 0, unused_L1 = 0; // Let's just pray that compiler will strip everything x.x
-        LV_LightVolumeAdditiveSH(worldPos + worldPosOffset, L0, unused_L1, unused_L1, unused_L1);
+        L0 += LV_SampleDynamicMeshLightL0(worldPos + worldPosOffset);
+        LV_LightVolumeAdditiveSHInternal(worldPos + worldPosOffset, false, L0, unused_L1, unused_L1, unused_L1);
         LV_PointLightVolumeSH(worldPos, worldNormal, pointLightShading, L0, unused_L1, unused_L1, unused_L1);
         return L0;
     }

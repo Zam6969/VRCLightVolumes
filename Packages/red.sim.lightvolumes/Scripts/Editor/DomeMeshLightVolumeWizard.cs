@@ -24,7 +24,8 @@ namespace VRCLightVolumes {
         [SerializeField] private float _projectionRangeScale = 2f;
         [SerializeField] private float _intensity = 5f;
         [SerializeField] private float _edgeFade = 0.5f;
-        [SerializeField] private float _updatesPerSecond = 30f;
+        [SerializeField] private float _updatesPerSecond = 15f;
+        [SerializeField] private bool _performanceMode = true;
         [SerializeField] private bool _disableExistingLights;
         [SerializeField] private string _outputFolder = DefaultOutputFolder;
 
@@ -168,6 +169,16 @@ namespace VRCLightVolumes {
                 };
                 if (outputs[0] == null || outputs[1] == null || outputs[2] == null) continue;
 
+                bool migrateToStableVr = manager.DynamicMeshLightOptimizationVersion < 1;
+                if (migrateToStableVr) {
+                    manager.DynamicMeshLightL0Only = true;
+                    manager.DynamicMeshLightOptimizationVersion = 1;
+                    EditorUtility.SetDirty(manager);
+                    LightVolumeManagerEditorBackend.CopyProxyToUdon(manager);
+                    EditorSceneManager.MarkSceneDirty(manager.gameObject.scene);
+                    repairedAny = true;
+                }
+
                 Matrix4x4 volumeMatrix = manager.DynamicMeshLightInvWorldMatrix.inverse;
                 Vector3 center = volumeMatrix.MultiplyPoint3x4(Vector3.zero);
                 Vector3 size = new Vector3(volumeMatrix.GetColumn(0).magnitude, volumeMatrix.GetColumn(1).magnitude, volumeMatrix.GetColumn(2).magnitude);
@@ -190,6 +201,19 @@ namespace VRCLightVolumes {
                     EditorUtility.SetDirty(material);
                     output.Update();
                     repairedAny = true;
+                }
+                for (int outputIndex = 0; outputIndex < outputs.Length; outputIndex++) {
+                    CustomRenderTextureUpdateMode updateMode = manager.DynamicMeshLightL0Only && outputIndex > 0 ? CustomRenderTextureUpdateMode.OnDemand : CustomRenderTextureUpdateMode.Realtime;
+                    bool outputChanged = outputs[outputIndex].updateMode != updateMode;
+                    outputs[outputIndex].updateMode = updateMode;
+                    if (migrateToStableVr && Mathf.Abs(outputs[outputIndex].updatePeriod - 0.1f) > 0.0001f) {
+                        outputs[outputIndex].updatePeriod = 0.1f;
+                        outputChanged = true;
+                    }
+                    if (outputChanged) {
+                        EditorUtility.SetDirty(outputs[outputIndex]);
+                        repairedAny = true;
+                    }
                 }
             }
             if (!repairedAny) return false;
@@ -236,6 +260,7 @@ namespace VRCLightVolumes {
             _projectionRangeScale = Mathf.Max(0.1f, EditorGUILayout.FloatField(new GUIContent("Panel Reach", "Maximum panel-to-voxel distance as a multiple of the dome radius."), _projectionRangeScale));
             _intensity = Mathf.Max(0f, EditorGUILayout.FloatField("Light Intensity", _intensity));
             _edgeFade = Mathf.Max(0.001f, EditorGUILayout.FloatField("Edge Fade", _edgeFade));
+            _performanceMode = EditorGUILayout.Toggle(new GUIContent("VR Performance Mode", "Keeps realtime screen colors but uses one non-directional lighting field instead of three directional fields."), _performanceMode);
             _updatesPerSecond = EditorGUILayout.Slider(new GUIContent("Light Refresh Rate", "How often the shared 3D lighting field reads the current video frame. Lower values save GPU time while the screen itself remains full frame rate."), _updatesPerSecond, 5f, 90f);
 
             GUILayout.Space(8f);
@@ -332,7 +357,7 @@ namespace VRCLightVolumes {
                         dimension = TextureDimension.Tex3D,
                         volumeDepth = _volumeResolution,
                         material = material,
-                        updateMode = CustomRenderTextureUpdateMode.Realtime,
+                        updateMode = _performanceMode && channel > 0 ? CustomRenderTextureUpdateMode.OnDemand : CustomRenderTextureUpdateMode.Realtime,
                         updatePeriod = 1f / Mathf.Max(_updatesPerSecond, 1f),
                         initializationColor = Color.clear,
                         useMipMap = false,
@@ -347,6 +372,8 @@ namespace VRCLightVolumes {
                 EditorUtility.DisplayProgressBar("Realtime Dome Mesh Light", "Connecting the Light Volume Manager", 0.85f);
                 Undo.RecordObject(_manager, "Create Realtime Dome Mesh Light");
                 _manager.DynamicMeshLightEnabled = true;
+                _manager.DynamicMeshLightL0Only = _performanceMode;
+                _manager.DynamicMeshLightOptimizationVersion = 1;
                 _manager.DynamicMeshLightTexture0 = outputs[0];
                 _manager.DynamicMeshLightTexture1 = outputs[1];
                 _manager.DynamicMeshLightTexture2 = outputs[2];

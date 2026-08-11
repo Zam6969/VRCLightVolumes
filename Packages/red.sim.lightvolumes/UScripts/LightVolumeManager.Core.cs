@@ -559,6 +559,7 @@ namespace VRCLightVolumes {
             _lightVolumeOcclusionCountID = VRCShader.PropertyToID("_UdonLightVolumeOcclusionCount");
             // Realtime Mesh Light Volume
             _dynamicMeshLightEnabledID = VRCShader.PropertyToID("_UdonDynamicMeshLightEnabled");
+            _dynamicMeshLightL0OnlyID = VRCShader.PropertyToID("_UdonDynamicMeshLightL0Only");
             _dynamicMeshLightTexture0ID = VRCShader.PropertyToID("_UdonDynamicMeshLightTexture0");
             _dynamicMeshLightTexture1ID = VRCShader.PropertyToID("_UdonDynamicMeshLightTexture1");
             _dynamicMeshLightTexture2ID = VRCShader.PropertyToID("_UdonDynamicMeshLightTexture2");
@@ -648,13 +649,15 @@ namespace VRCLightVolumes {
             VRCShader.SetGlobalFloat(_clusteringEnabledID, 0f);
             _clusteringActive = false;
             VRCShader.SetGlobalFloat(_dynamicMeshLightEnabledID, 0f);
+            VRCShader.SetGlobalFloat(_dynamicMeshLightL0OnlyID, 0f);
             VRCShader.SetGlobalFloat(_lightVolumeEnabledID, 0);
         }
 
         // Publishes the optional realtime mesh-light field without adding it to the regular atlas registry.
         private bool UploadDynamicMeshLightGlobals() {
-            bool active = DynamicMeshLightEnabled && DynamicMeshLightTexture0 != null && DynamicMeshLightTexture1 != null && DynamicMeshLightTexture2 != null;
+            bool active = DynamicMeshLightEnabled && DynamicMeshLightTexture0 != null && (DynamicMeshLightL0Only || DynamicMeshLightTexture1 != null && DynamicMeshLightTexture2 != null);
             VRCShader.SetGlobalFloat(_dynamicMeshLightEnabledID, active ? 1f : 0f);
+            VRCShader.SetGlobalFloat(_dynamicMeshLightL0OnlyID, active && DynamicMeshLightL0Only ? 1f : 0f);
             if (!active) return false;
 
             _dynamicMeshLightInvWorldMatrixArray[0] = DynamicMeshLightInvWorldMatrix;

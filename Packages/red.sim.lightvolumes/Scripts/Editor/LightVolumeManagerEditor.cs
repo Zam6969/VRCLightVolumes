@@ -236,6 +236,7 @@ namespace VRCLightVolumes {
         // Draws the optional realtime 3D light field generated from an emissive mesh and live atlas.
         private void DrawRealtimeMeshLightSettings() {
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightEnabled)), new GUIContent("Enabled"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightL0Only)), new GUIContent("VR Performance Mode"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightTexture0)), new GUIContent("Lighting 0"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightTexture1)), new GUIContent("Lighting 1"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightTexture2)), new GUIContent("Lighting 2"));

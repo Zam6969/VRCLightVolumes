@@ -46,24 +46,28 @@ namespace VRCLightVolumes {
 
             GUILayout.Space(8f);
             EditorGUILayout.LabelField("Performance", EditorStyles.boldLabel);
+            bool performanceMode = EditorGUILayout.Toggle(new GUIContent("VR Performance Mode", "Uses one realtime color-light texture and stops updating the two directional textures. Recommended for volumetric fog and VR."), _manager.DynamicMeshLightL0Only);
             float refreshRate = EditorGUILayout.Slider(new GUIContent("Light Refresh Rate", "How often the lighting follows the video. The screens continue playing at their normal frame rate."), currentRefreshRate, 5f, 60f);
             EditorGUILayout.LabelField("Grid Resolution", $"{outputs[0].width} x {outputs[0].height} x {outputs[0].volumeDepth}");
 
-            if (EditorGUI.EndChangeCheck()) ApplySettings(materials, outputs, enabled, intensity, color, panelReach, edgeFade, refreshRate, volumeSize);
+            if (EditorGUI.EndChangeCheck()) ApplySettings(materials, outputs, enabled, performanceMode, intensity, color, panelReach, edgeFade, refreshRate, volumeSize);
 
             GUILayout.Space(12f);
+            if (GUILayout.Button("Apply Stable VR Preset", GUILayout.Height(28f))) ApplySettings(materials, outputs, enabled, true, intensity, color, panelReach, edgeFade, 10f, volumeSize);
             using (new EditorGUILayout.HorizontalScope()) {
                 if (GUILayout.Button("Refresh Now")) RefreshOutputs(outputs);
                 if (GUILayout.Button("Rebuild / Advanced")) DomeMeshLightVolumeWizard.OpenWindow();
             }
         }
 
-        private void ApplySettings(Material[] materials, CustomRenderTexture[] outputs, bool enabled, float intensity, Color color, float panelReach, float edgeFade, float refreshRate, Vector3 volumeSize) {
+        private void ApplySettings(Material[] materials, CustomRenderTexture[] outputs, bool enabled, bool performanceMode, float intensity, Color color, float panelReach, float edgeFade, float refreshRate, Vector3 volumeSize) {
             Undo.RecordObject(_manager, "Change Realtime Mesh Light Settings");
             Undo.RecordObjects(materials, "Change Realtime Mesh Light Settings");
             Undo.RecordObjects(outputs, "Change Realtime Mesh Light Settings");
 
             _manager.DynamicMeshLightEnabled = enabled;
+            _manager.DynamicMeshLightL0Only = performanceMode;
+            _manager.DynamicMeshLightOptimizationVersion = 1;
             _manager.DynamicMeshLightColor = color;
             _manager.DynamicMeshLightInvEdgeSmooth = new Vector3(volumeSize.x / edgeFade, volumeSize.y / edgeFade, volumeSize.z / edgeFade);
             EditorUtility.SetDirty(_manager);
@@ -71,6 +75,7 @@ namespace VRCLightVolumes {
                 materials[i].SetFloat("_Intensity", intensity);
                 materials[i].SetFloat("_ProjectionRange", panelReach);
                 outputs[i].updatePeriod = 1f / refreshRate;
+                outputs[i].updateMode = performanceMode && i > 0 ? CustomRenderTextureUpdateMode.OnDemand : CustomRenderTextureUpdateMode.Realtime;
                 EditorUtility.SetDirty(materials[i]);
                 EditorUtility.SetDirty(outputs[i]);
             }

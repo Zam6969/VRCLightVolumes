@@ -82,6 +82,9 @@ namespace VRCLightVolumes {
         [Header("Realtime Mesh Light Volume")]
         [Tooltip("Adds one realtime 3D light field generated from an emissive mesh and a changing atlas such as a VideoTXL Custom Render Texture.")]
         public bool DynamicMeshLightEnabled = false;
+        [Tooltip("Uses only the realtime color field. This cuts mesh-light generation and fog sampling to one 3D texture for substantially better VR performance.")]
+        public bool DynamicMeshLightL0Only = true;
+        [HideInInspector] public int DynamicMeshLightOptimizationVersion;
         [Tooltip("Realtime mesh-light SH texture 0 (L0 RGB and L1 red Z).")]
         public Texture DynamicMeshLightTexture0;
         [Tooltip("Realtime mesh-light SH texture 1 (L1 RGB X and green Z).")]
@@ -433,6 +436,7 @@ namespace VRCLightVolumes {
         private int _lightVolumeOcclusionCountID;
         // Realtime Mesh Light Volume
         private int _dynamicMeshLightEnabledID;
+        private int _dynamicMeshLightL0OnlyID;
         private int _dynamicMeshLightTexture0ID;
         private int _dynamicMeshLightTexture1ID;
         private int _dynamicMeshLightTexture2ID;

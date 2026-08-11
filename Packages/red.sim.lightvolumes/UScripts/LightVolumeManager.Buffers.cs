@@ -626,7 +626,7 @@ namespace VRCLightVolumes {
             }
 
             bool isAtlas = LightVolumeAtlas != null;
-            bool hasDynamicMeshLight = DynamicMeshLightEnabled && DynamicMeshLightTexture0 != null && DynamicMeshLightTexture1 != null && DynamicMeshLightTexture2 != null;
+            bool hasDynamicMeshLight = DynamicMeshLightEnabled && DynamicMeshLightTexture0 != null && (DynamicMeshLightL0Only || DynamicMeshLightTexture1 != null && DynamicMeshLightTexture2 != null);
 
 #if UNITY_EDITOR && !COMPILER_UDONSHARP
             // Editor tests and inspector edits can change fields directly without going through instance notify methods.
