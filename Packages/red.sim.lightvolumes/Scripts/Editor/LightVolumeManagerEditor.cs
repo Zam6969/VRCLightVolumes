@@ -423,6 +423,14 @@ namespace VRCLightVolumes {
             SerializedProperty clustering = serializedObject.FindProperty("Clustering");
             EditorGUILayout.PropertyField(clustering, new GUIContent("Clustering Enabled", clustering.tooltip));
             if (!clustering.boolValue) return;
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PrefixLabel(new GUIContent("Quality Preset", "Sets the angular density and depth slices together. Custom values remain available below."));
+            if (GUILayout.Button(new GUIContent("VR Performance", "0.25 angular density, 32 slices and clustering from 8 active lights."))) ApplyClusteringPreset(0.25f, 32, 8);
+            if (GUILayout.Button(new GUIContent("Balanced", "0.5 angular density, 48 slices and clustering from 8 active lights."))) ApplyClusteringPreset(0.5f, 48, 8);
+            if (GUILayout.Button(new GUIContent("Detailed", "1.0 angular density, 100 slices and clustering from 8 active lights."))) ApplyClusteringPreset(1f, 100, 8);
+            EditorGUILayout.EndHorizontal();
+
             DrawProperty("ClusteringMinLights", "Min Lights Count");
             DrawProperty("FroxelDensity", "Angular Density");
             DrawProperty("FroxelSlices", "Slices Count");
@@ -452,6 +460,17 @@ namespace VRCLightVolumes {
                     $"Coarse Froxels: <b>{coarseColumns} x {coarseRows} x {coarseSlices} ({(long)coarseColumns * coarseRows * coarseSlices:N0} froxels)</b>",
                     "A simpler helper grid that quickly removes unrelated lights before the detailed Fine grid is built. The shown size is an editor estimate; in-game it changes with the player's FOV."),
                 RichLabelStyle);
+            if ((long)columns * rows * slices > 500000L) {
+                EditorGUILayout.HelpBox("This clustering grid is expensive to rebuild every frame, especially in VR. Use VR Performance or Balanced unless the lower grid resolution produces visible light popping.", MessageType.Warning);
+            }
+        }
+
+        // Applies a complete froxel preset without touching any light, shadow or projection setting.
+        private void ApplyClusteringPreset(float density, int slices, int minLights) {
+            serializedObject.FindProperty("FroxelDensity").floatValue = density;
+            serializedObject.FindProperty("FroxelSlices").intValue = slices;
+            serializedObject.FindProperty("FroxelCoarse").intValue = 4;
+            serializedObject.FindProperty("ClusteringMinLights").intValue = minLights;
         }
 
         // Draws lightmapper-specific bake and atlas settings.
