@@ -22,6 +22,8 @@ Shader "Hidden/VRCLV/FroxelClusteringBuild" {
 
             float _UdonPointLightVolumeCount;
             float4 _UdonPointLightVolumePosition[VRCLV_MAX_POINT_LIGHTS];
+            float4 _UdonPointLightVolumeColor[VRCLV_MAX_POINT_LIGHTS];
+            float4 _UdonPointLightVolumeAreaTriangleData[VRCLV_MAX_POINT_LIGHTS * 2];
             float4 _UdonClusteringLights[VRCLV_MAX_POINT_LIGHTS / 2];
             Texture2D<int4> _UdonCoarseClusterMask;
             float4 _UdonFroxelGrid;
@@ -123,15 +125,32 @@ Shader "Hidden/VRCLV/FroxelClusteringBuild" {
                 return axis * rsqrt(max(dot(axis, axis), 0.000001));
             }
 
+            // Conservatively bounds the finite emitter plus its existing Shape Spread cone.
+            // The bound may include extra froxels, but never rejects a receiver that the lighting shader can reach.
+            bool IntersectsAreaFroxel(uint lightId, float3 lightToFroxel, float lightDistanceSq, float froxelRadius, float combinedRadius, float3 shapeAxis) {
+                float axialDistance = dot(lightToFroxel, shapeAxis);
+                float axisPadding = combinedRadius * VRCLV_FROXEL_AXIS_ERROR;
+                float paddedFroxelRadius = froxelRadius + axisPadding;
+                [branch] if (axialDistance + paddedFroxelRadius < 0.0) return false;
+
+                float2 areaSize = float2(_UdonPointLightVolumePosition[lightId].w, _UdonPointLightVolumeColor[lightId].w - 2.0);
+                float emitterRadius = length(areaSize) * 0.5;
+                float packedSpread = _UdonPointLightVolumeAreaTriangleData[lightId * 2u + 1u].w;
+                float shapeSpread = packedSpread > 0.0 ? saturate(packedSpread - 1.0) : 1.0;
+                float radialDistanceSq = max(lightDistanceSq - axialDistance * axialDistance, 0.0);
+                float radialLimit = emitterRadius + paddedFroxelRadius + max(axialDistance + paddedFroxelRadius, 0.0) * shapeSpread;
+                return radialDistanceSq <= radialLimit * radialLimit;
+            }
+
             // Range rejection is performed before this shape-specific path, so point lights pay none of this cost.
-            bool IntersectsFroxelLightShape(float3 lightToFroxel, float lightDistanceSq, float froxelRadius, float combinedRadius, uint packedShape) {
+            bool IntersectsFroxelLightShape(uint lightId, float3 lightToFroxel, float lightDistanceSq, float froxelRadius, float combinedRadius, uint packedShape) {
                 uint shapeCode = packedShape >> 16u;
                 bool intersects = true;
                 [branch] if (shapeCode != 0u) {
                     float3 shapeAxis = DecodeClusterShapeAxis(packedShape);
                     float axialDistance = dot(lightToFroxel, shapeAxis);
                     [branch] if (shapeCode == 1u) {
-                        intersects = axialDistance + froxelRadius + combinedRadius * VRCLV_FROXEL_AXIS_ERROR >= 0.0;
+                        intersects = IntersectsAreaFroxel(lightId, lightToFroxel, lightDistanceSq, froxelRadius, combinedRadius, shapeAxis);
                     } else {
                         float encodedTangent = (float)(shapeCode - 1u) * (1.0 / 255.0);
                         float coneTangent = encodedTangent * rcp(1.0 - encodedTangent);
@@ -151,7 +170,7 @@ Shader "Hidden/VRCLV/FroxelClusteringBuild" {
                 float3 lightToFroxel = froxelCenter - _UdonPointLightVolumePosition[lightId].xyz;
                 float lightDistanceSq = dot(lightToFroxel, lightToFroxel);
                 bool intersects = lightDistanceSq <= combinedRadius * combinedRadius;
-                [branch] if (intersects) intersects = IntersectsFroxelLightShape(lightToFroxel, lightDistanceSq, froxelRadius, combinedRadius, (uint)lightData.y);
+                [branch] if (intersects) intersects = IntersectsFroxelLightShape(lightId, lightToFroxel, lightDistanceSq, froxelRadius, combinedRadius, (uint)lightData.y);
                 return intersects;
             }
 

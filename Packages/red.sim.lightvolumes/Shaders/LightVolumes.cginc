@@ -587,9 +587,7 @@ inline float2 LV_AreaLightClosestXY(float2 localXY, float2 halfSize, float shape
     return LV_ClosestPointOnTriangle(localXY, a, b, c);
 }
 
-inline float LV_AreaLightShapeFootprint(float2 localXY, float localZ, float2 halfSize, float shape, float shapeSpread, float4 customTriangle0, float4 customTriangle1) {
-    float2 closestXY = LV_AreaLightClosestXY(localXY, halfSize, shape, customTriangle0, customTriangle1);
-    float outsideDistance = length(localXY - closestXY);
+inline float LV_AreaLightFootprintFromOutsideDistance(float outsideDistance, float localZ, float shapeSpread) {
     float spreadRadius = max(localZ, 0.0) * saturate(shapeSpread);
     float footprint = outsideDistance <= 0.00001 ? 1.0 : 0.0;
     [branch] if (spreadRadius > 0.00001) {
@@ -601,19 +599,36 @@ inline float LV_AreaLightShapeFootprint(float2 localXY, float localZ, float2 hal
     return footprint;
 }
 
+inline float LV_AreaLightShapeFootprint(float2 localXY, float localZ, float2 halfSize, float shape, float shapeSpread, float4 customTriangle0, float4 customTriangle1) {
+    float2 closestXY = LV_AreaLightClosestXY(localXY, halfSize, shape, customTriangle0, customTriangle1);
+    return LV_AreaLightFootprintFromOutsideDistance(length(localXY - closestXY), localZ, shapeSpread);
+}
+
 // Projects a front-facing rectangle or triangle light into L1 SH using a cheap solid-angle approximation.
 // Caller must cull localPos.z <= 0 before calling.
 inline float4 LV_ProjectFastQuadLightIrradianceSH(float3 lightToWorldPos, float3 localPos, float centerSqDist, float3 xAxis, float3 yAxis, float2 size, float shape, float4 customTriangle0, float4 customTriangle1, out float3 pointLightShadingDir) {
     float2 halfSize = size * 0.5;
-    float area = max(size.x * size.y * LV_AreaLightShapeAreaScale(size, shape, customTriangle1), 1e-6);
-    float extentSq = max(dot(halfSize, halfSize), 1e-6);
+    float shapeSpread = customTriangle1.w > 0 ? saturate(customTriangle1.w - 1.0) : 1.0;
+    float spreadRadius = max(localPos.z, 0.0) * shapeSpread;
+    float broadRadius = length(halfSize) + spreadRadius + 0.00001;
+    [branch] if (dot(localPos.xy, localPos.xy) > broadRadius * broadRadius) {
+        pointLightShadingDir = 0;
+        return 0;
+    }
 
     float2 closestXY = LV_AreaLightClosestXY(localPos.xy, halfSize, shape, customTriangle0, customTriangle1);
     float2 rectDelta = localPos.xy - closestXY;
     float rectDeltaSq = dot(rectDelta, rectDelta);
+    float footprintRadius = max(spreadRadius, 0.00001);
+    [branch] if (rectDeltaSq > footprintRadius * footprintRadius) {
+        pointLightShadingDir = 0;
+        return 0;
+    }
+
+    float footprint = LV_AreaLightFootprintFromOutsideDistance(sqrt(rectDeltaSq), localPos.z, shapeSpread);
+    float area = max(size.x * size.y * LV_AreaLightShapeAreaScale(size, shape, customTriangle1), 1e-6);
+    float extentSq = max(dot(halfSize, halfSize), 1e-6);
     float planeRectSq = rectDeltaSq + localPos.z * localPos.z;
-    float shapeSpread = customTriangle1.w > 0 ? saturate(customTriangle1.w - 1.0) : 1.0;
-    float footprint = LV_AreaLightShapeFootprint(localPos.xy, localPos.z, halfSize, shape, shapeSpread, customTriangle0, customTriangle1);
     float closestSqDist = max(planeRectSq, 1e-6);
     float distanceBlend = planeRectSq * rcp(planeRectSq + extentSq);
     float solidSqDist = lerp(closestSqDist, centerSqDist, distanceBlend);
@@ -865,7 +880,6 @@ bool LV_PointLightVolumeContribution(uint id, float3 worldPos, float3 pointLight
 
                 [branch] if (areaLocalPos.z > 0) { // Receiver is in front of the area emitter plane
                     float3 areaPointLightShadingDir;
-                    float sourceSpreadSq = dot(areaSize, areaSize) * (0.25 * rcp(distSq));
                     float4 areaLightSH = LV_ProjectFastQuadLightIrradianceSH(lightToWorldPos, areaLocalPos, distSq, areaXAxis, areaYAxis, areaSize, areaShape, areaTriangle0, areaTriangle1, areaPointLightShadingDir);
                     float areaAttenuation = saturate(1 - distSq * rcp(rangeSq));
 
@@ -890,7 +904,7 @@ bool LV_PointLightVolumeContribution(uint id, float3 worldPos, float3 pointLight
                             [branch] if (LV_PointLightVolumeShadowMask(id, customID_data.y, 0.0, worldPos, dir, areaPointLightShadingDir, distSq, invDist, pointLightShadingNormal, pointLightShadingBias, true, false, shadow)) {
                                 counted = true;
                                 lightDirNormal = lightDir;
-                                specularSpreadSq = sourceSpreadSq;
+                                specularSpreadSq = dot(areaSize, areaSize) * (0.25 * rcp(distSq));
                                 l0 = color.rgb * (areaAttenuation * LV_PI * areaLightSH.w) * cookie;
                                 l1 = areaLightSH.xyz;
                             }

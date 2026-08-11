@@ -23,6 +23,7 @@ namespace VRCLightVolumes.Tests {
         private const string CustomRenderTextureInfoProperty = "_CustomRenderTextureInfo";
         private const string LightVolumesIncludePath = "Shaders/LightVolumes.cginc";
         private const string RuntimeShadowBlurShaderPath = "Shaders/Internal/PointLightShadowRuntimeBlur.shader";
+        private const string FroxelClusteringBuildShaderPath = "Shaders/Internal/FroxelClusteringBuild.shader";
         private const string LightVolumeManagerEditorSourcePath = "UScripts/LightVolumeManager.Editor.cs";
         private const string LightVolumeManagerEditorBackendSourcePath = "Scripts/Editor/LightVolumeManagerEditorBackend.cs";
         private const string PointLightVolumeEditorSourcePath = "Scripts/Editor/PointLightVolumeEditor.cs";
@@ -4376,7 +4377,7 @@ namespace VRCLightVolumes.Tests {
         [Test]
         public void AreaLightShapeExpandsAndSoftensPlainFootprint() {
             string shaderSource = ReadLightVolumesIncludeSource();
-            int footprintStart = shaderSource.IndexOf("inline float LV_AreaLightShapeFootprint", StringComparison.Ordinal);
+            int footprintStart = shaderSource.IndexOf("inline float LV_AreaLightFootprintFromOutsideDistance", StringComparison.Ordinal);
             int projectionStart = shaderSource.IndexOf("inline float4 LV_ProjectFastQuadLightIrradianceSH", StringComparison.Ordinal);
             int attenuationStart = shaderSource.IndexOf("// Calculates point light attenuation.", StringComparison.Ordinal);
 
@@ -4393,14 +4394,28 @@ namespace VRCLightVolumes.Tests {
             Assert.That(footprintSource, Does.Not.Contain("edgeSoftness"));
             Assert.That(footprintSource, Does.Not.Contain("abs(localZ) * 0.02"));
             Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeAreaScale(size, shape, customTriangle1)"));
+            Assert.That(projectionSource, Does.Contain("dot(localPos.xy, localPos.xy) > broadRadius * broadRadius"));
             Assert.That(shaderSource, Does.Contain("packedAreaData = customID_data.w"));
             Assert.That(shaderSource, Does.Contain("min(LV_AreaLightPackedShape(packedAreaData), 6.0)"));
             Assert.That(shaderSource, Does.Contain("_UdonPointLightVolumeAreaTriangleData[id * 2]"));
             Assert.That(shaderSource, Does.Not.Contain("_UdonLightVolumeVersion >= 3 ? customID_data.w : 0.0"));
-            Assert.That(projectionSource, Does.Contain("LV_AreaLightShapeFootprint(localPos.xy, localPos.z, halfSize, shape, shapeSpread, customTriangle0, customTriangle1)"));
+            Assert.That(projectionSource, Does.Contain("rectDeltaSq > footprintRadius * footprintRadius"));
+            Assert.That(projectionSource, Does.Contain("pointLightShadingDir = 0;"));
+            Assert.That(projectionSource, Does.Contain("LV_AreaLightFootprintFromOutsideDistance(sqrt(rectDeltaSq), localPos.z, shapeSpread)"));
             Assert.That(projectionSource, Does.Contain("* footprint"));
             Assert.That(projectionSource, Does.Contain("customTriangle1.w > 0 ? saturate(customTriangle1.w - 1.0) : 1.0"));
             Assert.That(shaderSource, Does.Not.Contain("areaRangeFade"));
+        }
+
+        [Test]
+        public void AreaLightClusteringUsesConservativeSpreadCone() {
+            string clusteringSource = ReadPackageSource(FroxelClusteringBuildShaderPath);
+
+            Assert.That(clusteringSource, Does.Contain("float4 _UdonPointLightVolumeAreaTriangleData[VRCLV_MAX_POINT_LIGHTS * 2];"));
+            Assert.That(clusteringSource, Does.Contain("bool IntersectsAreaFroxel(uint lightId"));
+            Assert.That(clusteringSource, Does.Contain("float shapeSpread = packedSpread > 0.0 ? saturate(packedSpread - 1.0) : 1.0;"));
+            Assert.That(clusteringSource, Does.Contain("emitterRadius + paddedFroxelRadius + max(axialDistance + paddedFroxelRadius, 0.0) * shapeSpread"));
+            Assert.That(clusteringSource, Does.Contain("IntersectsFroxelLightShape(lightId,"));
         }
 
         [Test]
