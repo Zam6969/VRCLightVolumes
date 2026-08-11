@@ -12,6 +12,7 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
         [HideInInspector] _EmitterCount("Emitter Count", Float) = 0
         [HideInInspector] _EmitterTexelSize("Emitter Texel Size", Float) = 1
         _Intensity("Intensity", Float) = 1
+        _ColorSaturation("Screen Color", Range(0, 1)) = 1
         _ProjectionRange("Projection Range", Float) = 10
         _OutputChannel("Output Channel", Int) = 0
     }
@@ -43,6 +44,7 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
             float _EmitterCount;
             float _EmitterTexelSize;
             float _Intensity;
+            float _ColorSaturation;
             float _ProjectionRange;
             int _OutputChannel;
 
@@ -76,6 +78,8 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
                     float4 sample1 = tex2Dlod(_SourceTex, float4(uv01.zw, 0, 0));
                     float4 sample2 = tex2Dlod(_SourceTex, float4(uv2, 0, 0));
                     float3 emission = (sample0.rgb + sample1.rgb + sample2.rgb) * 0.3333333333;
+                    float neutralEmission = dot(emission, float3(0.2126, 0.7152, 0.0722));
+                    emission = lerp(neutralEmission.xxx, emission, _ColorSaturation);
                     float sourceRadiusSq = max(positionArea.w * VRCLV_INV_PI, 1e-4);
                     float weight = _Intensity * positionArea.w * emitterFacing * VRCLV_INV_PI * rcp(distSq + sourceRadiusSq) * rangeMask * rangeMask;
                     float3 contribution = emission * weight;

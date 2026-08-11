@@ -23,6 +23,7 @@ namespace VRCLightVolumes {
         [SerializeField] private float _volumeScale = 1f;
         [SerializeField] private float _projectionRangeScale = 2f;
         [SerializeField] private float _intensity = 5f;
+        [SerializeField] private float _colorSaturation = 1f;
         [SerializeField] private float _edgeFade = 0.5f;
         [SerializeField] private float _updatesPerSecond = 15f;
         [SerializeField] private bool _performanceMode = true;
@@ -259,6 +260,7 @@ namespace VRCLightVolumes {
             _volumeResolution = EditorGUILayout.IntPopup("Grid Resolution", _volumeResolution, new[] { "16 x 16 x 16", "24 x 24 x 24", "32 x 32 x 32", "48 x 48 x 48" }, new[] { 16, 24, 32, 48 });
             _projectionRangeScale = Mathf.Max(0.1f, EditorGUILayout.FloatField(new GUIContent("Panel Reach", "Maximum panel-to-voxel distance as a multiple of the dome radius."), _projectionRangeScale));
             _intensity = Mathf.Max(0f, EditorGUILayout.FloatField("Light Intensity", _intensity));
+            _colorSaturation = EditorGUILayout.Slider(new GUIContent("Screen Color", "0 produces neutral white light; 1 uses the full screen colors."), _colorSaturation, 0f, 1f);
             _edgeFade = Mathf.Max(0.001f, EditorGUILayout.FloatField("Edge Fade", _edgeFade));
             _performanceMode = EditorGUILayout.Toggle(new GUIContent("VR Performance Mode", "Keeps realtime screen colors but uses one non-directional lighting field instead of three directional fields."), _performanceMode);
             _updatesPerSecond = EditorGUILayout.Slider(new GUIContent("Light Refresh Rate", "How often the shared 3D lighting field reads the current video frame. Lower values save GPU time while the screen itself remains full frame rate."), _updatesPerSecond, 5f, 90f);
@@ -348,6 +350,7 @@ namespace VRCLightVolumes {
                     material.SetFloat("_EmitterCount", emitters.Count);
                     material.SetFloat("_EmitterTexelSize", 1f / dataWidth);
                     material.SetFloat("_Intensity", _intensity);
+                    material.SetFloat("_ColorSaturation", _colorSaturation);
                     material.SetFloat("_ProjectionRange", radius * _projectionRangeScale);
                     material.SetInt("_OutputChannel", channel);
                     AssetDatabase.CreateAsset(material, AssetDatabase.GenerateUniqueAssetPath(outputFolder + $"/DomeMeshLightUpdate{channel}.mat"));
