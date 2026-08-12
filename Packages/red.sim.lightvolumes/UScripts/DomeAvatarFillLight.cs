@@ -40,10 +40,9 @@ namespace VRCLightVolumes {
             if (TargetLight == null) TargetLight = GetComponent<Light>();
             if (TargetLight != null) _smoothedColor = TargetLight.color;
             _previousColorTime = Time.time;
-            _downsampledTexture = new RenderTexture(64, 32, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear) {
-                useMipMap = true,
-                autoGenerateMips = true
-            };
+            _downsampledTexture = new RenderTexture(64, 32, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            _downsampledTexture.useMipMap = true;
+            _downsampledTexture.autoGenerateMips = true;
             _downsampledTexture.Create();
 #if UDONSHARP
             _pixels = new Color32[1];
