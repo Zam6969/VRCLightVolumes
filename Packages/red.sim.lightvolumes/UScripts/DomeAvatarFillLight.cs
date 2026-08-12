@@ -27,10 +27,15 @@ namespace VRCLightVolumes {
         [Range(0f, 1f)] public float FollowVideoBrightness = 0.25f;
         public Color ColorMultiplier = Color.white;
         public bool AntiFlickering = true;
+        public bool FollowClosestScreen = true;
+        public Vector3 ScreenCenter;
+        public float ScreenRadius = 5f;
+        [Range(0f, 2f)] public float ScreenInset = 0.15f;
         [HideInInspector] public int SettingsVersion;
 
 #if UDONSHARP
         private Color32[] _pixels;
+        private VRCPlayerApi _localPlayer;
 #endif
         private RenderTexture _downsampledTexture;
         private Color _smoothedColor = Color.white;
@@ -39,9 +44,12 @@ namespace VRCLightVolumes {
         private bool _readbackPending;
 
         private void Start() {
-            UpgradeSettings();
             if (TargetLight == null) TargetLight = GetComponent<Light>();
+            UpgradeSettings();
             if (TargetLight != null) _smoothedColor = TargetLight.color;
+#if UDONSHARP
+            _localPlayer = Networking.LocalPlayer;
+#endif
             _previousColorTime = Time.time;
             _downsampledTexture = new RenderTexture(64, 32, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             _downsampledTexture.useMipMap = true;
@@ -69,6 +77,7 @@ namespace VRCLightVolumes {
 
 #if UDONSHARP
         private void Update() {
+            UpdateSourcePosition();
             if (_readbackPending || TargetRenderTexture == null || TargetLight == null || !TargetLight.enabled || Time.time < _nextUpdateTime) return;
             _nextUpdateTime = Time.time + 1f / Mathf.Max(UpdatesPerSecond, 1f);
             VRCGraphics.Blit(TargetRenderTexture, _downsampledTexture);
@@ -82,6 +91,7 @@ namespace VRCLightVolumes {
         }
 #else
         private void Update() {
+            UpdateSourcePosition();
             if (_readbackPending || TargetRenderTexture == null || TargetLight == null || !TargetLight.enabled || Time.time < _nextUpdateTime) return;
             _nextUpdateTime = Time.time + 1f / Mathf.Max(UpdatesPerSecond, 1f);
             Graphics.Blit(TargetRenderTexture, _downsampledTexture);
@@ -116,10 +126,32 @@ namespace VRCLightVolumes {
         }
 
         private void UpgradeSettings() {
-            if (SettingsVersion >= 1) return;
-            if (UpdatesPerSecond <= 5f) UpdatesPerSecond = 12f;
-            ResponseSpeed = 18f;
-            SettingsVersion = 1;
+            if (SettingsVersion < 1) {
+                if (UpdatesPerSecond <= 5f) UpdatesPerSecond = 12f;
+                ResponseSpeed = 18f;
+            }
+            if (SettingsVersion < 2) {
+                ScreenCenter = transform.position;
+                ScreenRadius = TargetLight != null ? Mathf.Max(TargetLight.range * 0.666667f, 0.1f) : 5f;
+            }
+            SettingsVersion = 2;
+        }
+
+        private void UpdateSourcePosition() {
+            if (!FollowClosestScreen || TargetLight == null || ScreenRadius <= 0f) return;
+#if UDONSHARP
+            if (!Utilities.IsValid(_localPlayer)) _localPlayer = Networking.LocalPlayer;
+            if (!Utilities.IsValid(_localPlayer)) return;
+            Vector3 receiverPosition = _localPlayer.GetTrackingData(VRCPlayerApi.TrackingDataType.Head).position;
+#else
+            Camera viewer = Camera.main;
+            if (viewer == null) return;
+            Vector3 receiverPosition = viewer.transform.position;
+#endif
+            Vector3 centerToReceiver = receiverPosition - ScreenCenter;
+            if (centerToReceiver.sqrMagnitude <= 0.000001f) return;
+            float sourceRadius = Mathf.Max(ScreenRadius - ScreenInset, 0f);
+            TargetLight.transform.position = ScreenCenter + centerToReceiver.normalized * sourceRadius;
         }
     }
 }
