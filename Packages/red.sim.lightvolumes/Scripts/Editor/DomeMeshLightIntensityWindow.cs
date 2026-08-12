@@ -93,12 +93,14 @@ namespace VRCLightVolumes {
             using (new EditorGUI.DisabledScope(!antiFlickering)) {
                 responseSpeed = EditorGUILayout.Slider(new GUIContent("Color Response", "How quickly smoothed avatar lighting catches up to the sampled video color."), responseSpeed, 1f, 30f);
             }
-            bool followClosestScreen = EditorGUILayout.Toggle(new GUIContent("Light From Screen", "Moves the avatar light to the dome screen surface nearest the local player."), avatarFill.FollowClosestScreen);
+            bool followClosestScreen = EditorGUILayout.Toggle(new GUIContent("Light From Screen", "Places the avatar light along the direction of the nearest dome screen."), avatarFill.FollowClosestScreen);
             float screenRadius = avatarFill.ScreenRadius;
             float screenInset = avatarFill.ScreenInset;
+            float lightDistanceFromAvatar = avatarFill.LightDistanceFromAvatar;
             using (new EditorGUI.DisabledScope(!followClosestScreen)) {
                 screenRadius = Mathf.Max(0.1f, EditorGUILayout.FloatField(new GUIContent("Screen Radius", "Distance from the dome center to its screen surface."), screenRadius));
                 screenInset = EditorGUILayout.Slider(new GUIContent("Source Inset", "Moves the light slightly inward from the screen surface."), screenInset, 0f, 2f);
+                lightDistanceFromAvatar = EditorGUILayout.Slider(new GUIContent("Distance From Avatar", "Keeps the light close enough to be visible while preserving the direction from the nearest screen."), lightDistanceFromAvatar, 0.25f, 5f);
             }
             if (!EditorGUI.EndChangeCheck()) return;
 
@@ -118,7 +120,8 @@ namespace VRCLightVolumes {
             avatarFill.ScreenCenter = volumeMatrix.MultiplyPoint3x4(Vector3.zero);
             avatarFill.ScreenRadius = screenRadius;
             avatarFill.ScreenInset = screenInset;
-            avatarFill.SettingsVersion = 2;
+            avatarFill.LightDistanceFromAvatar = lightDistanceFromAvatar;
+            avatarFill.SettingsVersion = 3;
             EditorUtility.SetDirty(targetLight);
             EditorUtility.SetDirty(avatarFill);
             EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
@@ -155,7 +158,8 @@ namespace VRCLightVolumes {
             avatarFill.ScreenCenter = volumeMatrix.MultiplyPoint3x4(Vector3.zero);
             avatarFill.ScreenRadius = Mathf.Max(volumeSize.x, Mathf.Max(volumeSize.y, volumeSize.z)) * 0.5f;
             avatarFill.ScreenInset = 0.15f;
-            avatarFill.SettingsVersion = 2;
+            avatarFill.LightDistanceFromAvatar = 2f;
+            avatarFill.SettingsVersion = 3;
 
             EditorUtility.SetDirty(targetLight);
             EditorUtility.SetDirty(avatarFill);
@@ -165,17 +169,20 @@ namespace VRCLightVolumes {
         }
 
         private void UpgradeAvatarFillSettings(DomeAvatarFillLight avatarFill, Matrix4x4 volumeMatrix, Vector3 volumeSize) {
-            if (avatarFill.SettingsVersion >= 2) return;
+            if (avatarFill.SettingsVersion >= 3) return;
             Undo.RecordObject(avatarFill, "Upgrade Avatar Fill Light Settings");
             if (avatarFill.SettingsVersion < 1) {
                 if (avatarFill.UpdatesPerSecond <= 5f) avatarFill.UpdatesPerSecond = 12f;
                 avatarFill.ResponseSpeed = 18f;
             }
-            avatarFill.FollowClosestScreen = true;
-            avatarFill.ScreenCenter = volumeMatrix.MultiplyPoint3x4(Vector3.zero);
-            avatarFill.ScreenRadius = Mathf.Max(volumeSize.x, Mathf.Max(volumeSize.y, volumeSize.z)) * 0.5f;
-            avatarFill.ScreenInset = 0.15f;
-            avatarFill.SettingsVersion = 2;
+            if (avatarFill.SettingsVersion < 2) {
+                avatarFill.FollowClosestScreen = true;
+                avatarFill.ScreenCenter = volumeMatrix.MultiplyPoint3x4(Vector3.zero);
+                avatarFill.ScreenRadius = Mathf.Max(volumeSize.x, Mathf.Max(volumeSize.y, volumeSize.z)) * 0.5f;
+                avatarFill.ScreenInset = 0.15f;
+            }
+            avatarFill.LightDistanceFromAvatar = 2f;
+            avatarFill.SettingsVersion = 3;
             EditorUtility.SetDirty(avatarFill);
             EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
         }

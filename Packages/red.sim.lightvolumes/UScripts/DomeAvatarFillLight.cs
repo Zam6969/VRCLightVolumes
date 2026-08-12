@@ -31,6 +31,7 @@ namespace VRCLightVolumes {
         public Vector3 ScreenCenter;
         public float ScreenRadius = 5f;
         [Range(0f, 2f)] public float ScreenInset = 0.15f;
+        [Range(0.25f, 5f)] public float LightDistanceFromAvatar = 2f;
         [HideInInspector] public int SettingsVersion;
 
 #if UDONSHARP
@@ -134,7 +135,8 @@ namespace VRCLightVolumes {
                 ScreenCenter = transform.position;
                 ScreenRadius = TargetLight != null ? Mathf.Max(TargetLight.range * 0.666667f, 0.1f) : 5f;
             }
-            SettingsVersion = 2;
+            if (SettingsVersion < 3) LightDistanceFromAvatar = 2f;
+            SettingsVersion = 3;
         }
 
         private void UpdateSourcePosition() {
@@ -151,7 +153,11 @@ namespace VRCLightVolumes {
             Vector3 centerToReceiver = receiverPosition - ScreenCenter;
             if (centerToReceiver.sqrMagnitude <= 0.000001f) return;
             float sourceRadius = Mathf.Max(ScreenRadius - ScreenInset, 0f);
-            TargetLight.transform.position = ScreenCenter + centerToReceiver.normalized * sourceRadius;
+            Vector3 screenPosition = ScreenCenter + centerToReceiver.normalized * sourceRadius;
+            Vector3 receiverToScreen = screenPosition - receiverPosition;
+            float receiverToScreenDistance = receiverToScreen.magnitude;
+            if (receiverToScreenDistance <= LightDistanceFromAvatar) TargetLight.transform.position = screenPosition;
+            else TargetLight.transform.position = receiverPosition + receiverToScreen / receiverToScreenDistance * LightDistanceFromAvatar;
         }
     }
 }
