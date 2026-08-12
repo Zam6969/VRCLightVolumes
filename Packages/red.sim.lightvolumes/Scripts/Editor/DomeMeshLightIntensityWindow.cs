@@ -72,6 +72,8 @@ namespace VRCLightVolumes {
                 return;
             }
 
+            UpgradeAvatarFillSettings(avatarFill);
+
             Light targetLight = avatarFill.TargetLight != null ? avatarFill.TargetLight : avatarFill.GetComponent<Light>();
             if (targetLight == null) {
                 EditorGUILayout.HelpBox("The avatar fill component is missing its Unity Light.", MessageType.Warning);
@@ -84,9 +86,13 @@ namespace VRCLightVolumes {
             float lightRange = Mathf.Max(0.1f, EditorGUILayout.FloatField("Range", targetLight.range));
             float screenColor = EditorGUILayout.Slider(new GUIContent("Screen Color", "0 produces neutral light; 1 follows the video's full color."), avatarFill.ScreenColor, 0f, 1f);
             float videoBrightness = EditorGUILayout.Slider(new GUIContent("Video Brightness", "Controls how strongly dark video frames dim the avatar fill."), avatarFill.FollowVideoBrightness, 0f, 1f);
-            float updateRate = EditorGUILayout.Slider("Color Refresh Rate", avatarFill.UpdatesPerSecond, 1f, 15f);
+            float updateRate = EditorGUILayout.Slider(new GUIContent("Color Refresh Rate", "How often the video color is sampled for avatar lighting."), avatarFill.UpdatesPerSecond, 1f, 30f);
             Color fillMultiplier = EditorGUILayout.ColorField("Color Multiplier", avatarFill.ColorMultiplier);
             bool antiFlickering = EditorGUILayout.Toggle("Smooth Color Changes", avatarFill.AntiFlickering);
+            float responseSpeed = avatarFill.ResponseSpeed;
+            using (new EditorGUI.DisabledScope(!antiFlickering)) {
+                responseSpeed = EditorGUILayout.Slider(new GUIContent("Color Response", "How quickly smoothed avatar lighting catches up to the sampled video color."), responseSpeed, 1f, 30f);
+            }
             if (!EditorGUI.EndChangeCheck()) return;
 
             Undo.RecordObjects(new Object[] { avatarFill, targetLight }, "Change Avatar Fill Light Settings");
@@ -98,8 +104,10 @@ namespace VRCLightVolumes {
             avatarFill.ScreenColor = screenColor;
             avatarFill.FollowVideoBrightness = videoBrightness;
             avatarFill.UpdatesPerSecond = updateRate;
+            avatarFill.ResponseSpeed = responseSpeed;
             avatarFill.ColorMultiplier = fillMultiplier;
             avatarFill.AntiFlickering = antiFlickering;
+            avatarFill.SettingsVersion = 1;
             EditorUtility.SetDirty(targetLight);
             EditorUtility.SetDirty(avatarFill);
             EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
@@ -126,17 +134,29 @@ namespace VRCLightVolumes {
             DomeAvatarFillLight avatarFill = Undo.AddComponent<DomeAvatarFillLight>(gameObject);
             avatarFill.TargetRenderTexture = sourceTexture;
             avatarFill.TargetLight = targetLight;
-            avatarFill.UpdatesPerSecond = 5f;
+            avatarFill.UpdatesPerSecond = 12f;
+            avatarFill.ResponseSpeed = 18f;
             avatarFill.ScreenColor = 0.65f;
             avatarFill.FollowVideoBrightness = 0.25f;
             avatarFill.ColorMultiplier = Color.white;
             avatarFill.AntiFlickering = true;
+            avatarFill.SettingsVersion = 1;
 
             EditorUtility.SetDirty(targetLight);
             EditorUtility.SetDirty(avatarFill);
             EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
             Selection.activeGameObject = gameObject;
             EditorGUIUtility.PingObject(gameObject);
+        }
+
+        private void UpgradeAvatarFillSettings(DomeAvatarFillLight avatarFill) {
+            if (avatarFill.SettingsVersion >= 1) return;
+            Undo.RecordObject(avatarFill, "Upgrade Avatar Fill Light Settings");
+            if (avatarFill.UpdatesPerSecond <= 5f) avatarFill.UpdatesPerSecond = 12f;
+            avatarFill.ResponseSpeed = 18f;
+            avatarFill.SettingsVersion = 1;
+            EditorUtility.SetDirty(avatarFill);
+            EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
         }
 
         private void ApplySettings(Material[] materials, CustomRenderTexture[] outputs, bool enabled, bool performanceMode, float intensity, float colorSaturation, Color color, float panelReach, float edgeFade, float refreshRate, Vector3 volumeSize) {

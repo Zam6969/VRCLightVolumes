@@ -21,11 +21,13 @@ namespace VRCLightVolumes {
     {
         public Texture TargetRenderTexture;
         public Light TargetLight;
-        [Range(1f, 15f)] public float UpdatesPerSecond = 5f;
+        [Range(1f, 30f)] public float UpdatesPerSecond = 12f;
+        [Range(1f, 30f)] public float ResponseSpeed = 18f;
         [Range(0f, 1f)] public float ScreenColor = 0.65f;
         [Range(0f, 1f)] public float FollowVideoBrightness = 0.25f;
         public Color ColorMultiplier = Color.white;
         public bool AntiFlickering = true;
+        [HideInInspector] public int SettingsVersion;
 
 #if UDONSHARP
         private Color32[] _pixels;
@@ -37,6 +39,7 @@ namespace VRCLightVolumes {
         private bool _readbackPending;
 
         private void Start() {
+            UpgradeSettings();
             if (TargetLight == null) TargetLight = GetComponent<Light>();
             if (TargetLight != null) _smoothedColor = TargetLight.color;
             _previousColorTime = Time.time;
@@ -107,9 +110,16 @@ namespace VRCLightVolumes {
 
             float deltaTime = Mathf.Max(Time.time - _previousColorTime, 0f);
             _previousColorTime = Time.time;
-            float blend = AntiFlickering ? 1f - Mathf.Exp(-deltaTime * 6f) : 1f;
+            float blend = AntiFlickering ? 1f - Mathf.Exp(-deltaTime * Mathf.Max(ResponseSpeed, 1f)) : 1f;
             _smoothedColor = Color.Lerp(_smoothedColor, targetColor, blend);
             TargetLight.color = _smoothedColor;
+        }
+
+        private void UpgradeSettings() {
+            if (SettingsVersion >= 1) return;
+            if (UpdatesPerSecond <= 5f) UpdatesPerSecond = 12f;
+            ResponseSpeed = 18f;
+            SettingsVersion = 1;
         }
     }
 }
