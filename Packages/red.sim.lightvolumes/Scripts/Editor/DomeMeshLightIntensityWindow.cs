@@ -12,7 +12,7 @@ namespace VRCLightVolumes {
         private static void OpenWindow() {
             DomeMeshLightIntensityWindow window = GetWindow<DomeMeshLightIntensityWindow>();
             window.titleContent = new GUIContent("Mesh Light Settings");
-            window.minSize = new Vector2(420f, 300f);
+            window.minSize = new Vector2(420f, 520f);
             window.Show();
         }
 
@@ -52,12 +52,91 @@ namespace VRCLightVolumes {
 
             if (EditorGUI.EndChangeCheck()) ApplySettings(materials, outputs, enabled, performanceMode, intensity, colorSaturation, color, panelReach, edgeFade, refreshRate, volumeSize);
 
+            GUILayout.Space(8f);
+            DrawAvatarFillLight(outputs[0].material.GetTexture("_SourceTex"), volumeMatrix, volumeSize);
+
             GUILayout.Space(12f);
             if (GUILayout.Button("Apply Stable VR Preset", GUILayout.Height(28f))) ApplySettings(materials, outputs, enabled, true, intensity, colorSaturation, color, panelReach, edgeFade, 10f, volumeSize);
             using (new EditorGUILayout.HorizontalScope()) {
                 if (GUILayout.Button("Refresh Now")) RefreshOutputs(outputs);
                 if (GUILayout.Button("Rebuild / Advanced")) DomeMeshLightVolumeWizard.OpenWindow();
             }
+        }
+
+        private void DrawAvatarFillLight(Texture sourceTexture, Matrix4x4 volumeMatrix, Vector3 volumeSize) {
+            EditorGUILayout.LabelField("Avatar Lighting", EditorStyles.boldLabel);
+            DomeAvatarFillLight avatarFill = _manager.GetComponentInChildren<DomeAvatarFillLight>(true);
+            if (avatarFill == null) {
+                EditorGUILayout.HelpBox("Avatar shaders compiled without this mesh-light extension need one avatar-only fallback light.", MessageType.Info);
+                if (GUILayout.Button("Create Avatar Fill Light", GUILayout.Height(26f))) CreateAvatarFillLight(sourceTexture, volumeMatrix, volumeSize);
+                return;
+            }
+
+            Light targetLight = avatarFill.TargetLight != null ? avatarFill.TargetLight : avatarFill.GetComponent<Light>();
+            if (targetLight == null) {
+                EditorGUILayout.HelpBox("The avatar fill component is missing its Unity Light.", MessageType.Warning);
+                return;
+            }
+
+            EditorGUI.BeginChangeCheck();
+            bool lightEnabled = EditorGUILayout.Toggle("Enabled", targetLight.enabled);
+            float lightIntensity = EditorGUILayout.Slider("Intensity", targetLight.intensity, 0f, 8f);
+            float lightRange = Mathf.Max(0.1f, EditorGUILayout.FloatField("Range", targetLight.range));
+            float screenColor = EditorGUILayout.Slider(new GUIContent("Screen Color", "0 produces neutral light; 1 follows the video's full color."), avatarFill.ScreenColor, 0f, 1f);
+            float videoBrightness = EditorGUILayout.Slider(new GUIContent("Video Brightness", "Controls how strongly dark video frames dim the avatar fill."), avatarFill.FollowVideoBrightness, 0f, 1f);
+            float updateRate = EditorGUILayout.Slider("Color Refresh Rate", avatarFill.UpdatesPerSecond, 1f, 15f);
+            Color fillMultiplier = EditorGUILayout.ColorField("Color Multiplier", avatarFill.ColorMultiplier);
+            bool antiFlickering = EditorGUILayout.Toggle("Smooth Color Changes", avatarFill.AntiFlickering);
+            if (!EditorGUI.EndChangeCheck()) return;
+
+            Undo.RecordObjects(new Object[] { avatarFill, targetLight }, "Change Avatar Fill Light Settings");
+            targetLight.enabled = lightEnabled;
+            targetLight.intensity = lightIntensity;
+            targetLight.range = lightRange;
+            avatarFill.TargetRenderTexture = sourceTexture;
+            avatarFill.TargetLight = targetLight;
+            avatarFill.ScreenColor = screenColor;
+            avatarFill.FollowVideoBrightness = videoBrightness;
+            avatarFill.UpdatesPerSecond = updateRate;
+            avatarFill.ColorMultiplier = fillMultiplier;
+            avatarFill.AntiFlickering = antiFlickering;
+            EditorUtility.SetDirty(targetLight);
+            EditorUtility.SetDirty(avatarFill);
+            EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
+        }
+
+        private void CreateAvatarFillLight(Texture sourceTexture, Matrix4x4 volumeMatrix, Vector3 volumeSize) {
+            GameObject gameObject = new GameObject("Realtime Mesh Light - Avatar Fill");
+            Undo.RegisterCreatedObjectUndo(gameObject, "Create Avatar Fill Light");
+            gameObject.transform.position = volumeMatrix.GetColumn(3);
+            gameObject.transform.SetParent(_manager.transform, true);
+
+            Light targetLight = Undo.AddComponent<Light>(gameObject);
+            targetLight.type = LightType.Point;
+            targetLight.lightmapBakeType = LightmapBakeType.Realtime;
+            targetLight.shadows = LightShadows.None;
+            targetLight.renderMode = LightRenderMode.ForcePixel;
+            targetLight.intensity = 1.25f;
+            targetLight.range = Mathf.Max(volumeSize.x, Mathf.Max(volumeSize.y, volumeSize.z)) * 0.75f;
+            targetLight.color = Color.white;
+            targetLight.bounceIntensity = 0f;
+            int avatarLayers = LayerMask.GetMask("Player", "PlayerLocal", "MirrorReflection");
+            targetLight.cullingMask = avatarLayers != 0 ? avatarLayers : (1 << 9) | (1 << 10);
+
+            DomeAvatarFillLight avatarFill = Undo.AddComponent<DomeAvatarFillLight>(gameObject);
+            avatarFill.TargetRenderTexture = sourceTexture;
+            avatarFill.TargetLight = targetLight;
+            avatarFill.UpdatesPerSecond = 5f;
+            avatarFill.ScreenColor = 0.65f;
+            avatarFill.FollowVideoBrightness = 0.25f;
+            avatarFill.ColorMultiplier = Color.white;
+            avatarFill.AntiFlickering = true;
+
+            EditorUtility.SetDirty(targetLight);
+            EditorUtility.SetDirty(avatarFill);
+            EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
+            Selection.activeGameObject = gameObject;
+            EditorGUIUtility.PingObject(gameObject);
         }
 
         private void ApplySettings(Material[] materials, CustomRenderTexture[] outputs, bool enabled, bool performanceMode, float intensity, float colorSaturation, Color color, float panelReach, float edgeFade, float refreshRate, Vector3 volumeSize) {
