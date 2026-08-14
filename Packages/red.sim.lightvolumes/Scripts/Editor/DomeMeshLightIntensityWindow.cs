@@ -86,6 +86,7 @@ namespace VRCLightVolumes {
             float lightRange = Mathf.Max(0.1f, EditorGUILayout.FloatField("Range", targetLight.range));
             float screenColor = EditorGUILayout.Slider(new GUIContent("Screen Color", "0 produces neutral light; 1 follows the video's full color."), avatarFill.ScreenColor, 0f, 1f);
             float videoBrightness = EditorGUILayout.Slider(new GUIContent("Video Brightness", "Controls how strongly dark video frames dim the avatar fill."), avatarFill.FollowVideoBrightness, 0f, 1f);
+            float screenLightBoost = EditorGUILayout.Slider(new GUIContent("Screen Light Boost", "Amplifies the sampled screen color on avatars while black frames still turn the light off."), avatarFill.ScreenLightBoost, 0.25f, 4f);
             float updateRate = EditorGUILayout.Slider(new GUIContent("Color Refresh Rate", "How often the video color is sampled for avatar lighting."), avatarFill.UpdatesPerSecond, 1f, 30f);
             Color fillMultiplier = EditorGUILayout.ColorField("Color Multiplier", avatarFill.ColorMultiplier);
             bool antiFlickering = EditorGUILayout.Toggle("Smooth Color Changes", avatarFill.AntiFlickering);
@@ -112,6 +113,7 @@ namespace VRCLightVolumes {
             avatarFill.TargetLight = targetLight;
             avatarFill.ScreenColor = screenColor;
             avatarFill.FollowVideoBrightness = videoBrightness;
+            avatarFill.ScreenLightBoost = screenLightBoost;
             avatarFill.UpdatesPerSecond = updateRate;
             avatarFill.ResponseSpeed = responseSpeed;
             avatarFill.ColorMultiplier = fillMultiplier;
@@ -121,7 +123,7 @@ namespace VRCLightVolumes {
             avatarFill.ScreenRadius = screenRadius;
             avatarFill.ScreenInset = screenInset;
             avatarFill.LightDistanceFromAvatar = lightDistanceFromAvatar;
-            avatarFill.SettingsVersion = 3;
+            avatarFill.SettingsVersion = 4;
             EditorUtility.SetDirty(targetLight);
             EditorUtility.SetDirty(avatarFill);
             EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
@@ -152,6 +154,7 @@ namespace VRCLightVolumes {
             avatarFill.ResponseSpeed = 18f;
             avatarFill.ScreenColor = 0.65f;
             avatarFill.FollowVideoBrightness = 0.25f;
+            avatarFill.ScreenLightBoost = 2f;
             avatarFill.ColorMultiplier = Color.white;
             avatarFill.AntiFlickering = true;
             avatarFill.FollowClosestScreen = true;
@@ -159,7 +162,7 @@ namespace VRCLightVolumes {
             avatarFill.ScreenRadius = Mathf.Max(volumeSize.x, Mathf.Max(volumeSize.y, volumeSize.z)) * 0.5f;
             avatarFill.ScreenInset = 0.15f;
             avatarFill.LightDistanceFromAvatar = 2f;
-            avatarFill.SettingsVersion = 3;
+            avatarFill.SettingsVersion = 4;
 
             EditorUtility.SetDirty(targetLight);
             EditorUtility.SetDirty(avatarFill);
@@ -169,7 +172,7 @@ namespace VRCLightVolumes {
         }
 
         private void UpgradeAvatarFillSettings(DomeAvatarFillLight avatarFill, Matrix4x4 volumeMatrix, Vector3 volumeSize) {
-            if (avatarFill.SettingsVersion >= 3) return;
+            if (avatarFill.SettingsVersion >= 4) return;
             Undo.RecordObject(avatarFill, "Upgrade Avatar Fill Light Settings");
             if (avatarFill.SettingsVersion < 1) {
                 if (avatarFill.UpdatesPerSecond <= 5f) avatarFill.UpdatesPerSecond = 12f;
@@ -181,8 +184,9 @@ namespace VRCLightVolumes {
                 avatarFill.ScreenRadius = Mathf.Max(volumeSize.x, Mathf.Max(volumeSize.y, volumeSize.z)) * 0.5f;
                 avatarFill.ScreenInset = 0.15f;
             }
-            avatarFill.LightDistanceFromAvatar = 2f;
-            avatarFill.SettingsVersion = 3;
+            if (avatarFill.SettingsVersion < 3) avatarFill.LightDistanceFromAvatar = 2f;
+            avatarFill.ScreenLightBoost = 2f;
+            avatarFill.SettingsVersion = 4;
             EditorUtility.SetDirty(avatarFill);
             EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
         }

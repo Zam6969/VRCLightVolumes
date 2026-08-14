@@ -25,6 +25,7 @@ namespace VRCLightVolumes {
         [Range(1f, 30f)] public float ResponseSpeed = 18f;
         [Range(0f, 1f)] public float ScreenColor = 0.65f;
         [Range(0f, 1f)] public float FollowVideoBrightness = 0.25f;
+        [Range(0.25f, 4f)] public float ScreenLightBoost = 2f;
         public Color ColorMultiplier = Color.white;
         public bool AntiFlickering = true;
         public bool FollowClosestScreen = true;
@@ -110,18 +111,23 @@ namespace VRCLightVolumes {
 
         private void SetColor(Color sourceColor) {
             float peak = Mathf.Max(sourceColor.r, Mathf.Max(sourceColor.g, sourceColor.b));
-            if (peak <= 0.001f || TargetLight == null) return;
+            if (TargetLight == null) return;
 
-            Color normalizedColor = sourceColor / peak;
-            normalizedColor.a = 1f;
-            Color targetColor = Color.Lerp(normalizedColor, sourceColor, FollowVideoBrightness);
-            float luminance = targetColor.r * 0.2126f + targetColor.g * 0.7152f + targetColor.b * 0.0722f;
-            targetColor = Color.Lerp(new Color(luminance, luminance, luminance, 1f), targetColor, ScreenColor) * ColorMultiplier;
+            bool isBlackFrame = peak <= 0.001f;
+            Color targetColor = Color.black;
+            if (!isBlackFrame) {
+                Color normalizedColor = sourceColor / peak;
+                normalizedColor.a = 1f;
+                targetColor = Color.Lerp(normalizedColor, sourceColor, FollowVideoBrightness);
+                float luminance = targetColor.r * 0.2126f + targetColor.g * 0.7152f + targetColor.b * 0.0722f;
+                targetColor = Color.Lerp(new Color(luminance, luminance, luminance, 1f), targetColor, ScreenColor);
+            }
+            targetColor *= ColorMultiplier * ScreenLightBoost;
             targetColor.a = 1f;
 
             float deltaTime = Mathf.Max(Time.time - _previousColorTime, 0f);
             _previousColorTime = Time.time;
-            float blend = AntiFlickering ? 1f - Mathf.Exp(-deltaTime * Mathf.Max(ResponseSpeed, 1f)) : 1f;
+            float blend = AntiFlickering && !isBlackFrame ? 1f - Mathf.Exp(-deltaTime * Mathf.Max(ResponseSpeed, 1f)) : 1f;
             _smoothedColor = Color.Lerp(_smoothedColor, targetColor, blend);
             TargetLight.color = _smoothedColor;
         }
@@ -136,7 +142,8 @@ namespace VRCLightVolumes {
                 ScreenRadius = TargetLight != null ? Mathf.Max(TargetLight.range * 0.666667f, 0.1f) : 5f;
             }
             if (SettingsVersion < 3) LightDistanceFromAvatar = 2f;
-            SettingsVersion = 3;
+            if (SettingsVersion < 4) ScreenLightBoost = 2f;
+            SettingsVersion = 4;
         }
 
         private void UpdateSourcePosition() {
