@@ -72,13 +72,12 @@ namespace VRCLightVolumes {
                 return;
             }
 
-            UpgradeAvatarFillSettings(avatarFill, volumeMatrix, volumeSize);
-
             Light targetLight = avatarFill.TargetLight != null ? avatarFill.TargetLight : avatarFill.GetComponent<Light>();
             if (targetLight == null) {
                 EditorGUILayout.HelpBox("The avatar fill component is missing its Unity Light.", MessageType.Warning);
                 return;
             }
+            UpgradeAvatarFillSettings(avatarFill, targetLight, volumeMatrix, volumeSize);
 
             EditorGUI.BeginChangeCheck();
             bool lightEnabled = EditorGUILayout.Toggle("Enabled", targetLight.enabled);
@@ -103,6 +102,13 @@ namespace VRCLightVolumes {
                 screenInset = EditorGUILayout.Slider(new GUIContent("Source Inset", "Moves the light slightly inward from the screen surface."), screenInset, 0f, 2f);
                 lightDistanceFromAvatar = EditorGUILayout.Slider(new GUIContent("Distance From Avatar", "Keeps the light close enough to be visible while preserving the direction from the nearest screen."), lightDistanceFromAvatar, 0.25f, 5f);
             }
+            bool facingOnlyLighting = EditorGUILayout.Toggle(new GUIContent("Facing-Only Lighting", "Uses a spotlight so the screen contribution favors avatar surfaces facing the screen."), avatarFill.FacingOnlyLighting);
+            float facingSpotAngle = avatarFill.FacingSpotAngle;
+            float facingEdgeSoftness = avatarFill.FacingEdgeSoftness;
+            using (new EditorGUI.DisabledScope(!facingOnlyLighting)) {
+                facingSpotAngle = EditorGUILayout.Slider(new GUIContent("Facing Cone", "Width of the screen-facing spotlight around the avatar."), facingSpotAngle, 45f, 160f);
+                facingEdgeSoftness = EditorGUILayout.Slider(new GUIContent("Facing Blend", "Softens the transition from the lit region toward the unlit region."), facingEdgeSoftness, 0f, 1f);
+            }
             if (!EditorGUI.EndChangeCheck()) return;
 
             Undo.RecordObjects(new Object[] { avatarFill, targetLight }, "Change Avatar Fill Light Settings");
@@ -123,7 +129,13 @@ namespace VRCLightVolumes {
             avatarFill.ScreenRadius = screenRadius;
             avatarFill.ScreenInset = screenInset;
             avatarFill.LightDistanceFromAvatar = lightDistanceFromAvatar;
-            avatarFill.SettingsVersion = 4;
+            avatarFill.FacingOnlyLighting = facingOnlyLighting;
+            avatarFill.FacingSpotAngle = facingSpotAngle;
+            avatarFill.FacingEdgeSoftness = facingEdgeSoftness;
+            targetLight.type = facingOnlyLighting ? LightType.Spot : LightType.Point;
+            targetLight.spotAngle = facingSpotAngle;
+            targetLight.innerSpotAngle = facingSpotAngle * (1f - facingEdgeSoftness);
+            avatarFill.SettingsVersion = 5;
             EditorUtility.SetDirty(targetLight);
             EditorUtility.SetDirty(avatarFill);
             EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
@@ -136,12 +148,14 @@ namespace VRCLightVolumes {
             gameObject.transform.SetParent(_manager.transform, true);
 
             Light targetLight = Undo.AddComponent<Light>(gameObject);
-            targetLight.type = LightType.Point;
+            targetLight.type = LightType.Spot;
             targetLight.lightmapBakeType = LightmapBakeType.Realtime;
             targetLight.shadows = LightShadows.None;
             targetLight.renderMode = LightRenderMode.ForcePixel;
             targetLight.intensity = 1.25f;
             targetLight.range = Mathf.Max(volumeSize.x, Mathf.Max(volumeSize.y, volumeSize.z)) * 0.75f;
+            targetLight.spotAngle = 110f;
+            targetLight.innerSpotAngle = 38.5f;
             targetLight.color = Color.white;
             targetLight.bounceIntensity = 0f;
             int avatarLayers = LayerMask.GetMask("Player", "PlayerLocal", "MirrorReflection");
@@ -162,7 +176,10 @@ namespace VRCLightVolumes {
             avatarFill.ScreenRadius = Mathf.Max(volumeSize.x, Mathf.Max(volumeSize.y, volumeSize.z)) * 0.5f;
             avatarFill.ScreenInset = 0.15f;
             avatarFill.LightDistanceFromAvatar = 2f;
-            avatarFill.SettingsVersion = 4;
+            avatarFill.FacingOnlyLighting = true;
+            avatarFill.FacingSpotAngle = 110f;
+            avatarFill.FacingEdgeSoftness = 0.65f;
+            avatarFill.SettingsVersion = 5;
 
             EditorUtility.SetDirty(targetLight);
             EditorUtility.SetDirty(avatarFill);
@@ -171,9 +188,9 @@ namespace VRCLightVolumes {
             EditorGUIUtility.PingObject(gameObject);
         }
 
-        private void UpgradeAvatarFillSettings(DomeAvatarFillLight avatarFill, Matrix4x4 volumeMatrix, Vector3 volumeSize) {
-            if (avatarFill.SettingsVersion >= 4) return;
-            Undo.RecordObject(avatarFill, "Upgrade Avatar Fill Light Settings");
+        private void UpgradeAvatarFillSettings(DomeAvatarFillLight avatarFill, Light targetLight, Matrix4x4 volumeMatrix, Vector3 volumeSize) {
+            if (avatarFill.SettingsVersion >= 5) return;
+            Undo.RecordObjects(new Object[] { avatarFill, targetLight }, "Upgrade Avatar Fill Light Settings");
             if (avatarFill.SettingsVersion < 1) {
                 if (avatarFill.UpdatesPerSecond <= 5f) avatarFill.UpdatesPerSecond = 12f;
                 avatarFill.ResponseSpeed = 18f;
@@ -185,8 +202,15 @@ namespace VRCLightVolumes {
                 avatarFill.ScreenInset = 0.15f;
             }
             if (avatarFill.SettingsVersion < 3) avatarFill.LightDistanceFromAvatar = 2f;
-            avatarFill.ScreenLightBoost = 2f;
-            avatarFill.SettingsVersion = 4;
+            if (avatarFill.SettingsVersion < 4) avatarFill.ScreenLightBoost = 2f;
+            avatarFill.FacingOnlyLighting = true;
+            avatarFill.FacingSpotAngle = 110f;
+            avatarFill.FacingEdgeSoftness = 0.65f;
+            targetLight.type = LightType.Spot;
+            targetLight.spotAngle = 110f;
+            targetLight.innerSpotAngle = 38.5f;
+            avatarFill.SettingsVersion = 5;
+            EditorUtility.SetDirty(targetLight);
             EditorUtility.SetDirty(avatarFill);
             EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
         }

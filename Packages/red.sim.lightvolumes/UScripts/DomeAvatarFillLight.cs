@@ -33,6 +33,9 @@ namespace VRCLightVolumes {
         public float ScreenRadius = 5f;
         [Range(0f, 2f)] public float ScreenInset = 0.15f;
         [Range(0.25f, 5f)] public float LightDistanceFromAvatar = 2f;
+        public bool FacingOnlyLighting = true;
+        [Range(45f, 160f)] public float FacingSpotAngle = 110f;
+        [Range(0f, 1f)] public float FacingEdgeSoftness = 0.65f;
         [HideInInspector] public int SettingsVersion;
 
 #if UDONSHARP
@@ -143,7 +146,12 @@ namespace VRCLightVolumes {
             }
             if (SettingsVersion < 3) LightDistanceFromAvatar = 2f;
             if (SettingsVersion < 4) ScreenLightBoost = 2f;
-            SettingsVersion = 4;
+            if (SettingsVersion < 5) {
+                FacingOnlyLighting = true;
+                FacingSpotAngle = 110f;
+                FacingEdgeSoftness = 0.65f;
+            }
+            SettingsVersion = 5;
         }
 
         private void UpdateSourcePosition() {
@@ -165,6 +173,9 @@ namespace VRCLightVolumes {
             float receiverToScreenDistance = receiverToScreen.magnitude;
             if (receiverToScreenDistance <= LightDistanceFromAvatar) TargetLight.transform.position = screenPosition;
             else TargetLight.transform.position = receiverPosition + receiverToScreen / receiverToScreenDistance * LightDistanceFromAvatar;
+            if (!FacingOnlyLighting) return;
+            Vector3 lightToReceiver = receiverPosition - TargetLight.transform.position;
+            if (lightToReceiver.sqrMagnitude > 0.000001f) TargetLight.transform.rotation = Quaternion.LookRotation(lightToReceiver.normalized);
         }
     }
 }
