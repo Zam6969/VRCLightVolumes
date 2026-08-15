@@ -55,6 +55,7 @@ namespace VRCLightVolumes {
             float panelReach = Mathf.Max(0.1f, EditorGUILayout.FloatField(new GUIContent("Panel Reach", "Maximum distance in meters that each screen section contributes to the lighting field."), materials[0].GetFloat("_ProjectionRange")));
             float edgeFade = EditorGUILayout.Slider(new GUIContent("Edge Fade", "Softens the boundary of the shared 3D lighting field."), currentEdgeFade, 0.05f, Mathf.Max(volumeSize.x * 0.5f, 0.05f));
             float backfaceFade = EditorGUILayout.Slider(new GUIContent("Back Surface Fade", "Blocks light behind the screen mesh and controls how softly it begins on the viewing side."), materials[0].GetFloat("_BackfaceFade"), 0.01f, 1f);
+            float floorLightBoost = EditorGUILayout.Slider(new GUIContent("Floor Light Boost", "Strengthens lighting below the screen panels without raising the whole volume."), materials[0].GetFloat("_FloorLightBoost"), 1f, 4f);
 
             GUILayout.Space(8f);
             EditorGUILayout.LabelField("Performance", EditorStyles.boldLabel);
@@ -62,13 +63,13 @@ namespace VRCLightVolumes {
             float refreshRate = EditorGUILayout.Slider(new GUIContent("Light Refresh Rate", "How often the lighting follows the video. The screens continue playing at their normal frame rate."), currentRefreshRate, 5f, 60f);
             EditorGUILayout.LabelField("Grid Resolution", $"{outputs[0].width} x {outputs[0].height} x {outputs[0].volumeDepth}");
 
-            if (EditorGUI.EndChangeCheck()) ApplySettings(materials, outputs, enabled, performanceMode, intensity, colorSaturation, color, panelReach, edgeFade, backfaceFade, refreshRate, volumeSize);
+            if (EditorGUI.EndChangeCheck()) ApplySettings(materials, outputs, enabled, performanceMode, intensity, colorSaturation, color, panelReach, edgeFade, backfaceFade, floorLightBoost, refreshRate, volumeSize);
 
             GUILayout.Space(8f);
             DrawAvatarFillLight(outputs[0].material.GetTexture("_SourceTex"), volumeMatrix, volumeSize);
 
             GUILayout.Space(12f);
-            if (GUILayout.Button("Apply Stable VR Preset", GUILayout.Height(28f))) ApplySettings(materials, outputs, enabled, true, intensity, colorSaturation, color, panelReach, edgeFade, backfaceFade, 10f, volumeSize);
+            if (GUILayout.Button("Apply Stable VR Preset", GUILayout.Height(28f))) ApplySettings(materials, outputs, enabled, true, intensity, colorSaturation, color, panelReach, edgeFade, backfaceFade, floorLightBoost, 10f, volumeSize);
             using (new EditorGUILayout.HorizontalScope()) {
                 if (GUILayout.Button("Refresh Now")) RefreshOutputs(outputs);
                 if (GUILayout.Button("Rebuild / Advanced")) DomeMeshLightVolumeWizard.OpenWindow();
@@ -210,7 +211,7 @@ namespace VRCLightVolumes {
             EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
         }
 
-        private void ApplySettings(Material[] materials, CustomRenderTexture[] outputs, bool enabled, bool performanceMode, float intensity, float colorSaturation, Color color, float panelReach, float edgeFade, float backfaceFade, float refreshRate, Vector3 volumeSize) {
+        private void ApplySettings(Material[] materials, CustomRenderTexture[] outputs, bool enabled, bool performanceMode, float intensity, float colorSaturation, Color color, float panelReach, float edgeFade, float backfaceFade, float floorLightBoost, float refreshRate, Vector3 volumeSize) {
             Undo.RecordObject(_manager, "Change Realtime Mesh Light Settings");
             Undo.RecordObjects(materials, "Change Realtime Mesh Light Settings");
             Undo.RecordObjects(outputs, "Change Realtime Mesh Light Settings");
@@ -227,6 +228,7 @@ namespace VRCLightVolumes {
                 materials[i].SetFloat("_ColorSaturation", colorSaturation);
                 materials[i].SetFloat("_ProjectionRange", panelReach);
                 materials[i].SetFloat("_BackfaceFade", backfaceFade);
+                materials[i].SetFloat("_FloorLightBoost", floorLightBoost);
                 outputs[i].updatePeriod = 1f / refreshRate;
                 outputs[i].updateMode = performanceMode && i > 0 ? CustomRenderTextureUpdateMode.OnDemand : CustomRenderTextureUpdateMode.Realtime;
                 EditorUtility.SetDirty(materials[i]);

@@ -10,9 +10,11 @@ namespace VRCLightVolumes {
     public sealed class DomeMeshLightVolumeWizard : EditorWindow {
         private const int MaxEmitterCount = 128;
         private const int CoverageOptimizationVersion = 2;
-        internal const int CurrentOptimizationVersion = 3;
+        private const int BackfaceOptimizationVersion = 3;
+        internal const int CurrentOptimizationVersion = 4;
         private const float DefaultReceiverPadding = 2f;
         private const float DefaultBackfaceFade = 0.25f;
+        private const float DefaultFloorLightBoost = 2f;
         private const string UpdateShaderName = "Hidden/VRCLV/DomeMeshLightVolumeUpdate";
         private const string DefaultOutputFolder = "Assets/LightVolumesDome";
         private static readonly string[] CenterModeNames = { "Fit Dome Sphere", "Renderer Bounds", "Transform Override" };
@@ -27,6 +29,7 @@ namespace VRCLightVolumes {
         [SerializeField] private float _volumeScale = 1f;
         [SerializeField] private float _receiverPadding = DefaultReceiverPadding;
         [SerializeField] private float _backfaceFade = DefaultBackfaceFade;
+        [SerializeField] private float _floorLightBoost = DefaultFloorLightBoost;
         [SerializeField] private float _projectionRangeScale = 2f;
         [SerializeField] private float _intensity = 5f;
         [SerializeField] private float _colorSaturation = 1f;
@@ -191,7 +194,8 @@ namespace VRCLightVolumes {
                 Vector3 size = new Vector3(volumeMatrix.GetColumn(0).magnitude, volumeMatrix.GetColumn(1).magnitude, volumeMatrix.GetColumn(2).magnitude);
                 float currentEdgeFade = GetEdgeFade(size, manager.DynamicMeshLightInvEdgeSmooth);
                 bool migrateCoverage = manager.DynamicMeshLightOptimizationVersion < CoverageOptimizationVersion;
-                bool migrateBackfaceBlocking = manager.DynamicMeshLightOptimizationVersion < CurrentOptimizationVersion;
+                bool migrateBackfaceBlocking = manager.DynamicMeshLightOptimizationVersion < BackfaceOptimizationVersion;
+                bool migrateFloorBoost = manager.DynamicMeshLightOptimizationVersion < CurrentOptimizationVersion;
                 if (migrateCoverage) {
                     Vector3 bridgeSize = DomeMeshLightAtlasBridgeUtility.GetWorldSize(manager);
                     size = Vector3.Max(size, bridgeSize);
@@ -221,11 +225,23 @@ namespace VRCLightVolumes {
                         EditorUtility.SetDirty(outputMaterial);
                         outputs[outputIndex].Update();
                     }
+                    repairedAny = true;
+                }
+                if (migrateFloorBoost) {
+                    for (int outputIndex = 0; outputIndex < outputs.Length; outputIndex++) {
+                        Material outputMaterial = outputs[outputIndex].material;
+                        if (outputMaterial == null || outputMaterial.shader == null || outputMaterial.shader.name != UpdateShaderName) continue;
+                        outputMaterial.SetFloat("_FloorLightBoost", DefaultFloorLightBoost);
+                        EditorUtility.SetDirty(outputMaterial);
+                        outputs[outputIndex].Update();
+                    }
+                    repairedAny = true;
+                }
+                if (migrateBackfaceBlocking || migrateFloorBoost) {
                     manager.DynamicMeshLightOptimizationVersion = CurrentOptimizationVersion;
                     EditorUtility.SetDirty(manager);
                     LightVolumeManagerEditorBackend.CopyProxyToUdon(manager);
                     EditorSceneManager.MarkSceneDirty(manager.gameObject.scene);
-                    repairedAny = true;
                 }
                 for (int outputIndex = 0; outputIndex < outputs.Length; outputIndex++) {
                     CustomRenderTexture output = outputs[outputIndex];
@@ -308,6 +324,7 @@ namespace VRCLightVolumes {
             _colorSaturation = EditorGUILayout.Slider(new GUIContent("Screen Color", "0 produces neutral white light; 1 uses the full screen colors."), _colorSaturation, 0f, 1f);
             _edgeFade = Mathf.Max(0.001f, EditorGUILayout.FloatField("Edge Fade", _edgeFade));
             _backfaceFade = EditorGUILayout.Slider(new GUIContent("Back Surface Fade", "Stops screen light behind the mesh while softly beginning the light on its viewing side."), _backfaceFade, 0.01f, 1f);
+            _floorLightBoost = EditorGUILayout.Slider(new GUIContent("Floor Light Boost", "Strengthens the screen contribution below each panel without increasing the entire lighting volume."), _floorLightBoost, 1f, 4f);
             _performanceMode = EditorGUILayout.Toggle(new GUIContent("VR Performance Mode", "Keeps realtime screen colors but uses one non-directional lighting field instead of three directional fields."), _performanceMode);
             _updatesPerSecond = EditorGUILayout.Slider(new GUIContent("Light Refresh Rate", "How often the shared 3D lighting field reads the current video frame. Lower values save GPU time while the screen itself remains full frame rate."), _updatesPerSecond, 5f, 90f);
 
@@ -400,6 +417,7 @@ namespace VRCLightVolumes {
                     material.SetFloat("_ColorSaturation", _colorSaturation);
                     material.SetFloat("_ProjectionRange", radius * _projectionRangeScale);
                     material.SetFloat("_BackfaceFade", _backfaceFade);
+                    material.SetFloat("_FloorLightBoost", _floorLightBoost);
                     material.SetInt("_OutputChannel", channel);
                     AssetDatabase.CreateAsset(material, AssetDatabase.GenerateUniqueAssetPath(outputFolder + $"/DomeMeshLightUpdate{channel}.mat"));
 

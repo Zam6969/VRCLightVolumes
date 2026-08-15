@@ -15,6 +15,7 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
         _ColorSaturation("Screen Color", Range(0, 1)) = 1
         _ProjectionRange("Projection Range", Float) = 10
         _BackfaceFade("Back Surface Fade", Range(0.01, 1)) = 0.25
+        _FloorLightBoost("Floor Light Boost", Range(1, 4)) = 2
         _OutputChannel("Output Channel", Int) = 0
     }
 
@@ -48,6 +49,7 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
             float _ColorSaturation;
             float _ProjectionRange;
             float _BackfaceFade;
+            float _FloorLightBoost;
             int _OutputChannel;
 
             float4 frag(v2f_customrendertexture i) : SV_Target
@@ -91,7 +93,9 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
                     float neutralEmission = dot(emission, float3(0.2126, 0.7152, 0.0722));
                     emission = lerp(neutralEmission.xxx, emission, _ColorSaturation);
                     float sourceRadiusSq = max(positionArea.w * VRCLV_INV_PI, 1e-4);
-                    float weight = _Intensity * positionArea.w * emitterFacing * VRCLV_INV_PI * rcp(distSq + sourceRadiusSq) * rangeMask * rangeMask;
+                    float floorMask = smoothstep(0.0, max(_ProjectionRange * 0.25, 0.5), positionArea.y - worldPos.y);
+                    float floorBoost = lerp(1.0, _FloorLightBoost, floorMask);
+                    float weight = _Intensity * floorBoost * positionArea.w * emitterFacing * VRCLV_INV_PI * rcp(distSq + sourceRadiusSq) * rangeMask * rangeMask;
                     float3 contribution = emission * weight;
                     float3 receiverToEmitter = -emitterToReceiver;
 
