@@ -386,13 +386,15 @@ namespace VRCLightVolumes {
                 EditorUtility.SetDirty(_manager);
                 LightVolumeManagerEditorBackend.CopyProxyToUdon(_manager);
 
+                DomeMeshLightAtlasBridgeUtility.Create(_manager, center, volumeSize, _volumeResolution, _edgeFade, _updatesPerSecond, outputFolder);
+
                 if (_disableExistingLights) DisableExistingPointLights();
                 _manager.UpdateVolumes();
                 AssetDatabase.SaveAssets();
                 EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
                 Selection.activeGameObject = _manager.gameObject;
                 EditorGUIUtility.PingObject(_manager);
-                EditorUtility.DisplayDialog("Realtime Dome Mesh Light", $"Created one realtime mesh Light Volume from {emitters.Count} dome screen sections. The live video render texture drives it every frame.", "Done");
+                EditorUtility.DisplayDialog("Realtime Dome Mesh Light", $"Created one realtime mesh Light Volume from {emitters.Count} dome screen sections. It now publishes through the standard Light Volume atlas for compatible world and avatar shaders.", "Done");
             } catch (Exception exception) {
                 Debug.LogException(exception);
                 EditorUtility.DisplayDialog("Realtime Dome Mesh Light", "The realtime mesh Light Volume could not be created. See the Console for details.", "OK");

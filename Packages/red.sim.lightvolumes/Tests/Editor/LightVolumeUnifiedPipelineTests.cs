@@ -407,6 +407,46 @@ namespace VRCLightVolumes.Tests {
             Assert.That(manager.ShadowTextures.hideFlags, Is.EqualTo(HideFlags.HideAndDontSave));
         }
 
+        // The live mesh-light field occupies reserved atlas slots so every standard Light Volume receiver can sample it.
+        [Test]
+        public void RealtimeMeshLightBridgeMapsLiveTexturesIntoReservedAtlasBounds() {
+            LightVolumeManager manager = CreateComponent<LightVolumeManager>("Realtime Mesh Atlas Manager");
+            LightVolumeInstance volume = CreateChildComponent<LightVolumeInstance>(manager.transform, DomeMeshLightAtlasBridgeUtility.BridgeVolumeName);
+            Material material = CreateMaterial(DomeMeshLightAtlasBridgeUtility.BridgeShaderName);
+            CustomRenderTexture atlas = new CustomRenderTexture(4, 4, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear) {
+                dimension = TextureDimension.Tex3D,
+                volumeDepth = 4,
+                material = material
+            };
+            _createdObjects.Add(atlas);
+            Texture3D texture0 = CreateTexture3D("Realtime Mesh L0");
+            Texture3D texture1 = CreateTexture3D("Realtime Mesh L1 A");
+            Texture3D texture2 = CreateTexture3D("Realtime Mesh L1 B");
+
+            volume.Bake = false;
+            volume.ReserveUVSpace = true;
+            volume.BoundsUvwMin0 = new Vector4(0.1f, 0.2f, 0.3f, 0.25f);
+            volume.BoundsUvwMin1 = new Vector4(0.4f, 0.2f, 0.3f, 0.5f);
+            volume.BoundsUvwMin2 = new Vector4(0.7f, 0.2f, 0.3f, 0.75f);
+            manager.LightVolumeInstances = new[] { volume };
+            manager.AtlasPostProcessorTargets = new RenderTexture[] { atlas };
+            manager.AtlasPostProcessorMaterials = new[] { material };
+            manager.DynamicMeshLightTexture0 = texture0;
+            manager.DynamicMeshLightTexture1 = texture1;
+            manager.DynamicMeshLightTexture2 = texture2;
+            manager.DynamicMeshLightL0Only = false;
+
+            Assert.That(DomeMeshLightAtlasBridgeUtility.SyncAtlasMaterial(manager), Is.True);
+            Assert.That(material.GetTexture("_DynamicTexture0"), Is.SameAs(texture0));
+            Assert.That(material.GetTexture("_DynamicTexture1"), Is.SameAs(texture1));
+            Assert.That(material.GetTexture("_DynamicTexture2"), Is.SameAs(texture2));
+            Assert.That(material.GetVector("_DynamicBounds0"), Is.EqualTo(volume.BoundsUvwMin0));
+            Assert.That(material.GetVector("_DynamicBounds1"), Is.EqualTo(volume.BoundsUvwMin1));
+            Assert.That(material.GetVector("_DynamicBounds2"), Is.EqualTo(volume.BoundsUvwMin2));
+            Assert.That(material.GetFloat("_DynamicEnabled"), Is.EqualTo(1f));
+            Assert.That(material.GetFloat("_L0Only"), Is.EqualTo(0f));
+        }
+
         private T CreateComponent<T>(string name) where T : Component {
             return CreateGameObject(name).AddComponent<T>();
         }

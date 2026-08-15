@@ -33,11 +33,22 @@ namespace VRCLightVolumes {
             Vector3 volumeSize = new Vector3(volumeMatrix.GetColumn(0).magnitude, volumeMatrix.GetColumn(1).magnitude, volumeMatrix.GetColumn(2).magnitude);
             float currentEdgeFade = GetEdgeFade(volumeSize, _manager.DynamicMeshLightInvEdgeSmooth);
             float currentRefreshRate = outputs[0].updatePeriod > 0f ? 1f / outputs[0].updatePeriod : 90f;
+            bool hasStandardBridge = DomeMeshLightAtlasBridgeUtility.TryGetBridge(_manager, out LightVolumeInstance bridgeVolume, out _, out _);
+
+            if (!hasStandardBridge) {
+                EditorGUILayout.HelpBox("Publish this field through the standard Light Volume atlas so stock compatible avatar shaders can receive it.", MessageType.Info);
+                if (GUILayout.Button("Publish To Standard Light Volumes", GUILayout.Height(28f))) {
+                    DomeMeshLightAtlasBridgeUtility.CreateFromExisting(_manager);
+                    GUIUtility.ExitGUI();
+                }
+            } else {
+                EditorGUILayout.HelpBox("This live field is published as one standard additive Light Volume. No avatar shader patch is required.", MessageType.None);
+            }
 
             GUILayout.Space(8f);
             EditorGUILayout.LabelField("Lighting", EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
-            bool enabled = EditorGUILayout.Toggle(new GUIContent("Enabled", "Turns the shared realtime mesh-light field on or off."), _manager.DynamicMeshLightEnabled);
+            bool enabled = EditorGUILayout.Toggle(new GUIContent("Enabled", "Turns the shared realtime mesh-light field on or off."), hasStandardBridge ? bridgeVolume.Intensity > 0f : _manager.DynamicMeshLightEnabled);
             float intensity = EditorGUILayout.Slider(new GUIContent("Intensity", "Changes all three realtime mesh-light textures together."), materials[0].GetFloat("_Intensity"), 0f, 8f);
             float colorSaturation = EditorGUILayout.Slider(new GUIContent("Screen Color", "0 produces neutral white light; 1 uses the full screen colors."), materials[0].GetFloat("_ColorSaturation"), 0f, 1f);
             Color color = EditorGUILayout.ColorField(new GUIContent("Color Multiplier", "Tints or reduces the final realtime mesh-light contribution."), _manager.DynamicMeshLightColor);
@@ -203,11 +214,12 @@ namespace VRCLightVolumes {
             Undo.RecordObjects(materials, "Change Realtime Mesh Light Settings");
             Undo.RecordObjects(outputs, "Change Realtime Mesh Light Settings");
 
-            _manager.DynamicMeshLightEnabled = enabled;
             _manager.DynamicMeshLightL0Only = performanceMode;
             _manager.DynamicMeshLightOptimizationVersion = 1;
             _manager.DynamicMeshLightColor = color;
             _manager.DynamicMeshLightInvEdgeSmooth = new Vector3(volumeSize.x / edgeFade, volumeSize.y / edgeFade, volumeSize.z / edgeFade);
+            bool usesStandardBridge = DomeMeshLightAtlasBridgeUtility.ApplyVolumeSettings(_manager, enabled, color, edgeFade);
+            _manager.DynamicMeshLightEnabled = usesStandardBridge ? false : enabled;
             EditorUtility.SetDirty(_manager);
             for (int i = 0; i < materials.Length; i++) {
                 materials[i].SetFloat("_Intensity", intensity);

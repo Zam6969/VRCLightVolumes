@@ -208,6 +208,7 @@ namespace VRCLightVolumes {
 
             bool managerChanged = serializedObject.ApplyModifiedProperties();
             if (!managerChanged && !_registryChanged && !_pointRegistryChanged) return;
+            DomeMeshLightAtlasBridgeUtility.SyncAtlasMaterial(_manager);
 
             bool cookieLayoutChanged = previousCookieResolution != _manager.CustomTexturesWidth || _pointRegistryChanged;
             bool shadowLayoutChanged = previousShadowResolution != _manager.ShadowTexturesWidth || _pointRegistryChanged;
@@ -235,13 +236,16 @@ namespace VRCLightVolumes {
 
         // Draws the optional realtime 3D light field generated from an emissive mesh and live atlas.
         private void DrawRealtimeMeshLightSettings() {
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightEnabled)), new GUIContent("Enabled"));
+            bool hasStandardBridge = DomeMeshLightAtlasBridgeUtility.TryGetBridge(_manager, out _, out _, out _);
+            if (hasStandardBridge) EditorGUILayout.HelpBox("Published through the standard Light Volume atlas. Use Realtime Mesh Light Settings to control it.", MessageType.Info);
+            else EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightEnabled)), new GUIContent("Enabled"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightL0Only)), new GUIContent("VR Performance Mode"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightTexture0)), new GUIContent("Lighting 0"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightTexture1)), new GUIContent("Lighting 1"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightTexture2)), new GUIContent("Lighting 2"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightColor)), new GUIContent("Color Multiplier"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(LightVolumeManager.DynamicMeshLightInvEdgeSmooth)), new GUIContent("Edge Smoothing"));
+            if (!hasStandardBridge && GUILayout.Button("Publish To Standard Light Volumes")) DomeMeshLightAtlasBridgeUtility.CreateFromExisting(_manager);
             if (GUILayout.Button("Rebuild From Dome Mesh")) DomeMeshLightVolumeWizard.OpenWindow();
         }
 

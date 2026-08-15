@@ -77,6 +77,7 @@ namespace VRCLightVolumes {
         // Persists a changed atlas post-processor chain and queues the runtime mirror refresh.
         private static void OnAtlasPostProcessorsChanged(LightVolumeManager manager) {
             if (manager == null) return;
+            DomeMeshLightAtlasBridgeUtility.SyncAtlasMaterial(manager);
             LVUtils.MarkDirty(manager);
             LightVolumeManagerEditorBackend.CopyProxyToUdon(manager);
             LightVolumeManagerEditorBackend.QueueRuntimeManagerRefresh(manager);
