@@ -14,6 +14,7 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
         _Intensity("Intensity", Float) = 1
         _ColorSaturation("Screen Color", Range(0, 1)) = 1
         _ProjectionRange("Projection Range", Float) = 10
+        _BackfaceFade("Back Surface Fade", Range(0.01, 1)) = 0.25
         _OutputChannel("Output Channel", Int) = 0
     }
 
@@ -46,6 +47,7 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
             float _Intensity;
             float _ColorSaturation;
             float _ProjectionRange;
+            float _BackfaceFade;
             int _OutputChannel;
 
             float4 frag(v2f_customrendertexture i) : SV_Target
@@ -56,6 +58,8 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
                 float3 l1g = 0;
                 float3 l1b = 0;
                 float invRangeSq = rcp(max(_ProjectionRange * _ProjectionRange, 1e-4));
+                float nearestEmitterDistSq = 1e30;
+                float nearestSignedDistance = 0;
 
                 [loop] for (int emitterIndex = 0; emitterIndex < VRCLV_DOME_MAX_EMITTERS; emitterIndex++)
                 {
@@ -68,9 +72,15 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
 
                     float3 receiverFromEmitter = worldPos - positionArea.xyz;
                     float distSq = max(dot(receiverFromEmitter, receiverFromEmitter), 1e-4);
+                    float signedDistance = dot(emitterNormal, receiverFromEmitter);
+                    if (distSq < nearestEmitterDistSq)
+                    {
+                        nearestEmitterDistSq = distSq;
+                        nearestSignedDistance = signedDistance;
+                    }
                     float invDist = rsqrt(distSq);
                     float3 emitterToReceiver = receiverFromEmitter * invDist;
-                    float emitterFacing = saturate(dot(emitterNormal, emitterToReceiver));
+                    float emitterFacing = saturate(signedDistance * invDist);
                     float rangeMask = saturate(1.0 - distSq * invRangeSq);
                     if (emitterFacing <= 0 || rangeMask <= 0) continue;
 
@@ -90,6 +100,14 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
                     l1g += receiverToEmitter * contribution.g;
                     l1b += receiverToEmitter * contribution.b;
                 }
+
+                // The closest screen section defines the local shell. This prevents panels on the
+                // far side of the dome from illuminating points behind the nearest screen mesh.
+                float shellMask = smoothstep(0.0, max(_BackfaceFade, 1e-4), nearestSignedDistance);
+                l0 *= shellMask;
+                l1r *= shellMask;
+                l1g *= shellMask;
+                l1b *= shellMask;
 
                 if (_OutputChannel == 0) return float4(l0, l1r.z);
                 if (_OutputChannel == 1) return float4(l1r.x, l1g.x, l1b.x, l1g.z);

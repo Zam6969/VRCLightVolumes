@@ -453,6 +453,7 @@ namespace VRCLightVolumes.Tests {
         [Test]
         public void RealtimeMeshLightCoverageIncludesOuterEmittersAndNearbyAvatars() {
             Material material = CreateMaterial("Hidden/VRCLV/DomeMeshLightVolumeUpdate");
+            Assert.That(material.GetFloat("_BackfaceFade"), Is.EqualTo(0.25f).Within(0.0001f));
             Texture2D emitters = new Texture2D(2, 1, TextureFormat.RGBAFloat, false, true);
             emitters.SetPixels(new[] {
                 new Color(-6f, 0f, 0f, Mathf.PI),
