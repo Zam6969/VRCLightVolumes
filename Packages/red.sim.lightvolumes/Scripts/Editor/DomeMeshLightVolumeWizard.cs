@@ -11,10 +11,12 @@ namespace VRCLightVolumes {
         private const int MaxEmitterCount = 128;
         private const int CoverageOptimizationVersion = 2;
         private const int BackfaceOptimizationVersion = 3;
-        internal const int CurrentOptimizationVersion = 4;
+        private const int FloorBoostOptimizationVersion = 4;
+        internal const int CurrentOptimizationVersion = 5;
         private const float DefaultReceiverPadding = 2f;
         private const float DefaultBackfaceFade = 0.25f;
         private const float DefaultFloorLightBoost = 2f;
+        private const float DefaultPanelColorSpread = 0.02f;
         private const string UpdateShaderName = "Hidden/VRCLV/DomeMeshLightVolumeUpdate";
         private const string DefaultOutputFolder = "Assets/LightVolumesDome";
         private static readonly string[] CenterModeNames = { "Fit Dome Sphere", "Renderer Bounds", "Transform Override" };
@@ -30,6 +32,7 @@ namespace VRCLightVolumes {
         [SerializeField] private float _receiverPadding = DefaultReceiverPadding;
         [SerializeField] private float _backfaceFade = DefaultBackfaceFade;
         [SerializeField] private float _floorLightBoost = DefaultFloorLightBoost;
+        [SerializeField] private float _panelColorSpread = DefaultPanelColorSpread;
         [SerializeField] private float _projectionRangeScale = 2f;
         [SerializeField] private float _intensity = 5f;
         [SerializeField] private float _colorSaturation = 1f;
@@ -195,7 +198,8 @@ namespace VRCLightVolumes {
                 float currentEdgeFade = GetEdgeFade(size, manager.DynamicMeshLightInvEdgeSmooth);
                 bool migrateCoverage = manager.DynamicMeshLightOptimizationVersion < CoverageOptimizationVersion;
                 bool migrateBackfaceBlocking = manager.DynamicMeshLightOptimizationVersion < BackfaceOptimizationVersion;
-                bool migrateFloorBoost = manager.DynamicMeshLightOptimizationVersion < CurrentOptimizationVersion;
+                bool migrateFloorBoost = manager.DynamicMeshLightOptimizationVersion < FloorBoostOptimizationVersion;
+                bool migratePanelSampling = manager.DynamicMeshLightOptimizationVersion < CurrentOptimizationVersion;
                 if (migrateCoverage) {
                     Vector3 bridgeSize = DomeMeshLightAtlasBridgeUtility.GetWorldSize(manager);
                     size = Vector3.Max(size, bridgeSize);
@@ -237,7 +241,17 @@ namespace VRCLightVolumes {
                     }
                     repairedAny = true;
                 }
-                if (migrateBackfaceBlocking || migrateFloorBoost) {
+                if (migratePanelSampling) {
+                    for (int outputIndex = 0; outputIndex < outputs.Length; outputIndex++) {
+                        Material outputMaterial = outputs[outputIndex].material;
+                        if (outputMaterial == null || outputMaterial.shader == null || outputMaterial.shader.name != UpdateShaderName) continue;
+                        outputMaterial.SetFloat("_PanelColorSpread", DefaultPanelColorSpread);
+                        EditorUtility.SetDirty(outputMaterial);
+                        outputs[outputIndex].Update();
+                    }
+                    repairedAny = true;
+                }
+                if (migrateBackfaceBlocking || migrateFloorBoost || migratePanelSampling) {
                     manager.DynamicMeshLightOptimizationVersion = CurrentOptimizationVersion;
                     EditorUtility.SetDirty(manager);
                     LightVolumeManagerEditorBackend.CopyProxyToUdon(manager);
@@ -325,6 +339,7 @@ namespace VRCLightVolumes {
             _edgeFade = Mathf.Max(0.001f, EditorGUILayout.FloatField("Edge Fade", _edgeFade));
             _backfaceFade = EditorGUILayout.Slider(new GUIContent("Back Surface Fade", "Stops screen light behind the mesh while softly beginning the light on its viewing side."), _backfaceFade, 0.01f, 1f);
             _floorLightBoost = EditorGUILayout.Slider(new GUIContent("Floor Light Boost", "Strengthens the screen contribution below each panel without increasing the entire lighting volume."), _floorLightBoost, 1f, 4f);
+            _panelColorSpread = EditorGUILayout.Slider(new GUIContent("Panel Color Spread", "Spreads triangular panel color samples away from labels, seams, and isolated dark pixels."), _panelColorSpread, 0f, 0.04f);
             _performanceMode = EditorGUILayout.Toggle(new GUIContent("VR Performance Mode", "Keeps realtime screen colors but uses one non-directional lighting field instead of three directional fields."), _performanceMode);
             _updatesPerSecond = EditorGUILayout.Slider(new GUIContent("Light Refresh Rate", "How often the shared 3D lighting field reads the current video frame. Lower values save GPU time while the screen itself remains full frame rate."), _updatesPerSecond, 5f, 90f);
 
@@ -418,6 +433,7 @@ namespace VRCLightVolumes {
                     material.SetFloat("_ProjectionRange", radius * _projectionRangeScale);
                     material.SetFloat("_BackfaceFade", _backfaceFade);
                     material.SetFloat("_FloorLightBoost", _floorLightBoost);
+                    material.SetFloat("_PanelColorSpread", _panelColorSpread);
                     material.SetInt("_OutputChannel", channel);
                     AssetDatabase.CreateAsset(material, AssetDatabase.GenerateUniqueAssetPath(outputFolder + $"/DomeMeshLightUpdate{channel}.mat"));
 
@@ -536,7 +552,12 @@ namespace VRCLightVolumes {
                 group.Area += area;
                 group.WeightedPosition += centroid * area;
                 group.WeightedNormal += cross * 0.5f;
-                group.AddSample(area, (uv[ia] + uv[ib] + uv[ic]) / 3f);
+                Vector2 uvA = uv[ia];
+                Vector2 uvB = uv[ib];
+                Vector2 uvC = uv[ic];
+                group.AddSample(area, uvA * 0.6f + uvB * 0.2f + uvC * 0.2f);
+                group.AddSample(area, uvA * 0.2f + uvB * 0.6f + uvC * 0.2f);
+                group.AddSample(area, uvA * 0.2f + uvB * 0.2f + uvC * 0.6f);
             }
 
             List<Emitter> emitters = new List<Emitter>(groups.Count);

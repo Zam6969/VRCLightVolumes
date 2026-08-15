@@ -16,6 +16,7 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
         _ProjectionRange("Projection Range", Float) = 10
         _BackfaceFade("Back Surface Fade", Range(0.01, 1)) = 0.25
         _FloorLightBoost("Floor Light Boost", Range(1, 4)) = 2
+        _PanelColorSpread("Panel Color Spread", Range(0, 0.04)) = 0.02
         _OutputChannel("Output Channel", Int) = 0
     }
 
@@ -50,6 +51,7 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
             float _ProjectionRange;
             float _BackfaceFade;
             float _FloorLightBoost;
+            float _PanelColorSpread;
             int _OutputChannel;
 
             float4 frag(v2f_customrendertexture i) : SV_Target
@@ -60,8 +62,8 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
                 float3 l1g = 0;
                 float3 l1b = 0;
                 float invRangeSq = rcp(max(_ProjectionRange * _ProjectionRange, 1e-4));
-                float nearestEmitterDistSq = 1e30;
-                float nearestSignedDistance = 0;
+                float nearestFrontDistSq = 1e30;
+                float nearestBackDistSq = 1e30;
 
                 [loop] for (int emitterIndex = 0; emitterIndex < VRCLV_DOME_MAX_EMITTERS; emitterIndex++)
                 {
@@ -75,20 +77,27 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
                     float3 receiverFromEmitter = worldPos - positionArea.xyz;
                     float distSq = max(dot(receiverFromEmitter, receiverFromEmitter), 1e-4);
                     float signedDistance = dot(emitterNormal, receiverFromEmitter);
-                    if (distSq < nearestEmitterDistSq)
-                    {
-                        nearestEmitterDistSq = distSq;
-                        nearestSignedDistance = signedDistance;
-                    }
+                    if (signedDistance >= 0) nearestFrontDistSq = min(nearestFrontDistSq, distSq);
+                    else nearestBackDistSq = min(nearestBackDistSq, distSq);
                     float invDist = rsqrt(distSq);
                     float3 emitterToReceiver = receiverFromEmitter * invDist;
                     float emitterFacing = saturate(signedDistance * invDist);
                     float rangeMask = saturate(1.0 - distSq * invRangeSq);
                     if (emitterFacing <= 0 || rangeMask <= 0) continue;
 
-                    float4 sample0 = tex2Dlod(_SourceTex, float4(uv01.xy, 0, 0));
-                    float4 sample1 = tex2Dlod(_SourceTex, float4(uv01.zw, 0, 0));
-                    float4 sample2 = tex2Dlod(_SourceTex, float4(uv2, 0, 0));
+                    float2 sampleUv0 = uv01.xy;
+                    float2 sampleUv1 = uv01.zw;
+                    float2 sampleUv2 = uv2;
+                    float duplicateSpanSq = dot(sampleUv0 - sampleUv1, sampleUv0 - sampleUv1) + dot(sampleUv0 - sampleUv2, sampleUv0 - sampleUv2);
+                    if (duplicateSpanSq < 1e-10)
+                    {
+                        sampleUv0 += float2(0.0, 1.0) * _PanelColorSpread;
+                        sampleUv1 += float2(-0.8660254, -0.5) * _PanelColorSpread;
+                        sampleUv2 += float2(0.8660254, -0.5) * _PanelColorSpread;
+                    }
+                    float4 sample0 = tex2Dlod(_SourceTex, float4(saturate(sampleUv0), 0, 0));
+                    float4 sample1 = tex2Dlod(_SourceTex, float4(saturate(sampleUv1), 0, 0));
+                    float4 sample2 = tex2Dlod(_SourceTex, float4(saturate(sampleUv2), 0, 0));
                     float3 emission = (sample0.rgb + sample1.rgb + sample2.rgb) * 0.3333333333;
                     float neutralEmission = dot(emission, float3(0.2126, 0.7152, 0.0722));
                     emission = lerp(neutralEmission.xxx, emission, _ColorSaturation);
@@ -105,9 +114,13 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
                     l1b += receiverToEmitter * contribution.b;
                 }
 
-                // The closest screen section defines the local shell. This prevents panels on the
-                // far side of the dome from illuminating points behind the nearest screen mesh.
-                float shellMask = smoothstep(0.0, max(_BackfaceFade, 1e-4), nearestSignedDistance);
+                // Compare the nearest front and back surfaces instead of allowing one irregular
+                // panel centroid to erase valid light from another nearby front-facing panel.
+                float nearestFrontDistance = sqrt(nearestFrontDistSq);
+                float nearestBackDistance = sqrt(nearestBackDistSq);
+                float shellBias = max(_BackfaceFade * 4.0, 0.5);
+                float shellSide = nearestBackDistance - nearestFrontDistance + shellBias;
+                float shellMask = smoothstep(-_BackfaceFade, _BackfaceFade, shellSide);
                 l0 *= shellMask;
                 l1r *= shellMask;
                 l1g *= shellMask;
