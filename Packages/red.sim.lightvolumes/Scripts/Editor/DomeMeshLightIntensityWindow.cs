@@ -215,7 +215,7 @@ namespace VRCLightVolumes {
             Undo.RecordObjects(outputs, "Change Realtime Mesh Light Settings");
 
             _manager.DynamicMeshLightL0Only = performanceMode;
-            _manager.DynamicMeshLightOptimizationVersion = 1;
+            _manager.DynamicMeshLightOptimizationVersion = DomeMeshLightVolumeWizard.CurrentOptimizationVersion;
             _manager.DynamicMeshLightColor = color;
             _manager.DynamicMeshLightInvEdgeSmooth = new Vector3(volumeSize.x / edgeFade, volumeSize.y / edgeFade, volumeSize.z / edgeFade);
             bool usesStandardBridge = DomeMeshLightAtlasBridgeUtility.ApplyVolumeSettings(_manager, enabled, color, edgeFade);

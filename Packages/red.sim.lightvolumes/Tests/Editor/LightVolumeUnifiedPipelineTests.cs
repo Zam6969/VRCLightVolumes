@@ -450,6 +450,27 @@ namespace VRCLightVolumes.Tests {
             Assert.That(volume.SmoothBlending, Is.EqualTo(0.5f));
         }
 
+        [Test]
+        public void RealtimeMeshLightCoverageIncludesOuterEmittersAndNearbyAvatars() {
+            Material material = CreateMaterial("Hidden/VRCLV/DomeMeshLightVolumeUpdate");
+            Texture2D emitters = new Texture2D(2, 1, TextureFormat.RGBAFloat, false, true);
+            emitters.SetPixels(new[] {
+                new Color(-6f, 0f, 0f, Mathf.PI),
+                new Color(0f, 0f, 3f, Mathf.PI * 0.25f)
+            });
+            emitters.Apply(false, false);
+            _createdObjects.Add(emitters);
+            material.SetTexture("_EmitterPositionArea", emitters);
+            material.SetFloat("_EmitterCount", 2f);
+
+            bool found = DomeMeshLightVolumeWizard.TryCalculateExpandedCoverage(material, Vector3.zero, Vector3.one * 10f, 2f, out Vector3 size);
+
+            Assert.That(found, Is.True);
+            Assert.That(size.x, Is.EqualTo(18f).Within(0.0001f));
+            Assert.That(size.y, Is.EqualTo(10f).Within(0.0001f));
+            Assert.That(size.z, Is.EqualTo(11f).Within(0.0001f));
+        }
+
         private T CreateComponent<T>(string name) where T : Component {
             return CreateGameObject(name).AddComponent<T>();
         }

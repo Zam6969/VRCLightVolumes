@@ -9,6 +9,8 @@ using UnityEngine.SceneManagement;
 namespace VRCLightVolumes {
     public sealed class DomeMeshLightVolumeWizard : EditorWindow {
         private const int MaxEmitterCount = 128;
+        internal const int CurrentOptimizationVersion = 2;
+        private const float DefaultReceiverPadding = 2f;
         private const string UpdateShaderName = "Hidden/VRCLV/DomeMeshLightVolumeUpdate";
         private const string DefaultOutputFolder = "Assets/LightVolumesDome";
         private static readonly string[] CenterModeNames = { "Fit Dome Sphere", "Renderer Bounds", "Transform Override" };
@@ -21,6 +23,7 @@ namespace VRCLightVolumes {
         [SerializeField] private Vector3 _centerOffset;
         [SerializeField] private int _volumeResolution = 32;
         [SerializeField] private float _volumeScale = 1f;
+        [SerializeField] private float _receiverPadding = DefaultReceiverPadding;
         [SerializeField] private float _projectionRangeScale = 2f;
         [SerializeField] private float _intensity = 5f;
         [SerializeField] private float _colorSaturation = 1f;
@@ -183,6 +186,34 @@ namespace VRCLightVolumes {
                 Matrix4x4 volumeMatrix = manager.DynamicMeshLightInvWorldMatrix.inverse;
                 Vector3 center = volumeMatrix.MultiplyPoint3x4(Vector3.zero);
                 Vector3 size = new Vector3(volumeMatrix.GetColumn(0).magnitude, volumeMatrix.GetColumn(1).magnitude, volumeMatrix.GetColumn(2).magnitude);
+                float currentEdgeFade = GetEdgeFade(size, manager.DynamicMeshLightInvEdgeSmooth);
+                bool migrateCoverage = manager.DynamicMeshLightOptimizationVersion < CurrentOptimizationVersion;
+                if (migrateCoverage) {
+                    Vector3 bridgeSize = DomeMeshLightAtlasBridgeUtility.GetWorldSize(manager);
+                    size = Vector3.Max(size, bridgeSize);
+                    if (TryCalculateExpandedCoverage(outputs[0].material, center, size, DefaultReceiverPadding, out Vector3 expandedSize)) {
+                        for (int outputIndex = 0; outputIndex < outputs.Length; outputIndex++) {
+                            Material outputMaterial = outputs[outputIndex].material;
+                            if (outputMaterial == null || outputMaterial.shader == null || outputMaterial.shader.name != UpdateShaderName) continue;
+                            outputMaterial.SetVector("_VolumeCenter", center);
+                            outputMaterial.SetVector("_VolumeSize", expandedSize);
+                            EditorUtility.SetDirty(outputMaterial);
+                            outputs[outputIndex].Update();
+                        }
+                        manager.DynamicMeshLightInvWorldMatrix = Matrix4x4.TRS(center, Quaternion.identity, expandedSize).inverse;
+                        manager.DynamicMeshLightInvEdgeSmooth = new Vector3(expandedSize.x / currentEdgeFade, expandedSize.y / currentEdgeFade, expandedSize.z / currentEdgeFade);
+                        DomeMeshLightAtlasBridgeUtility.SetWorldCoverage(manager, center, expandedSize);
+                        LightVolumeManagerEditorBackend.GenerateAtlas(manager);
+                        DomeMeshLightAtlasBridgeUtility.SyncAtlasMaterial(manager);
+                        size = expandedSize;
+                        repairedAny = true;
+                    }
+                    manager.DynamicMeshLightOptimizationVersion = CurrentOptimizationVersion;
+                    EditorUtility.SetDirty(manager);
+                    LightVolumeManagerEditorBackend.CopyProxyToUdon(manager);
+                    EditorSceneManager.MarkSceneDirty(manager.gameObject.scene);
+                    repairedAny = true;
+                }
                 for (int outputIndex = 0; outputIndex < outputs.Length; outputIndex++) {
                     CustomRenderTexture output = outputs[outputIndex];
                     Material material = output.material;
@@ -248,6 +279,7 @@ namespace VRCLightVolumes {
             if (_centerMode == 2) _centerOverride = (Transform)EditorGUILayout.ObjectField("Center Transform", _centerOverride, typeof(Transform), true);
             _centerOffset = EditorGUILayout.Vector3Field("Center Offset", _centerOffset);
             _volumeScale = Mathf.Max(0.1f, EditorGUILayout.FloatField(new GUIContent("Volume Size Scale", "1 covers the fitted dome diameter. Increase this only if receivers lie outside it."), _volumeScale));
+            _receiverPadding = Mathf.Max(0f, EditorGUILayout.FloatField(new GUIContent("Nearby Avatar Coverage", "Extra space beyond every screen edge so avatars standing beside an outer panel remain inside the live lighting field."), _receiverPadding));
 
             if (TryResolveMesh(_domeRenderer, out Mesh mesh, out Matrix4x4 matrix, out _)) {
                 Vector3 center = ResolveCenter(mesh, matrix, out float radius);
@@ -322,7 +354,8 @@ namespace VRCLightVolumes {
 
             string outputFolder = NormalizeAssetFolder(_outputFolder);
             EnsureAssetFolder(outputFolder);
-            Vector3 volumeSize = Vector3.one * Mathf.Max(radius * 2f * _volumeScale, 0.01f);
+            Vector3 baseVolumeSize = Vector3.one * Mathf.Max(radius * 2f * _volumeScale, 0.01f);
+            Vector3 volumeSize = Vector3.Max(baseVolumeSize, CalculateMeshCoverageSize(mesh, localToWorld, center, _volumeScale, _receiverPadding));
 
             try {
                 EditorUtility.DisplayProgressBar("Realtime Dome Mesh Light", $"Preparing {emitters.Count} screen emitters", 0.2f);
@@ -376,7 +409,7 @@ namespace VRCLightVolumes {
                 Undo.RecordObject(_manager, "Create Realtime Dome Mesh Light");
                 _manager.DynamicMeshLightEnabled = true;
                 _manager.DynamicMeshLightL0Only = _performanceMode;
-                _manager.DynamicMeshLightOptimizationVersion = 1;
+                _manager.DynamicMeshLightOptimizationVersion = CurrentOptimizationVersion;
                 _manager.DynamicMeshLightTexture0 = outputs[0];
                 _manager.DynamicMeshLightTexture1 = outputs[1];
                 _manager.DynamicMeshLightTexture2 = outputs[2];
@@ -587,6 +620,49 @@ namespace VRCLightVolumes {
                 samples++;
             }
             return samples > 0 ? Mathf.Max((float)(sum / samples), 0.0001f) : 1f;
+        }
+
+        private static float GetEdgeFade(Vector3 volumeSize, Vector3 inverseEdgeSmooth) {
+            float x = inverseEdgeSmooth.x > 0.0001f ? volumeSize.x / inverseEdgeSmooth.x : 0f;
+            float y = inverseEdgeSmooth.y > 0.0001f ? volumeSize.y / inverseEdgeSmooth.y : 0f;
+            float z = inverseEdgeSmooth.z > 0.0001f ? volumeSize.z / inverseEdgeSmooth.z : 0f;
+            return Mathf.Max((x + y + z) / 3f, 0.05f);
+        }
+
+        private static Vector3 CalculateMeshCoverageSize(Mesh mesh, Matrix4x4 localToWorld, Vector3 center, float scale, float receiverPadding) {
+            Vector3[] vertices = mesh.vertices;
+            Vector3 halfSize = Vector3.zero;
+            for (int i = 0; i < vertices.Length; i++) {
+                Vector3 offset = localToWorld.MultiplyPoint3x4(vertices[i]) - center;
+                halfSize.x = Mathf.Max(halfSize.x, Mathf.Abs(offset.x));
+                halfSize.y = Mathf.Max(halfSize.y, Mathf.Abs(offset.y));
+                halfSize.z = Mathf.Max(halfSize.z, Mathf.Abs(offset.z));
+            }
+            halfSize = halfSize * Mathf.Max(scale, 0.1f) + Vector3.one * Mathf.Max(receiverPadding, 0f);
+            return Vector3.Max(halfSize * 2f, Vector3.one * 0.01f);
+        }
+
+        internal static bool TryCalculateExpandedCoverage(Material material, Vector3 center, Vector3 currentSize, float receiverPadding, out Vector3 expandedSize) {
+            expandedSize = currentSize;
+            if (material == null) return false;
+            Texture2D positionArea = material.GetTexture("_EmitterPositionArea") as Texture2D;
+            if (positionArea == null || !positionArea.isReadable) return false;
+
+            Color[] emitters = positionArea.GetPixels();
+            int emitterCount = Mathf.Min(Mathf.RoundToInt(material.GetFloat("_EmitterCount")), emitters.Length);
+            if (emitterCount <= 0) return false;
+            Vector3 halfSize = currentSize * 0.5f;
+            float padding = Mathf.Max(receiverPadding, 0f);
+            for (int i = 0; i < emitterCount; i++) {
+                Color emitter = emitters[i];
+                if (emitter.a <= 0.000001f) continue;
+                float footprint = Mathf.Sqrt(emitter.a / Mathf.PI);
+                halfSize.x = Mathf.Max(halfSize.x, Mathf.Abs(emitter.r - center.x) + footprint + padding);
+                halfSize.y = Mathf.Max(halfSize.y, Mathf.Abs(emitter.g - center.y) + footprint + padding);
+                halfSize.z = Mathf.Max(halfSize.z, Mathf.Abs(emitter.b - center.z) + footprint + padding);
+            }
+            expandedSize = halfSize * 2f;
+            return true;
         }
 
         private static Bounds TransformBounds(Bounds localBounds, Matrix4x4 matrix) {

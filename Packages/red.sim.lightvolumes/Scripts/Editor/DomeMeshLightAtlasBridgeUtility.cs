@@ -137,6 +137,27 @@ namespace VRCLightVolumes {
             return true;
         }
 
+        internal static Vector3 GetWorldSize(LightVolumeManager manager) {
+            if (!TryGetBridge(manager, out LightVolumeInstance volume, out _, out _)) return Vector3.zero;
+            Matrix4x4 matrix = volume.transform.localToWorldMatrix;
+            return new Vector3(matrix.GetColumn(0).magnitude, matrix.GetColumn(1).magnitude, matrix.GetColumn(2).magnitude);
+        }
+
+        internal static bool SetWorldCoverage(LightVolumeManager manager, Vector3 center, Vector3 size) {
+            if (!TryGetBridge(manager, out LightVolumeInstance volume, out _, out _)) return false;
+            Transform transform = volume.transform;
+            Transform parent = transform.parent;
+            transform.SetParent(null, true);
+            transform.position = center;
+            transform.rotation = Quaternion.identity;
+            transform.localScale = size;
+            transform.SetParent(parent, true);
+            volume.UpdateTransform();
+            EditorUtility.SetDirty(volume);
+            LightVolumeManagerEditorBackend.CopyProxyToUdon(volume);
+            return true;
+        }
+
         internal static bool ApplyVolumeSettings(LightVolumeManager manager, bool enabled, Color color, float edgeFade) {
             if (!TryGetBridge(manager, out LightVolumeInstance volume, out _, out _)) return false;
             Undo.RecordObject(volume, "Change Standard Realtime Light Volume Settings");
