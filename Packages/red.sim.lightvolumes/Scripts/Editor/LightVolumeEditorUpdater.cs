@@ -63,6 +63,7 @@ namespace VRCLightVolumes {
         // Refreshes the only loaded Manager allowed to own global runtime data.
         private static void RefreshPrimaryManager() {
             _primaryManager = LightVolumeManagerEditorBackend.GetPrimaryManager();
+            DomeMeshLightAtlasBridgeUtility.SyncAtlasMaterial(_primaryManager);
         }
 
         // Refreshes animated projection sources for the primary Manager in Edit Mode.

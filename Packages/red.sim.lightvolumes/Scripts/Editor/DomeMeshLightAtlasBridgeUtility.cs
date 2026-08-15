@@ -112,10 +112,21 @@ namespace VRCLightVolumes {
 
         internal static bool SyncAtlasMaterial(LightVolumeManager manager) {
             if (!TryGetBridge(manager, out LightVolumeInstance volume, out Material material, out CustomRenderTexture output)) return false;
+            if (volume.SmoothBlending <= 0.0001f) {
+                volume.SmoothBlending = 0.5f;
+                volume.UpdateTransform();
+                EditorUtility.SetDirty(volume);
+                LightVolumeManagerEditorBackend.CopyProxyToUdon(volume);
+            }
             SetSourceTextures(material, manager);
             material.SetVector("_DynamicBounds0", volume.BoundsUvwMin0);
             material.SetVector("_DynamicBounds1", volume.BoundsUvwMin1);
             material.SetVector("_DynamicBounds2", volume.BoundsUvwMin2);
+            material.SetVector("_AtlasTexelSize", new Vector4(
+                1f / Mathf.Max(output.width, 1),
+                1f / Mathf.Max(output.height, 1),
+                1f / Mathf.Max(output.volumeDepth, 1),
+                0f));
             bool hasTextures = manager.DynamicMeshLightTexture0 != null && (manager.DynamicMeshLightL0Only || manager.DynamicMeshLightTexture1 != null && manager.DynamicMeshLightTexture2 != null);
             material.SetFloat("_DynamicEnabled", hasTextures ? 1f : 0f);
             material.SetFloat("_L0Only", manager.DynamicMeshLightL0Only ? 1f : 0f);
