@@ -10,6 +10,7 @@
 | [Point Light Volume Shadows](../Documentation/HowToUse_Shadows.md)|
 | [Point Light Material Sources](../Documentation/HowToUse_PointLightMaterialSources.md)|
 | [Area Light Emission](../Documentation/HowToUse_AreaLightEmission.md)|
+| [Realtime Dome Mesh Light](../Documentation/HowToUse_RealtimeDomeMeshLight.md)|
 | [Audio Link Integration](../Documentation/HowToUse_AudioLinkIntegration.md)|
 | [TV Screens Integration](../Documentation/HowToUse_TVScreensIntegration.md)|
 | [Custom Lightmapper Integration](../Documentation/ForDevelopers.md#custom-lightmapper-integration)|
