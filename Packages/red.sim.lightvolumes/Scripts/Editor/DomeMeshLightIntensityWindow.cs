@@ -5,6 +5,7 @@ using UnityEngine;
 namespace VRCLightVolumes {
     public sealed class DomeMeshLightIntensityWindow : EditorWindow {
         private const string UpdateShaderName = "Hidden/VRCLV/DomeMeshLightVolumeUpdate";
+        private const string CubemapShadowLightName = "Realtime Mesh Light - Cubemap Shadows";
 
         [SerializeField] private LightVolumeManager _manager;
         [SerializeField] private LayerMask _shadowLayerMask = ~0;
@@ -14,6 +15,8 @@ namespace VRCLightVolumes {
         [SerializeField] private Texture3D _bakeryShadowMask;
         [SerializeField] private int _bakeryMaskChannel;
         [SerializeField] private Renderer _bakeryScreenRenderer;
+        [SerializeField] private Renderer _cubemapScreenRenderer;
+        [SerializeField] private LayerMask _cubemapShadowLayers = ~0;
         [SerializeField] private Vector2 _scrollPosition;
 
         [MenuItem("Tools/Light Volumes/Realtime Mesh Light Settings")]
@@ -85,7 +88,11 @@ namespace VRCLightVolumes {
             DrawShadowMapping(materials, outputs, volumeMatrix, volumeSize);
 
             GUILayout.Space(8f);
-            DrawAvatarFillLight(outputs[0].material.GetTexture("_SourceTex"), volumeMatrix, volumeSize);
+            Texture sourceTexture = outputs[0].material.GetTexture("_SourceTex");
+            DrawCubemapFloorShadows(sourceTexture, volumeMatrix, volumeSize);
+
+            GUILayout.Space(8f);
+            DrawAvatarFillLight(sourceTexture, volumeMatrix, volumeSize);
 
             GUILayout.Space(12f);
             if (GUILayout.Button("Apply Stable VR Preset", GUILayout.Height(28f))) ApplySettings(materials, outputs, enabled, true, intensity, colorSaturation, color, panelReach, edgeFade, backfaceFade, floorLightBoost, panelColorSpread, 10f, volumeSize);
@@ -194,9 +201,177 @@ namespace VRCLightVolumes {
             return EditorGUILayout.MaskField(label, value.value, layerNames);
         }
 
+        private void DrawCubemapFloorShadows(Texture sourceTexture, Matrix4x4 volumeMatrix, Vector3 volumeSize) {
+            EditorGUILayout.LabelField("Cubemap Floor Shadows", EditorStyles.boldLabel);
+            PointLightVolumeInstance shadowLight = FindCubemapShadowLight();
+            if (_cubemapScreenRenderer == null && _bakeryScreenRenderer != null) _cubemapScreenRenderer = _bakeryScreenRenderer;
+
+            if (shadowLight == null) {
+                _cubemapScreenRenderer = (Renderer)EditorGUILayout.ObjectField(new GUIContent("Dome Screens", "The combined dome screen renderer. It is excluded so the screen does not block its own shadow cubemap."), _cubemapScreenRenderer, typeof(Renderer), true);
+                _cubemapShadowLayers = DrawLayerMask(new GUIContent("Shadow Layers", "Meshes on these layers cast detailed cubemap shadows onto the floor and other receivers."), _cubemapShadowLayers);
+                EditorGUILayout.HelpBox("Creates one screen-colored Point Light Volume and a six-face cubemap shadow. The existing mesh field still supplies the directional panel colors.", MessageType.None);
+                using (new EditorGUI.DisabledScope(_cubemapScreenRenderer == null || EditorApplication.isPlayingOrWillChangePlaymode)) {
+                    if (GUILayout.Button("Create And Bake Cubemap Shadow Light", GUILayout.Height(28f))) {
+                        CreateCubemapShadowLight(sourceTexture, volumeMatrix, volumeSize);
+                        GUIUtility.ExitGUI();
+                    }
+                }
+                return;
+            }
+
+            DomeAvatarFillLight colorDriver = shadowLight.GetComponent<DomeAvatarFillLight>();
+            if (colorDriver == null) {
+                EditorGUILayout.HelpBox("The cubemap shadow light is missing its live screen-color driver.", MessageType.Warning);
+                if (GUILayout.Button("Repair Live Screen Color")) {
+                    colorDriver = AddScreenColorDriver(shadowLight.gameObject);
+                    ConfigureScreenColorDriver(colorDriver, shadowLight, sourceTexture);
+                    LightVolumeManagerEditorBackend.CopyProxyToUdon(colorDriver);
+                }
+                return;
+            }
+
+            if (_cubemapScreenRenderer == null && shadowLight.ExclusionMask != null && shadowLight.ExclusionMask.Length > 0 && shadowLight.ExclusionMask[0] != null)
+                _cubemapScreenRenderer = shadowLight.ExclusionMask[0].GetComponent<Renderer>();
+
+            EditorGUI.BeginChangeCheck();
+            bool active = EditorGUILayout.Toggle("Enabled", shadowLight.IsActive);
+            float intensity = EditorGUILayout.Slider(new GUIContent("Intensity", "Brightness of the single screen-colored shadow light."), shadowLight.Intensity, 0f, 8f);
+            float sourceSize = EditorGUILayout.Slider(new GUIContent("Source Size", "Softens the point-light response without changing the baked cubemap detail."), shadowLight.LightSourceSize, 0.05f, 5f);
+            Vector3 origin = EditorGUILayout.Vector3Field(new GUIContent("Cubemap Origin", "The point from which all six shadow faces are baked. Normally this is the dome center."), shadowLight.transform.position);
+            _cubemapScreenRenderer = (Renderer)EditorGUILayout.ObjectField(new GUIContent("Dome Screens", "Excluded from the cubemap so the emissive screen surface does not block its own light."), _cubemapScreenRenderer, typeof(Renderer), true);
+            _cubemapShadowLayers = DrawLayerMask(new GUIContent("Shadow Layers", "Meshes on these layers cast into the cubemap."), shadowLight.LayerMask);
+            float bias = EditorGUILayout.Slider("Shadow Bias", shadowLight.Bias, 0.001f, 0.2f);
+            float blur = EditorGUILayout.Slider("Shadow Blur", shadowLight.Blur, 0f, 4f);
+            float screenColor = EditorGUILayout.Slider("Screen Color", colorDriver.ScreenColor, 0f, 1f);
+            float videoBrightness = EditorGUILayout.Slider("Video Brightness", colorDriver.FollowVideoBrightness, 0f, 1f);
+            float screenBoost = EditorGUILayout.Slider("Screen Light Boost", colorDriver.ScreenLightBoost, 0.25f, 4f);
+            float refreshRate = EditorGUILayout.Slider("Color Refresh Rate", colorDriver.UpdatesPerSecond, 1f, 30f);
+            if (EditorGUI.EndChangeCheck()) {
+                Undo.RecordObjects(new UnityEngine.Object[] { shadowLight, colorDriver, shadowLight.transform }, "Change Cubemap Screen Shadows");
+                shadowLight.IsActive = active;
+                shadowLight.Intensity = intensity;
+                shadowLight.LightSourceSize = sourceSize;
+                shadowLight.transform.position = origin;
+                shadowLight.LayerMask = _cubemapShadowLayers.value;
+                shadowLight.Bias = bias;
+                shadowLight.Blur = blur;
+                shadowLight.ExclusionMask = _cubemapScreenRenderer != null ? new[] { _cubemapScreenRenderer.gameObject } : new GameObject[0];
+                colorDriver.TargetRenderTexture = sourceTexture;
+                colorDriver.TargetPointLightVolume = shadowLight;
+                colorDriver.ScreenColor = screenColor;
+                colorDriver.FollowVideoBrightness = videoBrightness;
+                colorDriver.ScreenLightBoost = screenBoost;
+                colorDriver.UpdatesPerSecond = refreshRate;
+                PointLightVolumeEditorUtility.Sync(shadowLight, false);
+                LightVolumeManagerEditorBackend.CopyProxyToUdon(colorDriver);
+                EditorUtility.SetDirty(colorDriver);
+                EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
+            }
+
+            using (new EditorGUI.DisabledScope(true)) {
+                EditorGUILayout.ObjectField("Current Cubemap", shadowLight.ShadowMap, typeof(Cubemap), false);
+            }
+            EditorGUILayout.HelpBox("The cubemap is static, while its light color follows the video at runtime. Rebake after moving the origin or changing shadow-casting meshes.", MessageType.None);
+            using (new EditorGUI.DisabledScope(_cubemapScreenRenderer == null || EditorApplication.isPlayingOrWillChangePlaymode)) {
+                if (GUILayout.Button(shadowLight.ShadowMap == null ? "Bake Cubemap Shadows" : "Rebake Cubemap Shadows", GUILayout.Height(26f))) {
+                    BakeCubemapShadowLight(shadowLight);
+                    GUIUtility.ExitGUI();
+                }
+            }
+        }
+
+        private void CreateCubemapShadowLight(Texture sourceTexture, Matrix4x4 volumeMatrix, Vector3 volumeSize) {
+            GameObject gameObject = new GameObject(CubemapShadowLightName);
+            Undo.RegisterCreatedObjectUndo(gameObject, "Create Cubemap Screen Shadow Light");
+            gameObject.transform.position = volumeMatrix.MultiplyPoint3x4(Vector3.zero);
+            gameObject.transform.SetParent(_manager.transform, true);
+#if UDONSHARP
+            PointLightVolumeInstance shadowLight = UdonSharpEditor.UdonSharpUndo.AddComponent<PointLightVolumeInstance>(gameObject);
+#else
+            PointLightVolumeInstance shadowLight = Undo.AddComponent<PointLightVolumeInstance>(gameObject);
+#endif
+            shadowLight.LightVolumeManager = _manager;
+            shadowLight.LightType = 0;
+            shadowLight.IsDynamic = false;
+            shadowLight.Color = Color.white;
+            shadowLight.Intensity = 4f;
+            shadowLight.ShadingStrength = 1f;
+            shadowLight.LightSourceSize = 1f;
+            shadowLight.Range = Mathf.Max(volumeSize.x, Mathf.Max(volumeSize.y, volumeSize.z));
+            shadowLight.Shadows = true;
+            shadowLight.RebakeShadows = true;
+            shadowLight.ForceCubemapShadows = true;
+            shadowLight.WorldSpaceShadows = true;
+            shadowLight.LayerMask = _cubemapShadowLayers.value;
+            shadowLight.NearClip = 0.05f;
+            shadowLight.FarClip = Mathf.Max(volumeSize.x, Mathf.Max(volumeSize.y, volumeSize.z)) * 1.5f;
+            shadowLight.Bias = 0.02f;
+            shadowLight.Blur = 0.5f;
+            shadowLight.ContactHardening = 0f;
+            shadowLight.ExclusionMask = new[] { _cubemapScreenRenderer.gameObject };
+            shadowLight.RegistryWeight = 999f;
+
+            DomeAvatarFillLight colorDriver = AddScreenColorDriver(gameObject);
+            ConfigureScreenColorDriver(colorDriver, shadowLight, sourceTexture);
+            LightVolumeManagerEditorBackend.EnsureRegistered(_manager, shadowLight, "Register Cubemap Screen Shadow Light", out _);
+            PointLightVolumeEditorUtility.Sync(shadowLight, false);
+            LightVolumeManagerEditorBackend.CopyProxyToUdon(colorDriver);
+            EditorUtility.SetDirty(shadowLight);
+            EditorUtility.SetDirty(colorDriver);
+            BakeCubemapShadowLight(shadowLight);
+            EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
+            Selection.activeGameObject = gameObject;
+        }
+
+        private static DomeAvatarFillLight AddScreenColorDriver(GameObject gameObject) {
+#if UDONSHARP
+            return UdonSharpEditor.UdonSharpUndo.AddComponent<DomeAvatarFillLight>(gameObject);
+#else
+            return Undo.AddComponent<DomeAvatarFillLight>(gameObject);
+#endif
+        }
+
+        private static void ConfigureScreenColorDriver(DomeAvatarFillLight colorDriver, PointLightVolumeInstance shadowLight, Texture sourceTexture) {
+            colorDriver.TargetRenderTexture = sourceTexture;
+            colorDriver.TargetLight = null;
+            colorDriver.TargetPointLightVolume = shadowLight;
+            colorDriver.UpdatesPerSecond = 12f;
+            colorDriver.ResponseSpeed = 18f;
+            colorDriver.ScreenColor = 1f;
+            colorDriver.FollowVideoBrightness = 1f;
+            colorDriver.ScreenLightBoost = 2f;
+            colorDriver.ColorMultiplier = Color.white;
+            colorDriver.AntiFlickering = true;
+            colorDriver.FollowClosestScreen = false;
+            colorDriver.FacingOnlyLighting = false;
+            colorDriver.SettingsVersion = 6;
+        }
+
+        private void BakeCubemapShadowLight(PointLightVolumeInstance shadowLight) {
+            shadowLight.Shadows = true;
+            shadowLight.ForceCubemapShadows = true;
+            shadowLight.WorldSpaceShadows = true;
+            shadowLight.LayerMask = _cubemapShadowLayers.value;
+            shadowLight.ExclusionMask = _cubemapScreenRenderer != null ? new[] { _cubemapScreenRenderer.gameObject } : new GameObject[0];
+            PointLightVolumeEditorUtility.Sync(shadowLight, false, false);
+            if (!PointLightShadowBaker.BakeShadowMap(shadowLight, "| realtime dome screen cubemap", true)) return;
+            PointLightVolumeEditorUtility.Sync(shadowLight, false, false);
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
+            EditorGUIUtility.PingObject(shadowLight.ShadowMap);
+        }
+
+        private PointLightVolumeInstance FindCubemapShadowLight() {
+            PointLightVolumeInstance[] lights = _manager.GetComponentsInChildren<PointLightVolumeInstance>(true);
+            for (int i = 0; i < lights.Length; i++) {
+                if (lights[i] != null && lights[i].gameObject.name == CubemapShadowLightName) return lights[i];
+            }
+            return null;
+        }
+
         private void DrawAvatarFillLight(Texture sourceTexture, Matrix4x4 volumeMatrix, Vector3 volumeSize) {
             EditorGUILayout.LabelField("Avatar Lighting", EditorStyles.boldLabel);
-            DomeAvatarFillLight avatarFill = _manager.GetComponentInChildren<DomeAvatarFillLight>(true);
+            DomeAvatarFillLight avatarFill = FindAvatarFillLight();
             if (avatarFill == null) {
                 EditorGUILayout.HelpBox("Avatar shaders compiled without this mesh-light extension need one avatar-only fallback light.", MessageType.Info);
                 if (GUILayout.Button("Create Avatar Fill Light", GUILayout.Height(26f))) CreateAvatarFillLight(sourceTexture, volumeMatrix, volumeSize);
@@ -327,6 +502,15 @@ namespace VRCLightVolumes {
             EditorUtility.SetDirty(targetLight);
             EditorUtility.SetDirty(avatarFill);
             EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
+        }
+
+        private DomeAvatarFillLight FindAvatarFillLight() {
+            DomeAvatarFillLight[] fills = _manager.GetComponentsInChildren<DomeAvatarFillLight>(true);
+            for (int i = 0; i < fills.Length; i++) {
+                DomeAvatarFillLight fill = fills[i];
+                if (fill != null && (fill.TargetLight != null || fill.GetComponent<Light>() != null)) return fill;
+            }
+            return null;
         }
 
         private void ApplySettings(Material[] materials, CustomRenderTexture[] outputs, bool enabled, bool performanceMode, float intensity, float colorSaturation, Color color, float panelReach, float edgeFade, float backfaceFade, float floorLightBoost, float panelColorSpread, float refreshRate, Vector3 volumeSize) {

@@ -74,6 +74,17 @@ The optional **Avatar Fill Light** is only a fallback for avatar shaders that do
 
 Open `Tools > Light Volumes > Realtime Mesh Light Settings` and find **Shadow Mapping**. The baked mask stores only static visibility, so the video color still changes at runtime while walls, floors and other fixed geometry can block the screen light.
 
+### Detailed Cubemap Floor Shadows
+
+The voxel visibility mask is intentionally low resolution. For recognizable object shadows on the floor, use the **Cubemap Floor Shadows** section:
+
+1. Assign the combined dome screen renderer under **Dome Screens**.
+2. Select the layers that should cast shadows.
+3. Click **Create And Bake Cubemap Shadow Light**.
+4. Adjust its intensity, origin, bias and blur, then use **Rebake Cubemap Shadows** after moving static geometry.
+
+This creates one Point Light Volume at the dome center and bakes a six-face EVSM cubemap. The screen renderer is excluded from the bake so it does not block itself. The cubemap and geometry remain static, but the one light's color and brightness follow the live video render texture. It complements the directional mesh field without restoring the old collection of per-panel realtime lights.
+
 ### Bake From Scene Geometry
 
 This is the quickest option and works alongside a Bakery-lit world:

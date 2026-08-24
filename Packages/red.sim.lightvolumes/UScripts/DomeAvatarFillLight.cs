@@ -21,6 +21,7 @@ namespace VRCLightVolumes {
     {
         public Texture TargetRenderTexture;
         public Light TargetLight;
+        public PointLightVolumeInstance TargetPointLightVolume;
         [Range(1f, 30f)] public float UpdatesPerSecond = 12f;
         [Range(1f, 30f)] public float ResponseSpeed = 18f;
         [Range(0f, 1f)] public float ScreenColor = 0.65f;
@@ -48,8 +49,10 @@ namespace VRCLightVolumes {
 
         private void Start() {
             if (TargetLight == null) TargetLight = GetComponent<Light>();
+            if (TargetPointLightVolume == null) TargetPointLightVolume = GetComponent<PointLightVolumeInstance>();
             UpgradeSettings();
             if (TargetLight != null) _smoothedColor = TargetLight.color;
+            else if (TargetPointLightVolume != null) _smoothedColor = TargetPointLightVolume.Color;
 #if UDONSHARP
             _localPlayer = Networking.LocalPlayer;
 #endif
@@ -81,7 +84,7 @@ namespace VRCLightVolumes {
 #if UDONSHARP
         private void Update() {
             UpdateSourcePosition();
-            if (_readbackPending || TargetRenderTexture == null || TargetLight == null || !TargetLight.enabled || Time.time < _nextUpdateTime) return;
+            if (_readbackPending || TargetRenderTexture == null || !HasActiveTarget() || Time.time < _nextUpdateTime) return;
             _nextUpdateTime = Time.time + 1f / Mathf.Max(UpdatesPerSecond, 1f);
             VRCGraphics.Blit(TargetRenderTexture, _downsampledTexture);
             _readbackPending = true;
@@ -95,7 +98,7 @@ namespace VRCLightVolumes {
 #else
         private void Update() {
             UpdateSourcePosition();
-            if (_readbackPending || TargetRenderTexture == null || TargetLight == null || !TargetLight.enabled || Time.time < _nextUpdateTime) return;
+            if (_readbackPending || TargetRenderTexture == null || !HasActiveTarget() || Time.time < _nextUpdateTime) return;
             _nextUpdateTime = Time.time + 1f / Mathf.Max(UpdatesPerSecond, 1f);
             Graphics.Blit(TargetRenderTexture, _downsampledTexture);
             _readbackPending = true;
@@ -112,7 +115,7 @@ namespace VRCLightVolumes {
 
         private void SetColor(Color sourceColor) {
             float peak = Mathf.Max(sourceColor.r, Mathf.Max(sourceColor.g, sourceColor.b));
-            if (TargetLight == null) return;
+            if (TargetLight == null && TargetPointLightVolume == null) return;
 
             bool isBlackFrame = peak <= 0.001f;
             Color targetColor = Color.black;
@@ -130,7 +133,13 @@ namespace VRCLightVolumes {
             _previousColorTime = Time.time;
             float blend = AntiFlickering && !isBlackFrame ? 1f - Mathf.Exp(-deltaTime * Mathf.Max(ResponseSpeed, 1f)) : 1f;
             _smoothedColor = Color.Lerp(_smoothedColor, targetColor, blend);
-            TargetLight.color = _smoothedColor;
+            if (TargetLight != null) TargetLight.color = _smoothedColor;
+            if (TargetPointLightVolume != null) TargetPointLightVolume.SetColor(_smoothedColor);
+        }
+
+        private bool HasActiveTarget() {
+            if (TargetLight != null) return TargetLight.enabled;
+            return TargetPointLightVolume != null && TargetPointLightVolume.IsActive;
         }
 
         private void UpgradeSettings() {
