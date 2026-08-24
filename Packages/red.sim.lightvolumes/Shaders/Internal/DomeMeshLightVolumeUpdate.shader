@@ -7,10 +7,14 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
         _EmitterNormal("Emitter Normal", 2D) = "black" {}
         _EmitterUv01("Emitter UV 0 and 1", 2D) = "black" {}
         _EmitterUv2("Emitter UV 2", 2D) = "black" {}
+        _BakedOcclusion("Baked Screen Shadow Mask", 3D) = "white" {}
         [HideInInspector] _VolumeCenter("Volume Center", Vector) = (0, 0, 0, 0)
         [HideInInspector] _VolumeSize("Volume Size", Vector) = (1, 1, 1, 0)
         [HideInInspector] _EmitterCount("Emitter Count", Float) = 0
         [HideInInspector] _EmitterTexelSize("Emitter Texel Size", Float) = 1
+        [HideInInspector] _UseBakedOcclusion("Use Baked Screen Shadows", Float) = 0
+        [HideInInspector] _BakedOcclusionChannel("Baked Shadow Channel", Vector) = (1, 0, 0, 0)
+        _BakedShadowStrength("Baked Shadow Strength", Range(0, 1)) = 1
         _Intensity("Intensity", Float) = 1
         _ColorSaturation("Screen Color", Range(0, 1)) = 1
         _ProjectionRange("Projection Range", Float) = 10
@@ -42,10 +46,14 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
             sampler2D _EmitterNormal;
             sampler2D _EmitterUv01;
             sampler2D _EmitterUv2;
+            sampler3D _BakedOcclusion;
             float3 _VolumeCenter;
             float3 _VolumeSize;
             float _EmitterCount;
             float _EmitterTexelSize;
+            float _UseBakedOcclusion;
+            float4 _BakedOcclusionChannel;
+            float _BakedShadowStrength;
             float _Intensity;
             float _ColorSaturation;
             float _ProjectionRange;
@@ -125,6 +133,14 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
                 l1r *= shellMask;
                 l1g *= shellMask;
                 l1b *= shellMask;
+
+                float4 bakedOcclusionSample = tex3Dlod(_BakedOcclusion, float4(saturate(i.localTexcoord.xyz), 0));
+                float bakedVisibility = saturate(dot(bakedOcclusionSample, _BakedOcclusionChannel));
+                float bakedShadow = lerp(1.0, bakedVisibility, saturate(_UseBakedOcclusion) * saturate(_BakedShadowStrength));
+                l0 *= bakedShadow;
+                l1r *= bakedShadow;
+                l1g *= bakedShadow;
+                l1b *= bakedShadow;
 
                 if (_OutputChannel == 0) return float4(l0, l1r.z);
                 if (_OutputChannel == 1) return float4(l1r.x, l1g.x, l1b.x, l1g.z);

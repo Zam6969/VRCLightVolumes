@@ -7,6 +7,13 @@ namespace VRCLightVolumes {
         private const string UpdateShaderName = "Hidden/VRCLV/DomeMeshLightVolumeUpdate";
 
         [SerializeField] private LightVolumeManager _manager;
+        [SerializeField] private LayerMask _shadowLayerMask = ~0;
+        [SerializeField] private float _shadowBias = 0.05f;
+        [SerializeField] private UnityEngine.Object _bakeryVolume;
+        [SerializeField] private Texture3D _bakeryShadowMask;
+        [SerializeField] private int _bakeryMaskChannel;
+        [SerializeField] private Renderer _bakeryScreenRenderer;
+        [SerializeField] private Vector2 _scrollPosition;
 
         [MenuItem("Tools/Light Volumes/Realtime Mesh Light Settings")]
         private static void OpenWindow() {
@@ -21,6 +28,13 @@ namespace VRCLightVolumes {
         }
 
         private void OnGUI() {
+            using (EditorGUILayout.ScrollViewScope scrollView = new EditorGUILayout.ScrollViewScope(_scrollPosition)) {
+                _scrollPosition = scrollView.scrollPosition;
+                DrawContent();
+            }
+        }
+
+        private void DrawContent() {
             EditorGUILayout.LabelField("Realtime Mesh Light", EditorStyles.boldLabel);
             _manager = (LightVolumeManager)EditorGUILayout.ObjectField("Light Volume Manager", _manager, typeof(LightVolumeManager), true);
 
@@ -67,6 +81,9 @@ namespace VRCLightVolumes {
             if (EditorGUI.EndChangeCheck()) ApplySettings(materials, outputs, enabled, performanceMode, intensity, colorSaturation, color, panelReach, edgeFade, backfaceFade, floorLightBoost, panelColorSpread, refreshRate, volumeSize);
 
             GUILayout.Space(8f);
+            DrawShadowMapping(materials, outputs, volumeMatrix, volumeSize);
+
+            GUILayout.Space(8f);
             DrawAvatarFillLight(outputs[0].material.GetTexture("_SourceTex"), volumeMatrix, volumeSize);
 
             GUILayout.Space(12f);
@@ -75,6 +92,99 @@ namespace VRCLightVolumes {
                 if (GUILayout.Button("Refresh Now")) RefreshOutputs(outputs);
                 if (GUILayout.Button("Rebuild / Advanced")) DomeMeshLightVolumeWizard.OpenWindow();
             }
+        }
+
+        private void DrawShadowMapping(Material[] materials, CustomRenderTexture[] outputs, Matrix4x4 volumeMatrix, Vector3 volumeSize) {
+            EditorGUILayout.LabelField("Shadow Mapping", EditorStyles.boldLabel);
+            Texture currentMask = materials[0].GetTexture("_BakedOcclusion");
+            bool shadowsEnabled = currentMask != null && materials[0].GetFloat("_UseBakedOcclusion") > 0.5f;
+            float shadowStrength = materials[0].GetFloat("_BakedShadowStrength");
+
+            EditorGUI.BeginChangeCheck();
+            bool nextEnabled = EditorGUILayout.Toggle(new GUIContent("Enabled", "Uses the assigned static visibility volume to shadow the changing screen light."), shadowsEnabled);
+            if (EditorGUI.EndChangeCheck()) DomeMeshLightShadowBaker.SetEnabled(materials, outputs, nextEnabled);
+
+            EditorGUI.BeginChangeCheck();
+            float nextStrength = EditorGUILayout.Slider(new GUIContent("Shadow Strength", "Blends between unshadowed screen light and the baked visibility mask."), shadowStrength, 0f, 1f);
+            if (EditorGUI.EndChangeCheck()) DomeMeshLightShadowBaker.SetStrength(materials, outputs, nextStrength);
+
+            using (new EditorGUI.DisabledScope(true)) {
+                EditorGUILayout.ObjectField("Current Shadow Mask", currentMask, typeof(Texture3D), false);
+            }
+
+            GUILayout.Space(4f);
+            EditorGUILayout.LabelField("Bake From Scene Colliders", EditorStyles.miniBoldLabel);
+            _shadowLayerMask = DrawLayerMask(new GUIContent("Shadow Layers", "Only colliders on these layers block the dome screen light."), _shadowLayerMask);
+            _shadowBias = EditorGUILayout.Slider(new GUIContent("Shadow Bias", "Moves each visibility ray away from surfaces to avoid false self-shadowing."), _shadowBias, 0.005f, 0.2f);
+            EditorGUILayout.HelpBox("This bake uses enabled scene colliders. It works alongside Bakery and does not modify Bakery lightmaps.", MessageType.None);
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode)) {
+                if (GUILayout.Button(currentMask == null ? "Bake Screen Shadow Map" : "Rebake Screen Shadow Map", GUILayout.Height(26f))) {
+                    DomeMeshLightShadowBaker.BakeFromColliders(materials, outputs, volumeMatrix, _shadowLayerMask.value, _shadowBias);
+                    GUIUtility.ExitGUI();
+                }
+            }
+
+            GUILayout.Space(5f);
+            EditorGUILayout.LabelField("Bakery Volume Shadow Mask", EditorStyles.miniBoldLabel);
+            if (!BakeryEditorBridge.IsAvailable) {
+                EditorGUILayout.HelpBox("Bakery is not installed or has not finished compiling.", MessageType.Info);
+            } else {
+                System.Type bakeryVolumeType = BakeryEditorBridge.BakeryVolumeComponentType;
+                _bakeryScreenRenderer = (Renderer)EditorGUILayout.ObjectField(new GUIContent("Dome Screens", "The same combined renderer used to create the realtime mesh light."), _bakeryScreenRenderer, typeof(Renderer), true);
+                using (new EditorGUI.DisabledScope(!BakeryEditorBridge.SupportsDomeShadowMask || _bakeryScreenRenderer == null)) {
+                    if (GUILayout.Button("Prepare Bakery Screen Shadows")) {
+                        Vector3 center = volumeMatrix.MultiplyPoint3x4(Vector3.zero);
+                        Vector3Int resolution = new Vector3Int(outputs[0].width, outputs[0].height, outputs[0].volumeDepth);
+                        float cutoff = materials[0].GetFloat("_ProjectionRange");
+                        if (BakeryEditorBridge.TrySetupDomeShadowMask(_bakeryScreenRenderer, _manager, center, volumeSize, resolution, cutoff, out UnityEngine.Object preparedVolume, out string setupMessage)) {
+                            _bakeryVolume = preparedVolume;
+                            _bakeryShadowMask = BakeryEditorBridge.TryGetVolumeShadowMask(_bakeryVolume, out Texture3D preparedMask) ? preparedMask : null;
+                            EditorUtility.DisplayDialog("Realtime Mesh Light Shadows", setupMessage, "Done");
+                        } else {
+                            EditorUtility.DisplayDialog("Realtime Mesh Light Shadows", setupMessage, "OK");
+                        }
+                    }
+                }
+                EditorGUI.BeginChangeCheck();
+                _bakeryVolume = EditorGUILayout.ObjectField(new GUIContent("Bakery Volume", "A baked Bakery Volume covering the same dome area."), _bakeryVolume, bakeryVolumeType, true);
+                if (EditorGUI.EndChangeCheck()) {
+                    _bakeryShadowMask = BakeryEditorBridge.TryGetVolumeShadowMask(_bakeryVolume, out Texture3D selectedMask) ? selectedMask : null;
+                }
+                _bakeryShadowMask = (Texture3D)EditorGUILayout.ObjectField(new GUIContent("Bakery Mask Texture", "The bakedMask Texture3D generated by Bakery."), _bakeryShadowMask, typeof(Texture3D), false);
+                _bakeryMaskChannel = EditorGUILayout.Popup(new GUIContent("Screen Mask Channel", "The Bakery shadowmask channel assigned to the dome screen light."), Mathf.Clamp(_bakeryMaskChannel, 0, 3), new[] { "Red", "Green", "Blue", "Alpha" });
+
+                using (new EditorGUILayout.HorizontalScope()) {
+                    if (GUILayout.Button("Find Matching Volume")) {
+                        Vector3 center = volumeMatrix.MultiplyPoint3x4(Vector3.zero);
+                        if (BakeryEditorBridge.TryFindClosestVolumeShadowMask(center, volumeSize, out UnityEngine.Object foundVolume, out Texture3D foundMask)) {
+                            _bakeryVolume = foundVolume;
+                            _bakeryShadowMask = foundMask;
+                        } else {
+                            EditorUtility.DisplayDialog("Realtime Mesh Light Shadows", "No baked Bakery Volume shadow mask overlapping this realtime mesh-light field was found.", "OK");
+                        }
+                    }
+                    using (new EditorGUI.DisabledScope(_bakeryShadowMask == null)) {
+                        if (GUILayout.Button("Use Bakery Mask")) {
+                            if (BakeryEditorBridge.TryGetDomeShadowMaskChannel(_bakeryScreenRenderer, out int allocatedChannel)) _bakeryMaskChannel = allocatedChannel;
+                            DomeMeshLightShadowBaker.ApplyMask(materials, outputs, _bakeryShadowMask, _bakeryMaskChannel, true);
+                        }
+                    }
+                }
+                EditorGUILayout.HelpBox("Bake Bakery in Shadowmask mode with the dome screen's Bakery Light Mesh assigned to the selected channel, then import that Bakery Volume mask here.", MessageType.None);
+            }
+
+            using (new EditorGUI.DisabledScope(currentMask == null)) {
+                if (GUILayout.Button("Clear Screen Shadow Map")) DomeMeshLightShadowBaker.ApplyMask(materials, outputs, null, 0, false);
+            }
+        }
+
+        private static LayerMask DrawLayerMask(GUIContent label, LayerMask value) {
+            string[] layerNames = new string[32];
+            for (int i = 0; i < layerNames.Length; i++) {
+                string layerName = LayerMask.LayerToName(i);
+                layerNames[i] = string.IsNullOrEmpty(layerName) ? "Layer " + i : layerName;
+            }
+            return EditorGUILayout.MaskField(label, value.value, layerNames);
         }
 
         private void DrawAvatarFillLight(Texture sourceTexture, Matrix4x4 volumeMatrix, Vector3 volumeSize) {

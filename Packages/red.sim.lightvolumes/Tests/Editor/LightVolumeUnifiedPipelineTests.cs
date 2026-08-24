@@ -456,6 +456,9 @@ namespace VRCLightVolumes.Tests {
             Assert.That(material.GetFloat("_BackfaceFade"), Is.EqualTo(0.25f).Within(0.0001f));
             Assert.That(material.GetFloat("_FloorLightBoost"), Is.EqualTo(2f).Within(0.0001f));
             Assert.That(material.GetFloat("_PanelColorSpread"), Is.EqualTo(0.02f).Within(0.0001f));
+            Assert.That(material.GetFloat("_UseBakedOcclusion"), Is.EqualTo(0f).Within(0.0001f));
+            Assert.That(material.GetFloat("_BakedShadowStrength"), Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(material.GetVector("_BakedOcclusionChannel"), Is.EqualTo(new Vector4(1f, 0f, 0f, 0f)));
             Texture2D emitters = new Texture2D(2, 1, TextureFormat.RGBAFloat, false, true);
             emitters.SetPixels(new[] {
                 new Color(-6f, 0f, 0f, Mathf.PI),
@@ -472,6 +475,14 @@ namespace VRCLightVolumes.Tests {
             Assert.That(size.x, Is.EqualTo(18f).Within(0.0001f));
             Assert.That(size.y, Is.EqualTo(10f).Within(0.0001f));
             Assert.That(size.z, Is.EqualTo(11f).Within(0.0001f));
+        }
+
+        [Test]
+        public void RealtimeMeshLightShadowMaskSelectsBakeryChannels() {
+            Assert.That(DomeMeshLightShadowBaker.GetChannelVector(0), Is.EqualTo(new Vector4(1f, 0f, 0f, 0f)));
+            Assert.That(DomeMeshLightShadowBaker.GetChannelVector(1), Is.EqualTo(new Vector4(0f, 1f, 0f, 0f)));
+            Assert.That(DomeMeshLightShadowBaker.GetChannelVector(2), Is.EqualTo(new Vector4(0f, 0f, 1f, 0f)));
+            Assert.That(DomeMeshLightShadowBaker.GetChannelVector(3), Is.EqualTo(new Vector4(0f, 0f, 0f, 1f)));
         }
 
         private T CreateComponent<T>(string name) where T : Component {

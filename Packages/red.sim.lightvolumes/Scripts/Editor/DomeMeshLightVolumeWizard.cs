@@ -434,6 +434,9 @@ namespace VRCLightVolumes {
                     material.SetFloat("_BackfaceFade", _backfaceFade);
                     material.SetFloat("_FloorLightBoost", _floorLightBoost);
                     material.SetFloat("_PanelColorSpread", _panelColorSpread);
+                    material.SetFloat("_UseBakedOcclusion", 0f);
+                    material.SetFloat("_BakedShadowStrength", 1f);
+                    material.SetVector("_BakedOcclusionChannel", new Vector4(1f, 0f, 0f, 0f));
                     material.SetInt("_OutputChannel", channel);
                     AssetDatabase.CreateAsset(material, AssetDatabase.GenerateUniqueAssetPath(outputFolder + $"/DomeMeshLightUpdate{channel}.mat"));
 

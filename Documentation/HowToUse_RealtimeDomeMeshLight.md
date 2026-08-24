@@ -38,7 +38,7 @@ You need:
 11. Click **Create Realtime Mesh Light Volume**.
 12. Save the scene.
 
-The tool creates emitter data, update materials and three 3D textures, connects them to the manager, and publishes the result through one standard additive Light Volume. It does not require a Unity or Bakery lighting bake.
+The tool creates emitter data, update materials and three 3D textures, connects them to the manager, and publishes the result through one standard additive Light Volume. The realtime light itself does not require a Unity or Bakery lighting bake. Static screen shadows can optionally be baked afterward.
 
 ## Recommended VR Starting Settings
 
@@ -69,6 +69,39 @@ This window changes the complete mesh-light setup at once. It includes intensity
 - **Enabled** controls the published standard Light Volume.
 
 The optional **Avatar Fill Light** is only a fallback for avatar shaders that do not receive the standard Light Volume data. Do not create it when your avatar shader already supports the published Light Volume and you prefer to avoid an extra realtime Unity light.
+
+## Shadow Mapping
+
+Open `Tools > Light Volumes > Realtime Mesh Light Settings` and find **Shadow Mapping**. The baked mask stores only static visibility, so the video color still changes at runtime while walls, floors and other fixed geometry can block the screen light.
+
+### Bake From Scene Colliders
+
+This is the quickest option and works alongside a Bakery-lit world:
+
+1. Make sure the static geometry that should cast a shadow has enabled colliders.
+2. Choose the relevant **Shadow Layers**.
+3. Leave **Shadow Bias** near `0.05` initially.
+4. Click **Bake Screen Shadow Map**.
+5. Adjust **Shadow Strength** and save the scene.
+
+The bake creates one small 3D texture next to the generated dome assets. Runtime cost is one extra 3D texture sample per lighting voxel, not one shadow map per screen panel.
+
+### Use A Bakery Volume Shadow Mask
+
+The mesh light can also read a Bakery Volume's `bakedMask` directly:
+
+1. In Bakery, use **Shadowmask** render mode.
+2. Assign the combined renderer under **Dome Screens** and click **Prepare Bakery Screen Shadows**. This adds or configures a Bakery Light Mesh, a zero-output Unity Light used only for Bakery's channel allocation, and a matching Bakery Volume.
+3. Run the Bakery bake.
+4. Return to **Realtime Mesh Light Settings > Shadow Mapping**.
+5. Assign the baked **Bakery Volume**, or click **Find Matching Volume**.
+6. The tool reads Bakery's allocated RGBA channel when possible. You can also select **Screen Mask Channel** manually.
+7. Click **Use Bakery Mask**, then adjust **Shadow Strength**.
+
+This imports only the selected visibility channel. It does not replace the normal Bakery lightmaps or the realtime video lighting. If the Bakery mask contains another light in the selected channel, choose the correct channel or use the collider bake instead.
+
+> [!IMPORTANT]
+> Rebuild or rebake the screen shadow map after changing the dome bounds, screen positions or static shadow-casting geometry. A Bakery shadow mask must also be reimported after its Bakery Volume is rebaked.
 
 ## After Changing The Mesh Or UVs
 
