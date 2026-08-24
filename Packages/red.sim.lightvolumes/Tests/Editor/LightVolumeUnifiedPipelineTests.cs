@@ -458,6 +458,7 @@ namespace VRCLightVolumes.Tests {
             Assert.That(material.GetFloat("_PanelColorSpread"), Is.EqualTo(0.02f).Within(0.0001f));
             Assert.That(material.GetFloat("_UseBakedOcclusion"), Is.EqualTo(0f).Within(0.0001f));
             Assert.That(material.GetFloat("_BakedShadowStrength"), Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(material.GetFloat("_BakedShadowContrast"), Is.EqualTo(2f).Within(0.0001f));
             Assert.That(material.GetVector("_BakedOcclusionChannel"), Is.EqualTo(new Vector4(1f, 0f, 0f, 0f)));
             Texture2D emitters = new Texture2D(2, 1, TextureFormat.RGBAFloat, false, true);
             emitters.SetPixels(new[] {

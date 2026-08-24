@@ -15,6 +15,7 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
         [HideInInspector] _UseBakedOcclusion("Use Baked Screen Shadows", Float) = 0
         [HideInInspector] _BakedOcclusionChannel("Baked Shadow Channel", Vector) = (1, 0, 0, 0)
         _BakedShadowStrength("Baked Shadow Strength", Range(0, 1)) = 1
+        _BakedShadowContrast("Baked Shadow Contrast", Range(0.5, 8)) = 2
         _Intensity("Intensity", Float) = 1
         _ColorSaturation("Screen Color", Range(0, 1)) = 1
         _ProjectionRange("Projection Range", Float) = 10
@@ -54,6 +55,7 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
             float _UseBakedOcclusion;
             float4 _BakedOcclusionChannel;
             float _BakedShadowStrength;
+            float _BakedShadowContrast;
             float _Intensity;
             float _ColorSaturation;
             float _ProjectionRange;
@@ -136,6 +138,7 @@ Shader "Hidden/VRCLV/DomeMeshLightVolumeUpdate"
 
                 float4 bakedOcclusionSample = tex3Dlod(_BakedOcclusion, float4(saturate(i.localTexcoord.xyz), 0));
                 float bakedVisibility = saturate(dot(bakedOcclusionSample, _BakedOcclusionChannel));
+                bakedVisibility = pow(bakedVisibility, max(_BakedShadowContrast, 0.5));
                 float bakedShadow = lerp(1.0, bakedVisibility, saturate(_UseBakedOcclusion) * saturate(_BakedShadowStrength));
                 l0 *= bakedShadow;
                 l1r *= bakedShadow;

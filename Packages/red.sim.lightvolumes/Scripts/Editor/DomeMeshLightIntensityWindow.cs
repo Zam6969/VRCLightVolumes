@@ -9,6 +9,7 @@ namespace VRCLightVolumes {
         [SerializeField] private LightVolumeManager _manager;
         [SerializeField] private LayerMask _shadowLayerMask = ~0;
         [SerializeField] private float _shadowBias = 0.05f;
+        [SerializeField] private bool _includeRenderMeshes = true;
         [SerializeField] private UnityEngine.Object _bakeryVolume;
         [SerializeField] private Texture3D _bakeryShadowMask;
         [SerializeField] private int _bakeryMaskChannel;
@@ -99,6 +100,7 @@ namespace VRCLightVolumes {
             Texture currentMask = materials[0].GetTexture("_BakedOcclusion");
             bool shadowsEnabled = currentMask != null && materials[0].GetFloat("_UseBakedOcclusion") > 0.5f;
             float shadowStrength = materials[0].GetFloat("_BakedShadowStrength");
+            float shadowContrast = materials[0].GetFloat("_BakedShadowContrast");
 
             EditorGUI.BeginChangeCheck();
             bool nextEnabled = EditorGUILayout.Toggle(new GUIContent("Enabled", "Uses the assigned static visibility volume to shadow the changing screen light."), shadowsEnabled);
@@ -108,18 +110,23 @@ namespace VRCLightVolumes {
             float nextStrength = EditorGUILayout.Slider(new GUIContent("Shadow Strength", "Blends between unshadowed screen light and the baked visibility mask."), shadowStrength, 0f, 1f);
             if (EditorGUI.EndChangeCheck()) DomeMeshLightShadowBaker.SetStrength(materials, outputs, nextStrength);
 
+            EditorGUI.BeginChangeCheck();
+            float nextContrast = EditorGUILayout.Slider(new GUIContent("Shadow Contrast", "Darkens partial shadows that are filled by several other dome panels."), shadowContrast, 0.5f, 8f);
+            if (EditorGUI.EndChangeCheck()) DomeMeshLightShadowBaker.SetContrast(materials, outputs, nextContrast);
+
             using (new EditorGUI.DisabledScope(true)) {
                 EditorGUILayout.ObjectField("Current Shadow Mask", currentMask, typeof(Texture3D), false);
             }
 
             GUILayout.Space(4f);
-            EditorGUILayout.LabelField("Bake From Scene Colliders", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField("Bake From Scene Geometry", EditorStyles.miniBoldLabel);
             _shadowLayerMask = DrawLayerMask(new GUIContent("Shadow Layers", "Only colliders on these layers block the dome screen light."), _shadowLayerMask);
+            _includeRenderMeshes = EditorGUILayout.Toggle(new GUIContent("Include Render Meshes", "Temporarily includes enabled Mesh Renderers and Skinned Mesh Renderers whose Cast Shadows setting is not Off. No permanent colliders are added."), _includeRenderMeshes);
             _shadowBias = EditorGUILayout.Slider(new GUIContent("Shadow Bias", "Moves each visibility ray away from surfaces to avoid false self-shadowing."), _shadowBias, 0.005f, 0.2f);
-            EditorGUILayout.HelpBox("This bake uses enabled scene colliders. It works alongside Bakery and does not modify Bakery lightmaps.", MessageType.None);
+            EditorGUILayout.HelpBox("This bake uses enabled scene colliders and, when selected, visible render meshes that cast shadows. It works alongside Bakery and does not modify Bakery lightmaps.", MessageType.None);
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode)) {
                 if (GUILayout.Button(currentMask == null ? "Bake Screen Shadow Map" : "Rebake Screen Shadow Map", GUILayout.Height(26f))) {
-                    DomeMeshLightShadowBaker.BakeFromColliders(materials, outputs, volumeMatrix, _shadowLayerMask.value, _shadowBias);
+                    DomeMeshLightShadowBaker.BakeFromColliders(materials, outputs, volumeMatrix, _shadowLayerMask.value, _shadowBias, _includeRenderMeshes);
                     GUIUtility.ExitGUI();
                 }
             }

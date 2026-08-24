@@ -74,17 +74,17 @@ The optional **Avatar Fill Light** is only a fallback for avatar shaders that do
 
 Open `Tools > Light Volumes > Realtime Mesh Light Settings` and find **Shadow Mapping**. The baked mask stores only static visibility, so the video color still changes at runtime while walls, floors and other fixed geometry can block the screen light.
 
-### Bake From Scene Colliders
+### Bake From Scene Geometry
 
 This is the quickest option and works alongside a Bakery-lit world:
 
-1. Make sure the static geometry that should cast a shadow has enabled colliders.
+1. Enable **Include Render Meshes** so ordinary Mesh Renderers and Skinned Mesh Renderers can cast screen-light shadows even when they do not have colliders.
 2. Choose the relevant **Shadow Layers**.
 3. Leave **Shadow Bias** near `0.05` initially.
 4. Click **Bake Screen Shadow Map**.
-5. Adjust **Shadow Strength** and save the scene.
+5. Adjust **Shadow Strength** and **Shadow Contrast**, then save the scene. Raise contrast when many dome panels fill the shadows too much.
 
-The bake creates one small 3D texture next to the generated dome assets. Runtime cost is one extra 3D texture sample per lighting voxel, not one shadow map per screen panel.
+The editor temporarily creates physics representations of visible render meshes whose **Cast Shadows** setting is not `Off`, traces the screen visibility, and removes those temporary objects when the bake finishes. Existing colliders are included too. The bake creates one small 3D texture next to the generated dome assets. Runtime cost is one extra 3D texture sample per lighting voxel, not one shadow map per screen panel.
 
 ### Use A Bakery Volume Shadow Mask
 

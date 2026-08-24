@@ -1,21 +1,17 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace VRCLightVolumes {
     internal static class DomeMeshLightShadowBaker {
         private const float MinimumWeight = 0.000001f;
 
-        internal static bool BakeFromColliders(Material[] materials, CustomRenderTexture[] outputs, Matrix4x4 volumeMatrix, int layerMask, float bias) {
+        internal static bool BakeFromColliders(Material[] materials, CustomRenderTexture[] outputs, Matrix4x4 volumeMatrix, int layerMask, float bias, bool includeRenderMeshes) {
             if (!TryReadEmitterData(materials, out Color[] positions, out Color[] normals, out int emitterCount)) {
                 EditorUtility.DisplayDialog("Realtime Mesh Light Shadows", "The generated screen emitter data could not be read. Rebuild the realtime mesh light and try again.", "OK");
-                return false;
-            }
-
-            Collider[] colliders = UnityEngine.Object.FindObjectsOfType<Collider>();
-            if (colliders.Length == 0) {
-                EditorUtility.DisplayDialog("Realtime Mesh Light Shadows", "No enabled scene colliders were found. Add colliders to the static geometry that should block the screen light, or import a Bakery Volume shadow mask instead.", "OK");
                 return false;
             }
 
@@ -29,10 +25,18 @@ namespace VRCLightVolumes {
             float floorBoost = Mathf.Max(sourceMaterial.GetFloat("_FloorLightBoost"), 1f);
             bool previousBackfaceQueries = Physics.queriesHitBackfaces;
             bool canceled = false;
+            TemporaryRenderMeshColliders temporaryRenderMeshes = null;
 
-            Physics.SyncTransforms();
-            Physics.queriesHitBackfaces = true;
             try {
+                if (includeRenderMeshes) temporaryRenderMeshes = TemporaryRenderMeshColliders.Create(layerMask);
+                Collider[] colliders = UnityEngine.Object.FindObjectsOfType<Collider>();
+                if (colliders.Length == 0) {
+                    EditorUtility.DisplayDialog("Realtime Mesh Light Shadows", "No enabled colliders or shadow-casting render meshes were found on the selected layers.", "OK");
+                    return false;
+                }
+
+                Physics.SyncTransforms();
+                Physics.queriesHitBackfaces = true;
                 for (int z = 0; z < depth && !canceled; z++) {
                     for (int y = 0; y < height; y++) {
                         float progress = (z * height + y) / (float)(depth * height);
@@ -71,6 +75,7 @@ namespace VRCLightVolumes {
                 }
             } finally {
                 Physics.queriesHitBackfaces = previousBackfaceQueries;
+                temporaryRenderMeshes?.Dispose();
                 EditorUtility.ClearProgressBar();
             }
 
@@ -112,6 +117,15 @@ namespace VRCLightVolumes {
             Undo.RecordObjects(materials, "Change Realtime Mesh Light Shadow Strength");
             for (int i = 0; i < materials.Length; i++) {
                 materials[i].SetFloat("_BakedShadowStrength", Mathf.Clamp01(strength));
+                EditorUtility.SetDirty(materials[i]);
+            }
+            Refresh(outputs);
+        }
+
+        internal static void SetContrast(Material[] materials, CustomRenderTexture[] outputs, float contrast) {
+            Undo.RecordObjects(materials, "Change Realtime Mesh Light Shadow Contrast");
+            for (int i = 0; i < materials.Length; i++) {
+                materials[i].SetFloat("_BakedShadowContrast", Mathf.Clamp(contrast, 0.5f, 8f));
                 EditorUtility.SetDirty(materials[i]);
             }
             Refresh(outputs);
@@ -167,6 +181,62 @@ namespace VRCLightVolumes {
                 outputs[i].Update();
             }
             SceneView.RepaintAll();
+        }
+
+        private sealed class TemporaryRenderMeshColliders : IDisposable {
+            private readonly List<GameObject> _temporaryObjects = new List<GameObject>();
+            private readonly List<Mesh> _temporaryMeshes = new List<Mesh>();
+
+            internal static TemporaryRenderMeshColliders Create(int layerMask) {
+                TemporaryRenderMeshColliders scope = new TemporaryRenderMeshColliders();
+                Renderer[] renderers = UnityEngine.Object.FindObjectsOfType<Renderer>();
+                for (int i = 0; i < renderers.Length; i++) {
+                    Renderer renderer = renderers[i];
+                    if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy || renderer.shadowCastingMode == ShadowCastingMode.Off) continue;
+                    if ((layerMask & (1 << renderer.gameObject.layer)) == 0) continue;
+
+                    try {
+                        scope.AddRenderer(renderer);
+                    } catch (Exception exception) {
+                        Debug.LogWarning($"[LightVolumes] Skipped shadow geometry '{renderer.name}': {exception.Message}", renderer);
+                    }
+                }
+                return scope;
+            }
+
+            private void AddRenderer(Renderer renderer) {
+                Mesh mesh = null;
+                MeshFilter meshFilter = renderer.GetComponent<MeshFilter>();
+                if (meshFilter != null) mesh = meshFilter.sharedMesh;
+                if (mesh == null && renderer is SkinnedMeshRenderer skinnedRenderer) {
+                    mesh = new Mesh { name = renderer.name + " Shadow Bake Mesh" };
+                    _temporaryMeshes.Add(mesh);
+                    skinnedRenderer.BakeMesh(mesh);
+                }
+                if (mesh == null || mesh.vertexCount == 0) return;
+
+                GameObject temporaryObject = new GameObject(renderer.name + " Shadow Bake Collider") {
+                    hideFlags = HideFlags.HideAndDontSave,
+                    layer = renderer.gameObject.layer
+                };
+                _temporaryObjects.Add(temporaryObject);
+                temporaryObject.transform.SetPositionAndRotation(renderer.transform.position, renderer.transform.rotation);
+                temporaryObject.transform.localScale = renderer.transform.lossyScale;
+                MeshCollider meshCollider = temporaryObject.AddComponent<MeshCollider>();
+                meshCollider.sharedMesh = mesh;
+                meshCollider.convex = false;
+                meshCollider.isTrigger = false;
+            }
+
+            public void Dispose() {
+                for (int i = 0; i < _temporaryObjects.Count; i++) {
+                    if (_temporaryObjects[i] != null) UnityEngine.Object.DestroyImmediate(_temporaryObjects[i]);
+                }
+                for (int i = 0; i < _temporaryMeshes.Count; i++) {
+                    if (_temporaryMeshes[i] != null) UnityEngine.Object.DestroyImmediate(_temporaryMeshes[i]);
+                }
+                Physics.SyncTransforms();
+            }
         }
     }
 }
