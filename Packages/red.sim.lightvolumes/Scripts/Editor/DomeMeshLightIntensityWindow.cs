@@ -68,7 +68,7 @@ namespace VRCLightVolumes {
             GUILayout.Space(8f);
             EditorGUILayout.LabelField("Lighting", EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
-            bool enabled = EditorGUILayout.Toggle(new GUIContent("Enabled", "Turns the shared realtime mesh-light field on or off."), hasStandardBridge ? bridgeVolume.Intensity > 0f : _manager.DynamicMeshLightEnabled);
+            bool enabled = EditorGUILayout.Toggle(new GUIContent("Enabled", "Turns the shared realtime mesh-light field on or off."), hasStandardBridge ? DomeMeshLightAtlasBridgeUtility.IsBridgeEnabled(bridgeVolume) : _manager.DynamicMeshLightEnabled);
             float intensity = EditorGUILayout.Slider(new GUIContent("Intensity", "Changes all three realtime mesh-light textures together."), materials[0].GetFloat("_Intensity"), 0f, 8f);
             float colorSaturation = EditorGUILayout.Slider(new GUIContent("Screen Color", "0 produces neutral white light; 1 uses the full screen colors."), materials[0].GetFloat("_ColorSaturation"), 0f, 1f);
             Color color = EditorGUILayout.ColorField(new GUIContent("Color Multiplier", "Tints or reduces the final realtime mesh-light contribution."), _manager.DynamicMeshLightColor);

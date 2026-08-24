@@ -128,13 +128,20 @@ namespace VRCLightVolumes {
                 1f / Mathf.Max(output.volumeDepth, 1),
                 0f));
             bool hasTextures = manager.DynamicMeshLightTexture0 != null && (manager.DynamicMeshLightL0Only || manager.DynamicMeshLightTexture1 != null && manager.DynamicMeshLightTexture2 != null);
-            material.SetFloat("_DynamicEnabled", hasTextures ? 1f : 0f);
+            bool bridgeEnabled = IsBridgeEnabled(volume);
+            float previousEnabled = material.GetFloat("_DynamicEnabled");
+            material.SetFloat("_DynamicEnabled", hasTextures && bridgeEnabled ? 1f : 0f);
             material.SetFloat("_L0Only", manager.DynamicMeshLightL0Only ? 1f : 0f);
             CustomRenderTexture source = manager.DynamicMeshLightTexture0 as CustomRenderTexture;
             if (source != null) output.updatePeriod = source.updatePeriod;
             EditorUtility.SetDirty(material);
             EditorUtility.SetDirty(output);
+            if (!Mathf.Approximately(previousEnabled, material.GetFloat("_DynamicEnabled")) && output.IsCreated()) output.Update();
             return true;
+        }
+
+        internal static bool IsBridgeEnabled(LightVolumeInstance volume) {
+            return volume != null && volume.isActiveAndEnabled && volume.IsActive && volume.Intensity > 0f && volume.Color != Color.black;
         }
 
         internal static Vector3 GetWorldSize(LightVolumeManager manager) {
@@ -160,7 +167,8 @@ namespace VRCLightVolumes {
 
         internal static bool ApplyVolumeSettings(LightVolumeManager manager, bool enabled, Color color, float edgeFade) {
             if (!TryGetBridge(manager, out LightVolumeInstance volume, out _, out _)) return false;
-            Undo.RecordObject(volume, "Change Standard Realtime Light Volume Settings");
+            Undo.RecordObjects(new UnityEngine.Object[] { volume, volume.gameObject }, "Change Standard Realtime Light Volume Settings");
+            if (enabled && !volume.gameObject.activeSelf) volume.gameObject.SetActive(true);
             manager.DynamicMeshLightEnabled = false;
             volume.Color = color;
             volume.Intensity = enabled ? 1f : 0f;

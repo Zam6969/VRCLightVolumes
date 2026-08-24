@@ -425,6 +425,7 @@ namespace VRCLightVolumes.Tests {
 
             volume.Bake = false;
             volume.ReserveUVSpace = true;
+            volume.IsActive = true;
             volume.SmoothBlending = 0f;
             volume.BoundsUvwMin0 = new Vector4(0.1f, 0.2f, 0.3f, 0.25f);
             volume.BoundsUvwMin1 = new Vector4(0.4f, 0.2f, 0.3f, 0.5f);
@@ -451,6 +452,10 @@ namespace VRCLightVolumes.Tests {
             Assert.That(material.GetFloat("_ScreenShadowStrength"), Is.EqualTo(1f));
             Assert.That(material.GetFloat("_ScreenShadowContrast"), Is.EqualTo(2f));
             Assert.That(volume.SmoothBlending, Is.EqualTo(0.5f));
+
+            volume.gameObject.SetActive(false);
+            Assert.That(DomeMeshLightAtlasBridgeUtility.SyncAtlasMaterial(manager), Is.True);
+            Assert.That(material.GetFloat("_DynamicEnabled"), Is.EqualTo(0f));
         }
 
         [Test]
