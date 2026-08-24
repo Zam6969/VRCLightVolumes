@@ -10,14 +10,23 @@ namespace VRCLightVolumes {
         private const float MinimumWeight = 0.000001f;
 
         internal static bool BakeFromColliders(Material[] materials, CustomRenderTexture[] outputs, Matrix4x4 volumeMatrix, int layerMask, float bias, bool includeRenderMeshes) {
+            Vector3Int resolution = new Vector3Int(outputs[0].width, outputs[0].height, outputs[0].volumeDepth);
+            return BakeFromColliders(materials, outputs, volumeMatrix, layerMask, bias, includeRenderMeshes, null, resolution, 1f, 2f);
+        }
+
+        internal static bool BakeScreenOriginField(Material[] materials, CustomRenderTexture[] outputs, Matrix4x4 volumeMatrix, int layerMask, float bias, bool includeRenderMeshes, LightVolumeManager manager, Vector3Int resolution, float strength, float contrast) {
+            return BakeFromColliders(materials, outputs, volumeMatrix, layerMask, bias, includeRenderMeshes, manager, resolution, strength, contrast);
+        }
+
+        private static bool BakeFromColliders(Material[] materials, CustomRenderTexture[] outputs, Matrix4x4 volumeMatrix, int layerMask, float bias, bool includeRenderMeshes, LightVolumeManager atlasManager, Vector3Int resolution, float strength, float contrast) {
             if (!TryReadEmitterData(materials, out Color[] positions, out Color[] normals, out int emitterCount)) {
                 EditorUtility.DisplayDialog("Realtime Mesh Light Shadows", "The generated screen emitter data could not be read. Rebuild the realtime mesh light and try again.", "OK");
                 return false;
             }
 
-            int width = outputs[0].width;
-            int height = outputs[0].height;
-            int depth = outputs[0].volumeDepth;
+            int width = Mathf.Max(resolution.x, 4);
+            int height = Mathf.Max(resolution.y, 4);
+            int depth = Mathf.Max(resolution.z, 4);
             Color[] pixels = new Color[width * height * depth];
             Material sourceMaterial = materials[0];
             float projectionRange = Mathf.Max(sourceMaterial.GetFloat("_ProjectionRange"), 0.01f);
@@ -94,10 +103,18 @@ namespace VRCLightVolumes {
             if (string.IsNullOrEmpty(folder)) folder = "Assets/LightVolumesDome";
             string assetPath = AssetDatabase.GenerateUniqueAssetPath(folder + "/DomeMeshLightBakedShadows.asset");
             AssetDatabase.CreateAsset(texture, assetPath);
-            ApplyMask(materials, outputs, texture, 0, true);
+            if (atlasManager != null) {
+                ApplyMask(materials, outputs, null, 0, false);
+                if (!DomeMeshLightAtlasBridgeUtility.ApplyScreenShadowField(atlasManager, texture, new Vector3Int(width, height, depth), strength, contrast)) {
+                    EditorUtility.DisplayDialog("Realtime Mesh Light Shadows", "The standard Light Volume bridge could not accept the screen-origin shadow field. Publish the realtime mesh light to the standard atlas and try again.", "OK");
+                    return false;
+                }
+            } else {
+                ApplyMask(materials, outputs, texture, 0, true);
+            }
             AssetDatabase.SaveAssets();
             EditorGUIUtility.PingObject(texture);
-            EditorUtility.DisplayDialog("Realtime Mesh Light Shadows", $"Baked static screen shadows into {width} x {height} x {depth} voxels. The changing video colors now use this visibility mask.", "Done");
+            EditorUtility.DisplayDialog("Realtime Mesh Light Shadows", $"Baked shadows from {emitterCount} screen sections into {width} x {height} x {depth} voxels. The screen sections, not a center light, are the shadow origins.", "Done");
             return true;
         }
 

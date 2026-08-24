@@ -447,6 +447,9 @@ namespace VRCLightVolumes.Tests {
             Assert.That(material.GetVector("_AtlasTexelSize"), Is.EqualTo(new Vector4(0.25f, 0.25f, 0.25f, 0f)));
             Assert.That(material.GetFloat("_DynamicEnabled"), Is.EqualTo(1f));
             Assert.That(material.GetFloat("_L0Only"), Is.EqualTo(0f));
+            Assert.That(material.GetFloat("_UseScreenVisibility"), Is.EqualTo(0f));
+            Assert.That(material.GetFloat("_ScreenShadowStrength"), Is.EqualTo(1f));
+            Assert.That(material.GetFloat("_ScreenShadowContrast"), Is.EqualTo(2f));
             Assert.That(volume.SmoothBlending, Is.EqualTo(0.5f));
         }
 

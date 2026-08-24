@@ -11,6 +11,8 @@ namespace VRCLightVolumes {
         [SerializeField] private LayerMask _shadowLayerMask = ~0;
         [SerializeField] private float _shadowBias = 0.05f;
         [SerializeField] private bool _includeRenderMeshes = true;
+        [SerializeField] private int _screenShadowHorizontalResolution = 64;
+        [SerializeField] private int _screenShadowVerticalResolution = 24;
         [SerializeField] private UnityEngine.Object _bakeryVolume;
         [SerializeField] private Texture3D _bakeryShadowMask;
         [SerializeField] private int _bakeryMaskChannel;
@@ -85,11 +87,8 @@ namespace VRCLightVolumes {
             if (EditorGUI.EndChangeCheck()) ApplySettings(materials, outputs, enabled, performanceMode, intensity, colorSaturation, color, panelReach, edgeFade, backfaceFade, floorLightBoost, panelColorSpread, refreshRate, volumeSize);
 
             GUILayout.Space(8f);
-            DrawShadowMapping(materials, outputs, volumeMatrix, volumeSize);
-
-            GUILayout.Space(8f);
             Texture sourceTexture = outputs[0].material.GetTexture("_SourceTex");
-            DrawCubemapFloorShadows(sourceTexture, volumeMatrix, volumeSize);
+            DrawScreenOriginShadows(materials, outputs, volumeMatrix);
 
             GUILayout.Space(8f);
             DrawAvatarFillLight(sourceTexture, volumeMatrix, volumeSize);
@@ -100,6 +99,72 @@ namespace VRCLightVolumes {
                 if (GUILayout.Button("Refresh Now")) RefreshOutputs(outputs);
                 if (GUILayout.Button("Rebuild / Advanced")) DomeMeshLightVolumeWizard.OpenWindow();
             }
+        }
+
+        private void DrawScreenOriginShadows(Material[] materials, CustomRenderTexture[] outputs, Matrix4x4 volumeMatrix) {
+            EditorGUILayout.LabelField("Screen-Origin Shadows", EditorStyles.boldLabel);
+            bool hasBridge = DomeMeshLightAtlasBridgeUtility.TryGetBridge(_manager, out _, out Material bridgeMaterial, out _);
+            Texture3D currentMask = hasBridge ? bridgeMaterial.GetTexture("_ScreenVisibility") as Texture3D : null;
+            bool enabled = currentMask != null && bridgeMaterial.GetFloat("_UseScreenVisibility") > 0.5f;
+            float strength = hasBridge && bridgeMaterial.HasProperty("_ScreenShadowStrength") ? bridgeMaterial.GetFloat("_ScreenShadowStrength") : 1f;
+            float contrast = hasBridge && bridgeMaterial.HasProperty("_ScreenShadowContrast") ? bridgeMaterial.GetFloat("_ScreenShadowContrast") : 2f;
+
+            EditorGUILayout.HelpBox("Bakes visibility from every generated dome screen section. The video colors remain realtime; only static mesh visibility is baked.", MessageType.None);
+            if (!hasBridge) {
+                EditorGUILayout.HelpBox("Publish the mesh light to the standard Light Volume atlas before baking detailed screen shadows.", MessageType.Info);
+                if (GUILayout.Button("Publish To Standard Light Volumes", GUILayout.Height(26f))) {
+                    DomeMeshLightAtlasBridgeUtility.CreateFromExisting(_manager);
+                    GUIUtility.ExitGUI();
+                }
+                return;
+            }
+
+            EditorGUI.BeginChangeCheck();
+            bool nextEnabled = EditorGUILayout.Toggle("Enabled", enabled);
+            float nextStrength = EditorGUILayout.Slider("Shadow Strength", strength, 0f, 1f);
+            float nextContrast = EditorGUILayout.Slider("Shadow Contrast", contrast, 0.5f, 8f);
+            if (EditorGUI.EndChangeCheck()) DomeMeshLightAtlasBridgeUtility.SetScreenShadowSettings(_manager, nextEnabled, nextStrength, nextContrast);
+
+            using (new EditorGUI.DisabledScope(true)) EditorGUILayout.ObjectField("Current Shadow Field", currentMask, typeof(Texture3D), false);
+            _screenShadowHorizontalResolution = EditorGUILayout.IntSlider(new GUIContent("Floor Detail", "Horizontal detail for shadows on the floor and walls."), _screenShadowHorizontalResolution, 32, 96);
+            _screenShadowVerticalResolution = EditorGUILayout.IntSlider(new GUIContent("Height Detail", "Vertical detail for raised shadow casters."), _screenShadowVerticalResolution, 8, 48);
+            _shadowLayerMask = DrawLayerMask(new GUIContent("Shadow Layers", "Meshes on these layers block light from the dome screen sections."), _shadowLayerMask);
+            _includeRenderMeshes = EditorGUILayout.Toggle(new GUIContent("Include Render Meshes", "Temporarily includes visible shadow-casting meshes without adding permanent colliders."), _includeRenderMeshes);
+            _shadowBias = EditorGUILayout.Slider("Shadow Bias", _shadowBias, 0.005f, 0.2f);
+
+            PointLightVolumeInstance legacyCenterLight = FindCubemapShadowLight();
+            if (legacyCenterLight != null && legacyCenterLight.gameObject.activeSelf && legacyCenterLight.IsActive) {
+                EditorGUILayout.HelpBox("The old center cubemap light is still enabled. It does not represent the dome screens and should be disabled.", MessageType.Warning);
+                if (GUILayout.Button("Disable Old Center Shadow Light")) DisableLegacyCenterShadowLight(legacyCenterLight);
+            }
+
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode)) {
+                string buttonLabel = currentMask == null ? "Bake Shadows From Screens" : "Rebake Shadows From Screens";
+                if (GUILayout.Button(buttonLabel, GUILayout.Height(28f))) {
+                    Vector3Int resolution = new Vector3Int(_screenShadowHorizontalResolution, _screenShadowVerticalResolution, _screenShadowHorizontalResolution);
+                    if (DomeMeshLightShadowBaker.BakeScreenOriginField(materials, outputs, volumeMatrix, _shadowLayerMask.value, _shadowBias, _includeRenderMeshes, _manager, resolution, nextStrength, nextContrast)) {
+                        DisableLegacyCenterShadowLight(legacyCenterLight);
+                        EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
+                    }
+                    GUIUtility.ExitGUI();
+                }
+            }
+
+            using (new EditorGUI.DisabledScope(currentMask == null)) {
+                if (GUILayout.Button("Clear Screen-Origin Shadows")) {
+                    DomeMeshLightAtlasBridgeUtility.ApplyScreenShadowField(_manager, null, Vector3Int.one, nextStrength, nextContrast);
+                    GUIUtility.ExitGUI();
+                }
+            }
+        }
+
+        private static void DisableLegacyCenterShadowLight(PointLightVolumeInstance shadowLight) {
+            if (shadowLight == null) return;
+            Undo.RecordObjects(new UnityEngine.Object[] { shadowLight, shadowLight.gameObject }, "Disable Old Center Shadow Light");
+            shadowLight.IsActive = false;
+            PointLightVolumeEditorUtility.Sync(shadowLight, false, false);
+            shadowLight.gameObject.SetActive(false);
+            EditorUtility.SetDirty(shadowLight);
         }
 
         private void DrawShadowMapping(Material[] materials, CustomRenderTexture[] outputs, Matrix4x4 volumeMatrix, Vector3 volumeSize) {
