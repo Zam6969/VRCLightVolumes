@@ -139,7 +139,8 @@ namespace VRCLightVolumes {
 
         private bool HasActiveTarget() {
             if (TargetLight != null) return TargetLight.enabled;
-            return TargetPointLightVolume != null && TargetPointLightVolume.IsActive;
+            // Keep sampling after a black frame deactivates the Point Light Volume so a later bright frame can wake it again.
+            return TargetPointLightVolume != null;
         }
 
         private void UpgradeSettings() {
@@ -154,7 +155,14 @@ namespace VRCLightVolumes {
             if (SettingsVersion < 3) LightDistanceFromAvatar = 2f;
             if (SettingsVersion < 4) ScreenLightBoost = 2f;
             if (SettingsVersion < 5) FacingOnlyLighting = true;
-            SettingsVersion = 6;
+            if (SettingsVersion < 7 && TargetPointLightVolume != null && TargetLight == null) {
+                if (TargetPointLightVolume.Intensity <= 8f) TargetPointLightVolume.SetIntensity(75f);
+                if (FollowVideoBrightness >= 0.99f) FollowVideoBrightness = 0.25f;
+                if (ScreenLightBoost >= 1.99f) ScreenLightBoost = 1f;
+                SettingsVersion = 7;
+            } else if (SettingsVersion < 6) {
+                SettingsVersion = 6;
+            }
         }
 
         private void UpdateSourcePosition() {

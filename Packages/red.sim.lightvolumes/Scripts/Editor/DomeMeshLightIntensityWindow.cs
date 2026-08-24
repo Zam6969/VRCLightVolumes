@@ -229,13 +229,14 @@ namespace VRCLightVolumes {
                 }
                 return;
             }
+            UpgradeCubemapShadowSettings(shadowLight, colorDriver);
 
             if (_cubemapScreenRenderer == null && shadowLight.ExclusionMask != null && shadowLight.ExclusionMask.Length > 0 && shadowLight.ExclusionMask[0] != null)
                 _cubemapScreenRenderer = shadowLight.ExclusionMask[0].GetComponent<Renderer>();
 
             EditorGUI.BeginChangeCheck();
             bool active = EditorGUILayout.Toggle("Enabled", shadowLight.IsActive);
-            float intensity = EditorGUILayout.Slider(new GUIContent("Intensity", "Brightness of the single screen-colored shadow light."), shadowLight.Intensity, 0f, 8f);
+            float intensity = EditorGUILayout.Slider(new GUIContent("Intensity", "Brightness of the single screen-colored Point Light Volume."), shadowLight.Intensity, 0f, 150f);
             float sourceSize = EditorGUILayout.Slider(new GUIContent("Source Size", "Softens the point-light response without changing the baked cubemap detail."), shadowLight.LightSourceSize, 0.05f, 5f);
             Vector3 origin = EditorGUILayout.Vector3Field(new GUIContent("Cubemap Origin", "The point from which all six shadow faces are baked. Normally this is the dome center."), shadowLight.transform.position);
             _cubemapScreenRenderer = (Renderer)EditorGUILayout.ObjectField(new GUIContent("Dome Screens", "Excluded from the cubemap so the emissive screen surface does not block its own light."), _cubemapScreenRenderer, typeof(Renderer), true);
@@ -294,7 +295,7 @@ namespace VRCLightVolumes {
             shadowLight.LightType = 0;
             shadowLight.IsDynamic = false;
             shadowLight.Color = Color.white;
-            shadowLight.Intensity = 4f;
+            shadowLight.Intensity = 75f;
             shadowLight.ShadingStrength = 1f;
             shadowLight.LightSourceSize = 1f;
             shadowLight.Range = Mathf.Max(volumeSize.x, Mathf.Max(volumeSize.y, volumeSize.z));
@@ -338,13 +339,27 @@ namespace VRCLightVolumes {
             colorDriver.UpdatesPerSecond = 12f;
             colorDriver.ResponseSpeed = 18f;
             colorDriver.ScreenColor = 1f;
-            colorDriver.FollowVideoBrightness = 1f;
-            colorDriver.ScreenLightBoost = 2f;
+            colorDriver.FollowVideoBrightness = 0.25f;
+            colorDriver.ScreenLightBoost = 1f;
             colorDriver.ColorMultiplier = Color.white;
             colorDriver.AntiFlickering = true;
             colorDriver.FollowClosestScreen = false;
             colorDriver.FacingOnlyLighting = false;
-            colorDriver.SettingsVersion = 6;
+            colorDriver.SettingsVersion = 7;
+        }
+
+        private void UpgradeCubemapShadowSettings(PointLightVolumeInstance shadowLight, DomeAvatarFillLight colorDriver) {
+            if (colorDriver.SettingsVersion >= 7) return;
+            Undo.RecordObjects(new UnityEngine.Object[] { shadowLight, colorDriver }, "Upgrade Cubemap Screen Shadows");
+            if (shadowLight.Intensity <= 8f) shadowLight.Intensity = 75f;
+            if (shadowLight.Color == Color.black) shadowLight.Color = Color.white;
+            if (colorDriver.FollowVideoBrightness >= 0.99f) colorDriver.FollowVideoBrightness = 0.25f;
+            if (colorDriver.ScreenLightBoost >= 1.99f) colorDriver.ScreenLightBoost = 1f;
+            colorDriver.SettingsVersion = 7;
+            PointLightVolumeEditorUtility.Sync(shadowLight, false);
+            LightVolumeManagerEditorBackend.CopyProxyToUdon(colorDriver);
+            EditorUtility.SetDirty(colorDriver);
+            EditorSceneManager.MarkSceneDirty(_manager.gameObject.scene);
         }
 
         private void BakeCubemapShadowLight(PointLightVolumeInstance shadowLight) {
