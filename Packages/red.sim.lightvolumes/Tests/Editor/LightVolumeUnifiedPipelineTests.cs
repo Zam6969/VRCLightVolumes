@@ -449,9 +449,22 @@ namespace VRCLightVolumes.Tests {
             Assert.That(material.GetFloat("_DynamicEnabled"), Is.EqualTo(1f));
             Assert.That(material.GetFloat("_L0Only"), Is.EqualTo(0f));
             Assert.That(material.GetFloat("_UseScreenVisibility"), Is.EqualTo(0f));
+            Assert.That(material.GetFloat("_UseScreenBake"), Is.EqualTo(0f));
+            Assert.That(material.GetFloat("_ScreenBakeNormalization"), Is.EqualTo(1f));
             Assert.That(material.GetFloat("_ScreenShadowStrength"), Is.EqualTo(1f));
             Assert.That(material.GetFloat("_ScreenShadowContrast"), Is.EqualTo(2f));
             Assert.That(volume.SmoothBlending, Is.EqualTo(0.5f));
+
+            Texture3D screenBake = CreateTexture3D("Screen Mesh Shadow Field");
+            material.SetTexture("_ScreenBakeL0", screenBake);
+            Assert.That(DomeMeshLightAtlasBridgeUtility.SetScreenShadowSettings(manager, true, 0.75f, 3f), Is.True);
+            Assert.That(material.GetFloat("_UseScreenBake"), Is.EqualTo(1f));
+            Assert.That(material.GetFloat("_UseScreenVisibility"), Is.EqualTo(0f));
+            Assert.That(material.GetFloat("_ScreenShadowStrength"), Is.EqualTo(0.75f));
+            Assert.That(material.GetFloat("_ScreenShadowContrast"), Is.EqualTo(3f));
+            Assert.That(DomeMeshLightAtlasBridgeUtility.ClearScreenShadowFields(manager), Is.True);
+            Assert.That(material.GetTexture("_ScreenBakeL0"), Is.Null);
+            Assert.That(material.GetFloat("_UseScreenBake"), Is.EqualTo(0f));
 
             volume.gameObject.SetActive(false);
             Assert.That(DomeMeshLightAtlasBridgeUtility.SyncAtlasMaterial(manager), Is.True);

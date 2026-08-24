@@ -104,12 +104,15 @@ namespace VRCLightVolumes {
         private void DrawScreenOriginShadows(Material[] materials, CustomRenderTexture[] outputs, Matrix4x4 volumeMatrix) {
             EditorGUILayout.LabelField("Screen-Origin Shadows", EditorStyles.boldLabel);
             bool hasBridge = DomeMeshLightAtlasBridgeUtility.TryGetBridge(_manager, out _, out Material bridgeMaterial, out _);
-            Texture3D currentMask = hasBridge ? bridgeMaterial.GetTexture("_ScreenVisibility") as Texture3D : null;
-            bool enabled = currentMask != null && bridgeMaterial.GetFloat("_UseScreenVisibility") > 0.5f;
+            Texture3D lightmapperField = hasBridge ? bridgeMaterial.GetTexture("_ScreenBakeL0") as Texture3D : null;
+            Texture3D rayField = hasBridge ? bridgeMaterial.GetTexture("_ScreenVisibility") as Texture3D : null;
+            bool usingLightmapperField = lightmapperField != null && bridgeMaterial.GetFloat("_UseScreenBake") > 0.5f;
+            Texture3D currentMask = lightmapperField != null ? lightmapperField : rayField;
+            bool enabled = usingLightmapperField || rayField != null && bridgeMaterial.GetFloat("_UseScreenVisibility") > 0.5f;
             float strength = hasBridge && bridgeMaterial.HasProperty("_ScreenShadowStrength") ? bridgeMaterial.GetFloat("_ScreenShadowStrength") : 1f;
             float contrast = hasBridge && bridgeMaterial.HasProperty("_ScreenShadowContrast") ? bridgeMaterial.GetFloat("_ScreenShadowContrast") : 2f;
 
-            EditorGUILayout.HelpBox("Bakes visibility from every generated dome screen section. The video colors remain realtime; only static mesh visibility is baked.", MessageType.None);
+            EditorGUILayout.HelpBox("Bakes static light transport from the screen mesh. The screen colors remain realtime and are multiplied by this baked shadow field.", MessageType.None);
             if (!hasBridge) {
                 EditorGUILayout.HelpBox("Publish the mesh light to the standard Light Volume atlas before baking detailed screen shadows.", MessageType.Info);
                 if (GUILayout.Button("Publish To Standard Light Volumes", GUILayout.Height(26f))) {
@@ -125,9 +128,36 @@ namespace VRCLightVolumes {
             float nextContrast = EditorGUILayout.Slider("Shadow Contrast", contrast, 0.5f, 8f);
             if (EditorGUI.EndChangeCheck()) DomeMeshLightAtlasBridgeUtility.SetScreenShadowSettings(_manager, nextEnabled, nextStrength, nextContrast);
 
-            using (new EditorGUI.DisabledScope(true)) EditorGUILayout.ObjectField("Current Shadow Field", currentMask, typeof(Texture3D), false);
+            using (new EditorGUI.DisabledScope(true)) EditorGUILayout.ObjectField(usingLightmapperField ? "Bakery Mesh Field" : "Current Shadow Field", currentMask, typeof(Texture3D), false);
             _screenShadowHorizontalResolution = EditorGUILayout.IntSlider(new GUIContent("Floor Detail", "Horizontal detail for shadows on the floor and walls."), _screenShadowHorizontalResolution, 32, 96);
             _screenShadowVerticalResolution = EditorGUILayout.IntSlider(new GUIContent("Height Detail", "Vertical detail for raised shadow casters."), _screenShadowVerticalResolution, 8, 48);
+
+            GUILayout.Space(4f);
+            EditorGUILayout.LabelField("Bakery Mesh Bake", EditorStyles.miniBoldLabel);
+            _bakeryScreenRenderer = (Renderer)EditorGUILayout.ObjectField(new GUIContent("Mesh Screen", "The combined dome renderer whose triangles should emit the light."), _bakeryScreenRenderer, typeof(Renderer), true);
+            if (!BakeryEditorBridge.IsAvailable) {
+                EditorGUILayout.HelpBox("Bakery is not installed or has not finished compiling.", MessageType.Info);
+            } else {
+                EditorGUILayout.HelpBox("Runs a screen-only Bakery pass using a temporary emissive copy of this mesh, saves its volume field, restores every light and material, then starts your normal Bakery world bake.", MessageType.None);
+                bool baking = BakeryEditorBridge.IsBaking || DomeMeshLightLightmapperShadowBaker.IsInProgress;
+                using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode || baking || _bakeryScreenRenderer == null)) {
+                    string bakeryLabel = lightmapperField == null ? "Bake Mesh Shadows + Restore World Bake" : "Rebake Mesh Shadows + Restore World Bake";
+                    if (GUILayout.Button(bakeryLabel, GUILayout.Height(28f))) {
+                        Vector3 center = volumeMatrix.MultiplyPoint3x4(Vector3.zero);
+                        Vector3 size = new Vector3(volumeMatrix.GetColumn(0).magnitude, volumeMatrix.GetColumn(1).magnitude, volumeMatrix.GetColumn(2).magnitude);
+                        Vector3Int resolution = new Vector3Int(_screenShadowHorizontalResolution, _screenShadowVerticalResolution, _screenShadowHorizontalResolution);
+                        float cutoff = Mathf.Max(materials[0].GetFloat("_ProjectionRange"), 0.1f);
+                        if (!DomeMeshLightLightmapperShadowBaker.Start(_bakeryScreenRenderer, _manager, center, size, resolution, cutoff, nextStrength, nextContrast, out string error)) {
+                            EditorUtility.DisplayDialog("Realtime Mesh Light Shadows", error, "OK");
+                        }
+                        GUIUtility.ExitGUI();
+                    }
+                }
+                if (baking) EditorGUILayout.HelpBox("Bakery is working. Keep this scene open until the screen pass is copied and the normal world bake starts.", MessageType.Info);
+            }
+
+            GUILayout.Space(4f);
+            EditorGUILayout.LabelField("Fast Raycast Fallback", EditorStyles.miniBoldLabel);
             _shadowLayerMask = DrawLayerMask(new GUIContent("Shadow Layers", "Meshes on these layers block light from the dome screen sections."), _shadowLayerMask);
             _includeRenderMeshes = EditorGUILayout.Toggle(new GUIContent("Include Render Meshes", "Temporarily includes visible shadow-casting meshes without adding permanent colliders."), _includeRenderMeshes);
             _shadowBias = EditorGUILayout.Slider("Shadow Bias", _shadowBias, 0.005f, 0.2f);
@@ -139,7 +169,7 @@ namespace VRCLightVolumes {
             }
 
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode)) {
-                string buttonLabel = currentMask == null ? "Bake Shadows From Screens" : "Rebake Shadows From Screens";
+                string buttonLabel = rayField == null ? "Bake Fast Screen Shadows" : "Rebake Fast Screen Shadows";
                 if (GUILayout.Button(buttonLabel, GUILayout.Height(28f))) {
                     Vector3Int resolution = new Vector3Int(_screenShadowHorizontalResolution, _screenShadowVerticalResolution, _screenShadowHorizontalResolution);
                     if (DomeMeshLightShadowBaker.BakeScreenOriginField(materials, outputs, volumeMatrix, _shadowLayerMask.value, _shadowBias, _includeRenderMeshes, _manager, resolution, nextStrength, nextContrast)) {
@@ -152,7 +182,7 @@ namespace VRCLightVolumes {
 
             using (new EditorGUI.DisabledScope(currentMask == null)) {
                 if (GUILayout.Button("Clear Screen-Origin Shadows")) {
-                    DomeMeshLightAtlasBridgeUtility.ApplyScreenShadowField(_manager, null, Vector3Int.one, nextStrength, nextContrast);
+                    DomeMeshLightAtlasBridgeUtility.ClearScreenShadowFields(_manager);
                     GUIUtility.ExitGUI();
                 }
             }

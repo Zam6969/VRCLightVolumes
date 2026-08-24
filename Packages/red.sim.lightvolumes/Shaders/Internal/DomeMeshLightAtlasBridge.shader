@@ -7,6 +7,7 @@ Shader "Hidden/VRCLV/DomeMeshLightAtlasBridge"
         _DynamicTexture1("Realtime Lighting 1", 3D) = "black" {}
         _DynamicTexture2("Realtime Lighting 2", 3D) = "black" {}
         _ScreenVisibility("Screen-Origin Shadow Field", 3D) = "white" {}
+        _ScreenBakeL0("Lightmapper Screen Field", 3D) = "white" {}
         [HideInInspector] _DynamicBounds0("Atlas Bounds 0", Vector) = (0, 0, 0, 0)
         [HideInInspector] _DynamicBounds1("Atlas Bounds 1", Vector) = (0, 0, 0, 0)
         [HideInInspector] _DynamicBounds2("Atlas Bounds 2", Vector) = (0, 0, 0, 0)
@@ -16,6 +17,8 @@ Shader "Hidden/VRCLV/DomeMeshLightAtlasBridge"
         [HideInInspector] _UseScreenVisibility("Use Screen-Origin Shadows", Float) = 0
         [HideInInspector] _ScreenShadowStrength("Screen Shadow Strength", Range(0, 1)) = 1
         [HideInInspector] _ScreenShadowContrast("Screen Shadow Contrast", Range(0.5, 8)) = 2
+        [HideInInspector] _UseScreenBake("Use Lightmapper Screen Field", Float) = 0
+        [HideInInspector] _ScreenBakeNormalization("Lightmapper Field Normalization", Float) = 1
     }
 
     SubShader
@@ -37,6 +40,7 @@ Shader "Hidden/VRCLV/DomeMeshLightAtlasBridge"
             sampler3D _DynamicTexture1;
             sampler3D _DynamicTexture2;
             sampler3D _ScreenVisibility;
+            sampler3D _ScreenBakeL0;
             float4 _DynamicBounds0;
             float4 _DynamicBounds1;
             float4 _DynamicBounds2;
@@ -46,11 +50,21 @@ Shader "Hidden/VRCLV/DomeMeshLightAtlasBridge"
             float _UseScreenVisibility;
             float _ScreenShadowStrength;
             float _ScreenShadowContrast;
+            float _UseScreenBake;
+            float _ScreenBakeNormalization;
 
             float ScreenVisibility(float3 localUvw)
             {
-                if (_UseScreenVisibility < 0.5) return 1.0;
-                float visibility = tex3Dlod(_ScreenVisibility, float4(saturate(localUvw), 0)).r;
+                float visibility = 1.0;
+                if (_UseScreenBake > 0.5)
+                {
+                    float3 bakedL0 = tex3Dlod(_ScreenBakeL0, float4(saturate(localUvw), 0)).rgb;
+                    visibility = max(bakedL0.r, max(bakedL0.g, bakedL0.b)) * _ScreenBakeNormalization;
+                }
+                else if (_UseScreenVisibility > 0.5)
+                {
+                    visibility = tex3Dlod(_ScreenVisibility, float4(saturate(localUvw), 0)).r;
+                }
                 visibility = pow(saturate(visibility), max(_ScreenShadowContrast, 0.5));
                 return lerp(1.0, visibility, saturate(_ScreenShadowStrength));
             }

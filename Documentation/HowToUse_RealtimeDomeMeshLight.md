@@ -74,7 +74,25 @@ The optional **Avatar Fill Light** is only a fallback for avatar shaders that do
 
 Open `Tools > Light Volumes > Realtime Mesh Light Settings` and find **Screen-Origin Shadows**. The baked field stores only static visibility, so the video color still changes at runtime while walls, floors and other fixed geometry block light from the actual dome screen sections.
 
-### Bake From Scene Geometry
+### Bakery Mesh Bake (Recommended)
+
+This is the closest equivalent to LTCGI's shadow-bake workflow, but it writes a 3D field for Light Volumes instead of a second receiver lightmap:
+
+1. Assign the combined dome renderer under **Mesh Screen**.
+2. Start with **Floor Detail** `64` and **Height Detail** `24`.
+3. Click **Bake Mesh Shadows + Restore World Bake**.
+4. Leave the scene open while Bakery runs two passes.
+5. Adjust **Shadow Strength** and **Shadow Contrast** after both passes finish.
+
+For the first pass, the tool remembers the current scene state, turns off external lights and emissive contributors, and creates a temporary white Bakery Light Mesh from the actual screen triangles. Only the matching Bakery Volume is baked. Its screen-light field is copied into `Assets/LightVolumesDome`, then the temporary emitter is removed and all lights, probes, materials, ambient settings, and Bakery volumes are restored. The tool immediately starts a second normal Bakery bake so your world lightmaps remain based on the original scene.
+
+The video texture is not baked. At runtime the saved field supplies static mesh visibility while the realtime mesh-light textures continue supplying the changing video colors. This avoids the old center-light approximation and does not leave a realtime Unity light behind.
+
+This isolation-and-restore process is independently implemented for Light Volumes and follows the general workflow documented by [LTCGI Shadowmaps](https://ltcgi.dev/Advanced/Shadowmaps).
+
+If a bake is interrupted, use `Tools > Light Volumes > Restore Interrupted Mesh Shadow Bake`. The restore state is serialized in the scene during the temporary pass so the original setup can also be recovered after a script reload.
+
+### Fast Raycast Fallback
 
 This option works alongside a Bakery-lit world:
 
@@ -82,7 +100,7 @@ This option works alongside a Bakery-lit world:
 2. Choose the relevant **Shadow Layers**.
 3. Leave **Shadow Bias** near `0.05` initially.
 4. Start with **Floor Detail** `64` and **Height Detail** `24`.
-5. Click **Bake Shadows From Screens**.
+5. Click **Bake Fast Screen Shadows**.
 6. Adjust **Shadow Strength** and **Shadow Contrast**, then save the scene. Raise contrast when many dome panels fill the shadows too much.
 
 The editor temporarily creates physics representations of visible render meshes whose **Cast Shadows** setting is not `Off`, traces every shadow voxel to every generated screen emitter, and removes those temporary objects when the bake finishes. Existing colliders are included too. The result is applied through the one standard Light Volume atlas; it does not create a Unity light or a center Point Light Volume. Runtime cost is one extra 3D texture sample, not one shadow map per screen panel.
@@ -91,22 +109,8 @@ Higher detail gives cleaner floor shadows but increases atlas memory and bake ti
 
 Older versions of this tool could create `Realtime Mesh Light - Cubemap Shadows` at the dome center. That proxy is not needed for screen-origin shadows. The settings window offers to disable it, and a successful screen-origin bake disables it automatically.
 
-### Use A Bakery Volume Shadow Mask
-
-The mesh light can also read a Bakery Volume's `bakedMask` directly:
-
-1. In Bakery, use **Shadowmask** render mode.
-2. Assign the combined renderer under **Dome Screens** and click **Prepare Bakery Screen Shadows**. This adds or configures a Bakery Light Mesh, a zero-output Unity Light used only for Bakery's channel allocation, and a matching Bakery Volume.
-3. Run the Bakery bake.
-4. Return to **Realtime Mesh Light Settings**.
-5. Assign the baked **Bakery Volume**, or click **Find Matching Volume**.
-6. The tool reads Bakery's allocated RGBA channel when possible. You can also select **Screen Mask Channel** manually.
-7. Click **Use Bakery Mask**, then adjust **Shadow Strength**.
-
-This imports only the selected visibility channel. It does not replace the normal Bakery lightmaps or the realtime video lighting. If the Bakery mask contains another light in the selected channel, choose the correct channel or use the collider bake instead.
-
 > [!IMPORTANT]
-> Rebuild or rebake the screen shadow map after changing the dome bounds, screen positions or static shadow-casting geometry. A Bakery shadow mask must also be reimported after its Bakery Volume is rebaked.
+> Rebuild or rebake the screen shadow field after changing the dome bounds, screen positions, screen mesh, or static shadow-casting geometry.
 
 ## After Changing The Mesh Or UVs
 

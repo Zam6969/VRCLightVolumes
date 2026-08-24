@@ -12,9 +12,13 @@ namespace VRCLightVolumes {
     internal static class BakeryEditorBridge {
         private const BindingFlags StaticFields = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
         private const BindingFlags InstanceFields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        private const BindingFlags InstanceMethods = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
         private static readonly Type BakeryVolumeType = ResolveType("BakeryVolume", "BakeryRuntimeAssembly");
         private static readonly Type BakeryLightMeshType = ResolveType("BakeryLightMesh", "BakeryRuntimeAssembly");
+        private static readonly Type BakerySkyLightType = ResolveType("BakerySkyLight", "BakeryRuntimeAssembly");
+        private static readonly Type BakeryPointLightType = ResolveType("BakeryPointLight", "BakeryRuntimeAssembly");
+        private static readonly Type BakeryDirectLightType = ResolveType("BakeryDirectLight", "BakeryRuntimeAssembly");
         private static readonly Type BakeryGroupType = ResolveType("BakeryLightmapGroup", "BakeryRuntimeAssembly");
         private static readonly Type BakeryStorageType = ResolveType("ftLightmapsStorage", "BakeryRuntimeAssembly");
         private static readonly Type BakeryRendererType = ResolveType("ftRenderLightmap", "BakeryEditorAssembly");
@@ -33,6 +37,10 @@ namespace VRCLightVolumes {
 
         // Exposes Bakery's optional component type to editor UI without creating a hard assembly dependency.
         internal static Type BakeryVolumeComponentType => BakeryVolumeType;
+
+        internal static Type BakeryLightMeshComponentType => BakeryLightMeshType;
+
+        internal static Type[] BakeryLightComponentTypes => new[] { BakerySkyLightType, BakeryPointLightType, BakeryDirectLightType, BakeryLightMeshType };
 
         // Whether this Bakery install can produce a mesh-light shadow mask for the realtime field.
         internal static bool SupportsDomeShadowMask => BakeryVolumeType != null && BakeryLightMeshType != null;
@@ -144,6 +152,136 @@ namespace VRCLightVolumes {
             if (BakeryVolumeType == null || candidate == null || !BakeryVolumeType.IsInstanceOfType(candidate)) return false;
             shadowMask = ReadTexture3D((Component)candidate, "bakedMask");
             return shadowMask != null;
+        }
+
+        // Reads the directional SH textures produced by a Bakery Volume.
+        internal static bool TryGetVolumeLightingTextures(UnityEngine.Object candidate, out Texture3D texture0, out Texture3D texture1, out Texture3D texture2) {
+            texture0 = null;
+            texture1 = null;
+            texture2 = null;
+            if (BakeryVolumeType == null || candidate == null || !BakeryVolumeType.IsInstanceOfType(candidate)) return false;
+            Component component = candidate as Component;
+            if (component == null) return false;
+            texture0 = ReadTexture3D(component, "bakedTexture0");
+            texture1 = ReadTexture3D(component, "bakedTexture1");
+            texture2 = ReadTexture3D(component, "bakedTexture2");
+            return texture0 != null;
+        }
+
+        // Includes or excludes an optional Bakery Volume from the next bake.
+        internal static void SetVolumeBakingEnabled(UnityEngine.Object candidate, bool enabled) {
+            if (BakeryVolumeType == null || candidate == null || !BakeryVolumeType.IsInstanceOfType(candidate)) return;
+            SerializedObject serialized = new SerializedObject(candidate);
+            SetBool(serialized, "enableBaking", enabled);
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            LVUtils.MarkDirty(candidate);
+        }
+
+        internal static bool TryGetVolumeBakingEnabled(UnityEngine.Object candidate, out bool enabled) {
+            enabled = false;
+            if (BakeryVolumeType == null || candidate == null || !BakeryVolumeType.IsInstanceOfType(candidate)) return false;
+            SerializedObject serialized = new SerializedObject(candidate);
+            SerializedProperty property = serialized.FindProperty("enableBaking");
+            if (property == null) return false;
+            enabled = property.boolValue;
+            return true;
+        }
+
+        // Starts Bakery's normal full render without introducing a hard dependency on Bakery assemblies.
+        internal static bool TryStartFullRender(out string error) {
+            error = null;
+            if (BakeryRendererType == null) {
+                error = "Bakery's editor renderer is not available.";
+                return false;
+            }
+            if (IsBaking) {
+                error = "Bakery is already baking.";
+                return false;
+            }
+
+            try {
+                FieldInfo instanceField = BakeryRendererType.GetField("instance", StaticFields);
+                object instance = instanceField?.GetValue(null);
+                if (instance == null) {
+                    if (!typeof(ScriptableObject).IsAssignableFrom(BakeryRendererType)) {
+                        error = "This Bakery version does not expose a compatible render window.";
+                        return false;
+                    }
+                    instance = ScriptableObject.CreateInstance(BakeryRendererType);
+                    instanceField?.SetValue(null, instance);
+                }
+
+                BakeryRendererType.GetMethod("Show", InstanceMethods, null, Type.EmptyTypes, null)?.Invoke(instance, null);
+                BakeryRendererType.GetMethod("SaveRenderSettings", InstanceMethods, null, Type.EmptyTypes, null)?.Invoke(instance, null);
+                BakeryRendererType.GetMethod("LoadRenderSettings", InstanceMethods, null, Type.EmptyTypes, null)?.Invoke(instance, null);
+                MethodInfo renderButton = BakeryRendererType.GetMethod("RenderButton", InstanceMethods, null, new[] { typeof(bool) }, null);
+                if (renderButton == null) {
+                    error = "This Bakery version does not expose RenderButton(bool).";
+                    return false;
+                }
+                renderButton.Invoke(instance, new object[] { false });
+                return true;
+            } catch (Exception exception) {
+                Exception source = exception is TargetInvocationException invocation && invocation.InnerException != null ? invocation.InnerException : exception;
+                error = source.Message;
+                return false;
+            }
+        }
+
+        // Configures the actual mesh as the only Bakery emitter for a dedicated screen-light volume pass.
+        internal static bool TrySetupDomeMeshField(Renderer screenRenderer, LightVolumeManager manager, Vector3 center, Vector3 size, Vector3Int resolution, float cutoff, out UnityEngine.Object bakeryVolume, out string error) {
+            bakeryVolume = null;
+            error = null;
+            if (!SupportsDomeShadowMask || screenRenderer == null || manager == null) {
+                error = "Assign the combined dome screen renderer and install Bakery first.";
+                return false;
+            }
+
+            Component lightMesh = screenRenderer.GetComponent(BakeryLightMeshType);
+            if (lightMesh == null) lightMesh = screenRenderer.gameObject.AddComponent(BakeryLightMeshType);
+            if (lightMesh == null) {
+                error = "Bakery Light Mesh could not be added to the temporary screen emitter.";
+                return false;
+            }
+
+            SerializedObject serializedLightMesh = new SerializedObject(lightMesh);
+            SetColor(serializedLightMesh, "color", Color.white);
+            SetFloat(serializedLightMesh, "intensity", 1f);
+            SetFloat(serializedLightMesh, "cutoff", Mathf.Max(cutoff, 0.1f));
+            SetInt(serializedLightMesh, "samples", 256);
+            SetInt(serializedLightMesh, "samples2", 32);
+            SetBool(serializedLightMesh, "selfShadow", true);
+            SetBool(serializedLightMesh, "bakeToIndirect", true);
+            SetBool(serializedLightMesh, "shadowmask", false);
+            SetFloat(serializedLightMesh, "indirectIntensity", 1f);
+            serializedLightMesh.ApplyModifiedPropertiesWithoutUndo();
+            LVUtils.MarkDirty(lightMesh);
+
+            const string helperName = "Realtime Mesh Light - Bakery Shadow Volume";
+            Transform helperTransform = manager.transform.Find(helperName);
+            GameObject helper = helperTransform != null ? helperTransform.gameObject : new GameObject(helperName);
+            if (helperTransform == null) helper.transform.SetParent(manager.transform, false);
+            Component volume = helper.GetComponent(BakeryVolumeType);
+            if (volume == null) volume = helper.AddComponent(BakeryVolumeType);
+            if (volume == null) {
+                error = "Bakery Volume could not be created for the mesh shadow field.";
+                return false;
+            }
+
+            SerializedObject serializedVolume = new SerializedObject(volume);
+            SetBounds(serializedVolume, "bounds", new Bounds(center, size));
+            SetBool(serializedVolume, "enableBaking", true);
+            SetBool(serializedVolume, "adaptiveRes", false);
+            SetBool(serializedVolume, "denoise", true);
+            SetBool(serializedVolume, "isGlobal", false);
+            SetInt(serializedVolume, "resolutionX", Mathf.Max(resolution.x, 4));
+            SetInt(serializedVolume, "resolutionY", Mathf.Max(resolution.y, 4));
+            SetInt(serializedVolume, "resolutionZ", Mathf.Max(resolution.z, 4));
+            SetEnum(serializedVolume, "encoding", 0);
+            serializedVolume.ApplyModifiedPropertiesWithoutUndo();
+            LVUtils.MarkDirty(volume);
+            bakeryVolume = volume;
+            return true;
         }
 
         // Finds the baked Bakery Volume that most closely covers the realtime mesh-light field.

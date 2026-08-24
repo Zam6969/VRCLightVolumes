@@ -186,6 +186,28 @@ namespace VRCLightVolumes {
             Undo.RecordObjects(new UnityEngine.Object[] { volume, material }, "Apply Screen-Origin Shadow Field");
             material.SetTexture("_ScreenVisibility", texture);
             material.SetFloat("_UseScreenVisibility", texture != null ? 1f : 0f);
+            if (texture != null) material.SetFloat("_UseScreenBake", 0f);
+            material.SetFloat("_ScreenShadowStrength", Mathf.Clamp01(strength));
+            material.SetFloat("_ScreenShadowContrast", Mathf.Clamp(contrast, 0.5f, 8f));
+            if (texture != null) volume.Resolution = new Vector3Int(
+                Mathf.Max(resolution.x, 4),
+                Mathf.Max(resolution.y, 4),
+                Mathf.Max(resolution.z, 4));
+            volume.UpdateTransform();
+            EditorUtility.SetDirty(volume);
+            EditorUtility.SetDirty(material);
+            LightVolumeManagerEditorBackend.CopyProxyToUdon(volume);
+            LightVolumeManagerEditorBackend.GenerateAtlas(manager);
+            return true;
+        }
+
+        internal static bool ApplyLightmapperScreenField(LightVolumeManager manager, Texture3D texture, Vector3Int resolution, float normalization, float strength, float contrast) {
+            if (!TryGetBridge(manager, out LightVolumeInstance volume, out Material material, out _)) return false;
+            Undo.RecordObjects(new UnityEngine.Object[] { volume, material }, "Apply Lightmapper Screen Shadow Field");
+            material.SetTexture("_ScreenBakeL0", texture);
+            material.SetFloat("_UseScreenBake", texture != null ? 1f : 0f);
+            if (texture != null) material.SetFloat("_UseScreenVisibility", 0f);
+            material.SetFloat("_ScreenBakeNormalization", Mathf.Max(normalization, 0.0001f));
             material.SetFloat("_ScreenShadowStrength", Mathf.Clamp01(strength));
             material.SetFloat("_ScreenShadowContrast", Mathf.Clamp(contrast, 0.5f, 8f));
             if (texture != null) volume.Resolution = new Vector3Int(
@@ -203,10 +225,26 @@ namespace VRCLightVolumes {
         internal static bool SetScreenShadowSettings(LightVolumeManager manager, bool enabled, float strength, float contrast) {
             if (!TryGetBridge(manager, out _, out Material material, out CustomRenderTexture output)) return false;
             Undo.RecordObject(material, "Change Screen-Origin Shadow Settings");
-            bool hasTexture = material.GetTexture("_ScreenVisibility") != null;
-            material.SetFloat("_UseScreenVisibility", enabled && hasTexture ? 1f : 0f);
+            bool hasLightmapperField = material.GetTexture("_ScreenBakeL0") != null;
+            bool hasRayField = material.GetTexture("_ScreenVisibility") != null;
+            material.SetFloat("_UseScreenBake", enabled && hasLightmapperField ? 1f : 0f);
+            material.SetFloat("_UseScreenVisibility", enabled && !hasLightmapperField && hasRayField ? 1f : 0f);
             material.SetFloat("_ScreenShadowStrength", Mathf.Clamp01(strength));
             material.SetFloat("_ScreenShadowContrast", Mathf.Clamp(contrast, 0.5f, 8f));
+            EditorUtility.SetDirty(material);
+            if (!output.IsCreated()) output.Create();
+            output.Update();
+            SceneView.RepaintAll();
+            return true;
+        }
+
+        internal static bool ClearScreenShadowFields(LightVolumeManager manager) {
+            if (!TryGetBridge(manager, out _, out Material material, out CustomRenderTexture output)) return false;
+            Undo.RecordObject(material, "Clear Screen-Origin Shadow Fields");
+            material.SetTexture("_ScreenVisibility", null);
+            material.SetTexture("_ScreenBakeL0", null);
+            material.SetFloat("_UseScreenVisibility", 0f);
+            material.SetFloat("_UseScreenBake", 0f);
             EditorUtility.SetDirty(material);
             if (!output.IsCreated()) output.Create();
             output.Update();
@@ -231,7 +269,7 @@ namespace VRCLightVolumes {
             volume.AdaptiveResolution = false;
             bool hasDetailedShadowField = false;
             if (TryGetBridge(manager, out LightVolumeInstance existingVolume, out Material bridgeMaterial, out _) && existingVolume == volume)
-                hasDetailedShadowField = bridgeMaterial.GetTexture("_ScreenVisibility") != null;
+                hasDetailedShadowField = bridgeMaterial.GetTexture("_ScreenVisibility") != null || bridgeMaterial.GetTexture("_ScreenBakeL0") != null;
             if (!hasDetailedShadowField) volume.Resolution = Vector3Int.one * Mathf.Max(resolution, 4);
             volume.RegistryWeight = 1000f;
             volume.InvBakedRotation = Quaternion.identity;
