@@ -111,6 +111,8 @@ namespace VRCLightVolumes {
             bool enabled = usingLightmapperField || rayField != null && bridgeMaterial.GetFloat("_UseScreenVisibility") > 0.5f;
             float strength = hasBridge && bridgeMaterial.HasProperty("_ScreenShadowStrength") ? bridgeMaterial.GetFloat("_ScreenShadowStrength") : 1f;
             float contrast = hasBridge && bridgeMaterial.HasProperty("_ScreenShadowContrast") ? bridgeMaterial.GetFloat("_ScreenShadowContrast") : 2f;
+            float softness = hasBridge && bridgeMaterial.HasProperty("_ScreenShadowSoftness") ? bridgeMaterial.GetFloat("_ScreenShadowSoftness") : 1f;
+            float minimumLight = hasBridge && bridgeMaterial.HasProperty("_ScreenShadowFloor") ? bridgeMaterial.GetFloat("_ScreenShadowFloor") : 0.2f;
 
             EditorGUILayout.HelpBox("Bakes static light transport from the screen mesh. The screen colors remain realtime and are multiplied by this baked shadow field.", MessageType.None);
             if (!hasBridge) {
@@ -126,7 +128,9 @@ namespace VRCLightVolumes {
             bool nextEnabled = EditorGUILayout.Toggle("Enabled", enabled);
             float nextStrength = EditorGUILayout.Slider("Shadow Strength", strength, 0f, 1f);
             float nextContrast = EditorGUILayout.Slider("Shadow Contrast", contrast, 0.5f, 8f);
-            if (EditorGUI.EndChangeCheck()) DomeMeshLightAtlasBridgeUtility.SetScreenShadowSettings(_manager, nextEnabled, nextStrength, nextContrast);
+            float nextSoftness = EditorGUILayout.Slider(new GUIContent("Shadow Softness", "Smooths noisy Bakery voxels without another bake."), softness, 0f, 3f);
+            float nextMinimumLight = EditorGUILayout.Slider(new GUIContent("Minimum Light", "Stops dim transport from becoming solid black while retaining occlusion."), minimumLight, 0f, 0.75f);
+            if (EditorGUI.EndChangeCheck()) DomeMeshLightAtlasBridgeUtility.SetScreenShadowSettings(_manager, nextEnabled, nextStrength, nextContrast, nextSoftness, nextMinimumLight);
 
             using (new EditorGUI.DisabledScope(true)) EditorGUILayout.ObjectField(usingLightmapperField ? "Bakery Mesh Field" : "Current Shadow Field", currentMask, typeof(Texture3D), false);
             _screenShadowHorizontalResolution = EditorGUILayout.IntSlider(new GUIContent("Floor Detail", "Horizontal detail for shadows on the floor and walls."), _screenShadowHorizontalResolution, 32, 96);

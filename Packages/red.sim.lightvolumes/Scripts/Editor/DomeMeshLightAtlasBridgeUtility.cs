@@ -208,6 +208,11 @@ namespace VRCLightVolumes {
             material.SetFloat("_UseScreenBake", texture != null ? 1f : 0f);
             if (texture != null) material.SetFloat("_UseScreenVisibility", 0f);
             material.SetFloat("_ScreenBakeNormalization", Mathf.Max(normalization, 0.0001f));
+            material.SetVector("_ScreenBakeTexelSize", new Vector4(
+                1f / Mathf.Max(resolution.x, 1),
+                1f / Mathf.Max(resolution.y, 1),
+                1f / Mathf.Max(resolution.z, 1),
+                0f));
             material.SetFloat("_ScreenShadowStrength", Mathf.Clamp01(strength));
             material.SetFloat("_ScreenShadowContrast", Mathf.Clamp(contrast, 0.5f, 8f));
             if (texture != null) volume.Resolution = new Vector3Int(
@@ -222,7 +227,7 @@ namespace VRCLightVolumes {
             return true;
         }
 
-        internal static bool SetScreenShadowSettings(LightVolumeManager manager, bool enabled, float strength, float contrast) {
+        internal static bool SetScreenShadowSettings(LightVolumeManager manager, bool enabled, float strength, float contrast, float softness, float minimumLight) {
             if (!TryGetBridge(manager, out _, out Material material, out CustomRenderTexture output)) return false;
             Undo.RecordObject(material, "Change Screen-Origin Shadow Settings");
             bool hasLightmapperField = material.GetTexture("_ScreenBakeL0") != null;
@@ -231,6 +236,8 @@ namespace VRCLightVolumes {
             material.SetFloat("_UseScreenVisibility", enabled && !hasLightmapperField && hasRayField ? 1f : 0f);
             material.SetFloat("_ScreenShadowStrength", Mathf.Clamp01(strength));
             material.SetFloat("_ScreenShadowContrast", Mathf.Clamp(contrast, 0.5f, 8f));
+            material.SetFloat("_ScreenShadowSoftness", Mathf.Clamp(softness, 0f, 3f));
+            material.SetFloat("_ScreenShadowFloor", Mathf.Clamp01(minimumLight));
             EditorUtility.SetDirty(material);
             if (!output.IsCreated()) output.Create();
             output.Update();

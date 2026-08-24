@@ -17,8 +17,11 @@ Shader "Hidden/VRCLV/DomeMeshLightAtlasBridge"
         [HideInInspector] _UseScreenVisibility("Use Screen-Origin Shadows", Float) = 0
         [HideInInspector] _ScreenShadowStrength("Screen Shadow Strength", Range(0, 1)) = 1
         [HideInInspector] _ScreenShadowContrast("Screen Shadow Contrast", Range(0.5, 8)) = 2
+        [HideInInspector] _ScreenShadowSoftness("Screen Shadow Softness", Range(0, 3)) = 1
+        [HideInInspector] _ScreenShadowFloor("Screen Shadow Minimum Light", Range(0, 1)) = 0.2
         [HideInInspector] _UseScreenBake("Use Lightmapper Screen Field", Float) = 0
         [HideInInspector] _ScreenBakeNormalization("Lightmapper Field Normalization", Float) = 1
+        [HideInInspector] _ScreenBakeTexelSize("Lightmapper Field Texel Size", Vector) = (0.015625, 0.0416667, 0.015625, 0)
     }
 
     SubShader
@@ -50,21 +53,39 @@ Shader "Hidden/VRCLV/DomeMeshLightAtlasBridge"
             float _UseScreenVisibility;
             float _ScreenShadowStrength;
             float _ScreenShadowContrast;
+            float _ScreenShadowSoftness;
+            float _ScreenShadowFloor;
             float _UseScreenBake;
             float _ScreenBakeNormalization;
+            float3 _ScreenBakeTexelSize;
+
+            float BakedTransport(float3 localUvw)
+            {
+                float3 uvw = saturate(localUvw);
+                float3 offset = _ScreenBakeTexelSize * max(_ScreenShadowSoftness, 0.0);
+                float3 value = tex3Dlod(_ScreenBakeL0, float4(uvw, 0)).rgb * 4.0;
+                value += tex3Dlod(_ScreenBakeL0, float4(saturate(uvw + float3(offset.x, 0, 0)), 0)).rgb;
+                value += tex3Dlod(_ScreenBakeL0, float4(saturate(uvw - float3(offset.x, 0, 0)), 0)).rgb;
+                value += tex3Dlod(_ScreenBakeL0, float4(saturate(uvw + float3(0, offset.y, 0)), 0)).rgb;
+                value += tex3Dlod(_ScreenBakeL0, float4(saturate(uvw - float3(0, offset.y, 0)), 0)).rgb;
+                value += tex3Dlod(_ScreenBakeL0, float4(saturate(uvw + float3(0, 0, offset.z)), 0)).rgb;
+                value += tex3Dlod(_ScreenBakeL0, float4(saturate(uvw - float3(0, 0, offset.z)), 0)).rgb;
+                value *= 0.1;
+                return max(value.r, max(value.g, value.b)) * _ScreenBakeNormalization;
+            }
 
             float ScreenVisibility(float3 localUvw)
             {
                 float visibility = 1.0;
                 if (_UseScreenBake > 0.5)
                 {
-                    float3 bakedL0 = tex3Dlod(_ScreenBakeL0, float4(saturate(localUvw), 0)).rgb;
                     // Bakery stores physical irradiance rather than a 0-1 visibility mask. After
-                    // normalizing the brightest voxel, recover the useful low end of that HDR
-                    // signal so ordinary visible voxels do not collapse to black.
-                    float transport = max(bakedL0.r, max(bakedL0.g, bakedL0.b)) * _ScreenBakeNormalization;
+                    // filtering the voxel field, recover its useful low end without allowing dim
+                    // transport or isolated samples to become solid black shadows.
+                    float transport = BakedTransport(localUvw);
                     visibility = saturate(transport * 512.0);
                     visibility = 1.0 - pow(1.0 - visibility, max(_ScreenShadowContrast, 0.5));
+                    visibility = max(visibility, saturate(_ScreenShadowFloor));
                     return lerp(1.0, visibility, saturate(_ScreenShadowStrength));
                 }
                 else if (_UseScreenVisibility > 0.5)
