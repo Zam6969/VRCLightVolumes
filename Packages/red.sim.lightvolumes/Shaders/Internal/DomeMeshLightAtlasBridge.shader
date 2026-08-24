@@ -59,7 +59,13 @@ Shader "Hidden/VRCLV/DomeMeshLightAtlasBridge"
                 if (_UseScreenBake > 0.5)
                 {
                     float3 bakedL0 = tex3Dlod(_ScreenBakeL0, float4(saturate(localUvw), 0)).rgb;
-                    visibility = max(bakedL0.r, max(bakedL0.g, bakedL0.b)) * _ScreenBakeNormalization;
+                    // Bakery stores physical irradiance rather than a 0-1 visibility mask. After
+                    // normalizing the brightest voxel, recover the useful low end of that HDR
+                    // signal so ordinary visible voxels do not collapse to black.
+                    float transport = max(bakedL0.r, max(bakedL0.g, bakedL0.b)) * _ScreenBakeNormalization;
+                    visibility = saturate(transport * 512.0);
+                    visibility = 1.0 - pow(1.0 - visibility, max(_ScreenShadowContrast, 0.5));
+                    return lerp(1.0, visibility, saturate(_ScreenShadowStrength));
                 }
                 else if (_UseScreenVisibility > 0.5)
                 {
